@@ -26,3 +26,6 @@
 .account-head{flex-wrap:nowrap}.account-head #playerName{min-width:0;flex:1}.account-head #accountAvatarLarge,.account-head #accountEquippedBadge{flex:none}
 
 .mq-admin-login{display:block;text-align:center;margin:16px 0 4px;font-size:12px;color:#62758b;text-decoration:underline}
+
+/* Requested record and title alignment */
+.mq-identity{max-width:100%;flex-wrap:wrap;justify-content:flex-start}.mq-identity-name{font-size:20px!important;font-weight:700;white-space:normal;overflow-wrap:anywhere;min-width:0}.titles li,#tower li,#titleList li{text-align:left!important;justify-content:flex-start!important}.mq-celebration{animation-duration:1s!important;pointer-events:none}.mq-celebration-center{animation-duration:1s!important}
