@@ -24,3 +24,5 @@
 .mq-reduced-motion .mq-celebration i{display:none}@media(prefers-reduced-motion:reduce){.mq-celebration,.mq-celebration-center{animation:none}.mq-celebration i{display:none}}
 
 .account-head{flex-wrap:nowrap}.account-head #playerName{min-width:0;flex:1}.account-head #accountAvatarLarge,.account-head #accountEquippedBadge{flex:none}
+
+.mq-admin-login{display:block;text-align:center;margin:16px 0 4px;font-size:12px;color:#62758b;text-decoration:underline}
