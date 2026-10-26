@@ -1,6 +1,6 @@
 {
   "mode": "isolated-upgrade-preview",
-  "source_commit": "27ab929fe634e24fbbc2307caa525d6860431b62",
+  "source_commit": "a0cf9a9eb21fc2d0b218f71143bc2c7b51be1739",
   "upstream": {
     "repository": "romanamatya/manabi-game-land",
     "commit": "3a1163c6cf70dc50e54f767fcd9eedb7bcf10050",
@@ -122,7 +122,7 @@
     "assets/subjects/social-v1.png": "ecc34baa2d991b39ff08ea2ae7ef8a09ea7b23a21dcb3dc6280c397c117f1cc2",
     "assets/title.png": "b1d3b0204329bc1f51e52379fde50e27f718878bd06b30fc1f4d3b49de24397b",
     "control-room.css": "db09907d89a89373c78d5c60e92368baa64fddef6f52e402316f2c3e7b412209",
-    "control-room.html": "19698b7dda2b98f468de3236d61b707e4fcb2aa26e39391b296fda9513489869",
+    "control-room.html": "8d8854899c58064e2e7d9d130206de6e6593e08b0d60a310aa7076140289fa41",
     "control-room.js": "74cbdc2316dc35af10efc83115a68c6306118f5c4e77044852595709b284df6e",
     "distribution-game.js": "22129139fae16e4939835f4d428ab53a1989c88a3b782e6a70ecd1ec689864f3",
     "distribution-model.js": "87f4076112058a380294b8b0569597ff30d6f89a75d66bbac77a28a2c8514004",
@@ -172,5 +172,6 @@
   },
   "adminBackendConfigured": false,
   "adminAuth": "dedicated-preview-spark-password",
-  "serverGradingReplacement": "excluded-by-user"
+  "serverGradingReplacement": "excluded-by-user",
+  "assetVersion": "spark-20261027-r1"
 }
