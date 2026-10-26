@@ -3,7 +3,7 @@ const games=window.ManabiProfileCatalog;
 const badges=games.flatMap(g=>g.titles.map(t=>({...t,game:g.id,gameName:g.name})));
 const number=v=>Number.isSafeInteger(Number(v))&&Number(v)>=0?Number(v):0;
 const read=(storage,key)=>{try{return JSON.parse(storage.getItem(key)||'{}')||{}}catch{return {}}};
-function records(storage){return games.map(game=>{const state=game.id==='keisan'?{best:storage.getItem('mgl_best'),points:storage.getItem('mgl_points')}:read(storage,'mgl_'+game.id);return {...game,best:number(state.best),points:number(state.points)}})}
+function records(storage){return games.map(game=>{const state=game.id==='keisan'?{best:storage.getItem('mgl_best'),points:storage.getItem('mgl_points')}:read(storage,'mgl_'+game.id);const sourceKey=game.id==='pref-name'?'mq_pref_name':game.id==='pref-place'?'mq_pref_place':null,legacy=sourceKey?read(storage,sourceKey):{};return {...game,best:Math.max(number(state.best),number(legacy.best)),points:number(state.points)}})}
 const icons=[
 {id:'cat',name:'ねこ',x:502,y:240},{id:'rabbit',name:'うさぎ',x:753,y:240},{id:'penguin',name:'ペンギン',x:1007,y:240},{id:'robot',name:'ロボット',x:1266,y:240},
 {id:'explorer',name:'探検ねこ',x:502,y:520,game:'pref-name',at:5,title:'地図のたんけん家'},

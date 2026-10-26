@@ -1,5 +1,5 @@
 {
-  "source_commit": "acde43d2428329d0e737e71c59defaf428f20be8",
+  "source_commit": "35541915ca99a0b3a15a1ca2e6568bf5950fc020",
   "mode": "public-preview",
   "cloud_writes": false,
   "storage_prefix": "manabi_public_preview:",
@@ -117,7 +117,7 @@
     "leaderboard.js": "1363f623461dca0d862ce214524165906ad7df0bb8fe7470b83887159a1cd495",
     "math.html": "6e6754734a61af6a7e25694361910f9f0e313b8a2aa62fdb991c450ffb8d16c8",
     "profile-catalog.js": "df6e6aee4ef0acf9eba6d98e2fe0c655c4a6ae781fe4fd4aa544b53706e67616",
-    "profile-model.js": "a6ccd01f59ecbea9bbe2e153c41bd30227ee98b1ea5200914597b32b02f45069",
+    "profile-model.js": "be507a53873f7033f62fffd01bc2a8546bf4da360e5d4d048becc2a60f344f64",
     "profile-ui.js": "9a5e6a1839fd86019fdf89382d9a98bb434a618407b028da3a7b1ff53a97d0aa",
     "profile.css": "d3b3d909994dbd7395a12fe28387b6eb0c2bfa070a9203cb39e6eddedfdf92a7",
     "ranking-page.js": "d4531be4570ffe063ab5e6acb7377bab2a0646cfd83e34ae7ad058d0a3299314",
