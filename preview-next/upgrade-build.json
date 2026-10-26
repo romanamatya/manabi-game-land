@@ -1,6 +1,6 @@
 {
   "mode": "isolated-upgrade-preview",
-  "source_commit": "ecfaa1f3059df12f33042f505755e86d780981db",
+  "source_commit": "27ab929fe634e24fbbc2307caa525d6860431b62",
   "upstream": {
     "repository": "romanamatya/manabi-game-land",
     "commit": "3a1163c6cf70dc50e54f767fcd9eedb7bcf10050",
@@ -121,9 +121,9 @@
     "assets/subjects/science-v1.png": "7e4337439e020e162f34764e6d724ab76b29ff2b88b47a0555f06676c204d8be",
     "assets/subjects/social-v1.png": "ecc34baa2d991b39ff08ea2ae7ef8a09ea7b23a21dcb3dc6280c397c117f1cc2",
     "assets/title.png": "b1d3b0204329bc1f51e52379fde50e27f718878bd06b30fc1f4d3b49de24397b",
-    "control-room.css": "d496ab0e2b23f1cd9cce21a08672c3eac346ff98c50a165aec7ce94bd6dc10f9",
-    "control-room.html": "b0645a7177716b041f174c3a7cdebef0d7d91cea706da1e964d66e3c8e7c6ad9",
-    "control-room.js": "e84f5dc8410e27d9d0c52f6bb2822ce8c205d0d5222c8de3b8f9d2476f439cc2",
+    "control-room.css": "db09907d89a89373c78d5c60e92368baa64fddef6f52e402316f2c3e7b412209",
+    "control-room.html": "19698b7dda2b98f468de3236d61b707e4fcb2aa26e39391b296fda9513489869",
+    "control-room.js": "74cbdc2316dc35af10efc83115a68c6306118f5c4e77044852595709b284df6e",
     "distribution-game.js": "22129139fae16e4939835f4d428ab53a1989c88a3b782e6a70ecd1ec689864f3",
     "distribution-model.js": "87f4076112058a380294b8b0569597ff30d6f89a75d66bbac77a28a2c8514004",
     "distribution-review.html": "b81a4e2826e713913eafe9ee6a2a9a0834e911ed6bee6058626c1740611496cc",
@@ -166,6 +166,11 @@
     "upgrade-config.js": "d214daa9865ff2e3458d56cbdde403c3f0521c1a2db9b252507b905db910f52b",
     "upgrade-runtime.js": "d71aec295d519ac602369af3378423e9ee7dd61b5848b787cd86ad61fa632cf3",
     "upgrade-shared.js": "800708ab9ff710bf814cd577c1f48c0a84829090b23c306736d264c98da6f23f",
-    "upgrade.css": "113830a8f2591b00f6cc468049641bba196f607e1998e1a9d4f176be8e382a7c"
-  }
+    "upgrade.css": "113830a8f2591b00f6cc468049641bba196f607e1998e1a9d4f176be8e382a7c",
+    "spark-config.js": "58df2bf4feff6bc662bc5d83984f9af87ca2fcdcb0e036add0ec754b5e107e39",
+    "spark-auth.js": "8d08b3ec2b6d3cc63901c7fc85893aee0c315c4a3266869bf29a72e3d4898cf2"
+  },
+  "adminBackendConfigured": false,
+  "adminAuth": "dedicated-preview-spark-password",
+  "serverGradingReplacement": "excluded-by-user"
 }

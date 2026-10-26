@@ -39,6 +39,7 @@ if(active==='avatar'){
 }}
 function open(panel){if(!names[panel])return;active=panel;profile=model.profile(storage);renderPanel();document.getElementById('accountMenu')?.removeAttribute('open');if(!dialog.open)dialog.showModal();dialog.scrollTop=0}
 document.querySelectorAll('[data-profile-panel]').forEach(b=>b.addEventListener('click',()=>open(b.dataset.profilePanel)));
+if(home&&window.MANABI_ENV?.preview){const menu=document.querySelector('#accountMenu .mq-menu');if(menu)menu.append(el('a',{class:'mq-link',href:prefix+'control-room.html'},'管理室を開く'))}
 if(home){const choices=document.getElementById('registrationAvatarChoices');for(const icon of model.icons.filter(i=>!i.game&&!i.shop)){const b=el('button',{type:'button','data-icon':icon.id,'aria-label':icon.name,'aria-pressed':profile.icon===icon.id});b.append(avatar(icon.id,'plain',48),el('small',{},icon.name));b.onclick=()=>{profile.icon=icon.id;save()};choices.append(b)}document.addEventListener('click',e=>{const menu=document.getElementById('accountMenu');if(menu.open&&!menu.contains(e.target))menu.open=false});document.addEventListener('keydown',e=>{if(e.key==='Escape')document.getElementById('accountMenu').open=false})}
 const isGame=location.pathname.includes('/games/'),gameId=isGame?location.pathname.split('/').pop().replace('.html',''):null;
 const gamePlayer=isGame?el('div',{class:'mq-game-player','aria-label':'自分のプレイヤー情報'}):null;

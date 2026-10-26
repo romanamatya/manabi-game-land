@@ -36,3 +36,6 @@
 .mq-avatar.mq-png-frame>.mq-frame-art{position:absolute;inset:0;display:block!important;width:100%!important;height:100%!important;max-width:none!important;object-fit:contain!important;pointer-events:none;z-index:1;padding:0!important;border:0!important;border-radius:0!important;background:transparent!important}
 
 #mqLimitedSubject{font:inherit;padding:10px;margin:8px 0 16px;max-width:100%;border:1px solid #bacadd;border-radius:8px}.mq-limited-reward{font-size:clamp(14px,3.8vw,20px)!important}.mq-celebration-center>.mq-avatar{display:inline-flex;margin:8px auto}.mq-celebration-center{max-width:calc(100vw - 24px)}
+
+/* Shared display-only positioning, used by every avatar surface. */
+.mq-avatar>.mq-png-face{position:relative;padding:0!important;background:none!important;overflow:visible;flex:none;line-height:0}.mq-avatar .mq-avatar-image{position:absolute!important;display:block!important;left:calc(50% + var(--portrait-x,0%))!important;top:calc(50% + var(--portrait-y,0%))!important;transform:translate(-50%,-50%)!important;width:100%!important;height:100%!important;max-width:none!important;max-height:none!important;margin:0!important;padding:0!important;border:0!important;object-fit:contain!important;box-shadow:none!important;border-radius:0!important;pointer-events:none}.mq-avatar.mq-png-frame>.mq-png-face{position:absolute}

@@ -1,0 +1,25 @@
+const config=window.MANABI_SPARK_CONFIG;
+export function errorText(e){return ({'backend-not-configured':'確認用の認証サーバーは設定待ち。管理機能はまだ利用できない。','production-project-rejected':'本番プロジェクトへの接続を停止した。','auth/invalid-credential':'パスワードを確認して。','auth/wrong-password':'パスワードを確認して。','auth/user-not-found':'パスワードを確認して。','auth/too-many-requests':'試行回数が多いため一時停止中。時間を空けて試して。','permission-denied':'管理権限がないか、認証が失効している。再ログインして。','admin-required':'管理者として認証されていない。','feature-unverified':'この操作はSpark用の検証が未完了のため停止中。','auth/weak-password':'新しいパスワードは12文字以上にして。','invalid-input':'入力内容を確認して。'})[e.code||e.message]||'処理を完了できなかった。接続と認証状態を確認して。'}
+let pending;
+export function client(){if(pending)return pending;pending=open().catch(e=>{pending=null;throw e});return pending}
+async function open(){
+ if(!config?.enabled||!config.firebase?.projectId)throw Error('backend-not-configured');
+ if(config.environment!=='previewSpark/v1'||config.firebase.projectId==='manabi-game-land')throw Error('production-project-rejected');
+ const [appSdk,A,F]=await Promise.all(['app','auth','firestore'].map(n=>import('https://www.gstatic.com/firebasejs/13.1.0/firebase-'+n+'.js')));
+ const name='manabi-shared-admin-preview-spark',app=appSdk.getApps().find(a=>a.name===name)||appSdk.initializeApp(config.firebase,name),auth=A.getAuth(app),db=F.getFirestore(app),base='previewSpark/v1',alias='admin-preview@'+config.firebase.projectId+'.invalid';
+ await A.setPersistence(auth,A.browserLocalPersistence);await auth.authStateReady();
+ const ref=(kind,id)=>F.doc(db,base,kind,id),rows=async kind=>(await F.getDocs(F.collection(db,base,kind))).docs.map(d=>({id:d.id,...d.data()}));
+ const plain=value=>value?.toMillis?value.toMillis():Array.isArray(value)?value.map(plain):value&&typeof value==='object'?Object.fromEntries(Object.entries(value).map(([k,v])=>[k,plain(v)])):value;
+ async function verify(){if(!auth.currentUser)throw Error('admin-required');const owner=await F.getDocFromServer(ref('private','admin'));if(!owner.exists()||owner.data().uid!==auth.currentUser.uid||owner.data().enabled!==true)throw Error('admin-required')}
+ async function change(kind,id,next,reason,action){await verify();if(typeof reason!=='string'||reason.trim().length<2||reason.length>300)throw Error('invalid-input');const target=ref(kind,id);await F.runTransaction(db,async tx=>{const before=await tx.get(target),audit=F.doc(F.collection(db,base,'audit')),backup=F.doc(F.collection(db,base,'backups')),at=F.serverTimestamp(),actor=auth.currentUser.uid;tx.set(backup,{actor,at,target:kind+'/'+id,data:before.exists()?before.data():null,kind:'document'});tx.set(audit,{actor,at,targets:[kind+'/'+id],target:kind+'/'+id,action,reason,backupId:backup.id});tx.set(target,{...next,lastAudit:audit.id,lastBackup:backup.id})})}
+ async function call(action,input={}){await verify();if(action==='admin:snapshot'){const [players,games,rankings,campaigns,audit,backups]=await Promise.all(['players','games','rankings','campaigns','audit','backups'].map(rows)),notice=await F.getDoc(ref('settings','notice'));return plain({players,games,rankings,campaigns,audit,backups,notice:notice.data()||null})}if(action==='admin:events')return {events:plain(await rows('events')),cursor:null};
+  const op=action.replace(/^admin:/,'');if(input.confirm!==true)throw Error('invalid-input');
+  if(['rename','suspend','restorePlayer'].includes(op)){if(!input.uid||input.uid===auth.currentUser.uid)throw Error('invalid-input');const snap=await F.getDoc(ref('players',input.uid));if(!snap.exists())throw Error('invalid-input');const player=snap.data();if(op==='rename'){const nickname=String(input.nickname||'').trim();if(!nickname||nickname.length>12)throw Error('invalid-input');player.nickname=nickname}else player.status=op==='suspend'?'suspended':'active';await change('players',input.uid,player,input.reason,op);return {ok:true}}
+  if(op==='notice'){await change('settings','notice',{title:String(input.title||'').slice(0,100),body:String(input.body||'').slice(0,2000),published:input.published===true},input.reason,op);return {ok:true}}
+  // The six-game runtime, generation resets/imports and campaign settlement still use the old proposal.
+  // Never silently route these operations to the production project or an undeployed callable.
+  throw Error('feature-unverified');
+ }
+ async function changePassword(oldPassword,newPassword){if(typeof newPassword!=='string'||newPassword.length<12)throw Object.assign(Error('weak-password'),{code:'auth/weak-password'});await verify();const user=auth.currentUser;await A.reauthenticateWithCredential(user,A.EmailAuthProvider.credential(alias,oldPassword));await F.setDoc(ref('private','revocation'),{after:F.serverTimestamp(),actor:user.uid});try{await A.updatePassword(user,newPassword)}finally{await A.signOut(auth)}}
+ return {auth,db,call,verify,login:password=>A.signInWithEmailAndPassword(auth,alias,password).then(verify),logout:()=>A.signOut(auth),changePassword,watch:callback=>A.onIdTokenChanged(auth,callback),watchRevocation:callback=>F.onSnapshot(ref('private','revocation'),async()=>{try{await verify()}catch(e){callback(e)}},callback)};
+}
