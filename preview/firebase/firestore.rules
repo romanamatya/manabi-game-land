@@ -1,0 +1,82 @@
+rules_version = '2';
+// Dedicated PREVIEW Firebase project only. Do not deploy this file to production.
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function identity() {
+      let owner = get(/databases/$(database)/documents/previewSpark/v1/private/admin).data;
+      return request.auth != null && request.auth.token.firebase.sign_in_provider == 'password'
+        && owner.enabled == true && owner.uid == request.auth.uid;
+    }
+    function admin() {
+      return identity() && request.auth.token.auth_time * 1000 >
+        get(/databases/$(database)/documents/previewSpark/v1/private/revocation).data.after.toMillis();
+    }
+    function nameOK(n) {
+      return n is string && n.size() >= 1 && n.size() <= 12
+        && !n.matches('.*[<>\\r\\n].*') && !n.matches('^\\s.*') && !n.matches('.*\\s$');
+    }
+    function auditOK(a, uid, auditId, old, next) {
+      return a.keys().hasOnly(['actor','at','uid','target','action','reason','backupId','beforeName','afterName'])
+        && a.actor == request.auth.uid && a.at == request.time && a.uid == uid
+        && a.target == 'players/' + uid && a.action == 'rename'
+        && a.reason is string && a.reason.size() >= 2 && a.reason.size() <= 300
+        && a.beforeName == old.nickname && a.afterName == next.nickname
+        && a.backupId == next.lastBackup && next.lastAudit == auditId;
+    }
+    function backupOK(b, uid, old) {
+      return b.keys().hasOnly(['actor','at','uid','target','kind','data'])
+        && b.actor == request.auth.uid && b.at == request.time && b.uid == uid
+        && b.target == 'players/' + uid && b.kind == 'rename' && b.data == old;
+    }
+    function renameOK(uid, old, next) {
+      let a = getAfter(/databases/$(database)/documents/previewSpark/v1/audit/$(next.lastAudit)).data;
+      let b = getAfter(/databases/$(database)/documents/previewSpark/v1/backups/$(next.lastBackup)).data;
+      return uid != request.auth.uid && nameOK(next.nickname) && next.nickname != old.nickname
+        && next.diff(old).affectedKeys().hasOnly(['nickname','lastAudit','lastBackup','adminUpdatedAt'])
+        && next.adminUpdatedAt == request.time
+        && !exists(/databases/$(database)/documents/previewSpark/v1/audit/$(next.lastAudit))
+        && !exists(/databases/$(database)/documents/previewSpark/v1/backups/$(next.lastBackup))
+        && auditOK(a, uid, next.lastAudit, old, next) && backupOK(b, uid, old);
+    }
+    match /previewSpark/v1/private/admin {
+      allow get: if identity();
+      allow list, write: if false; // Role provisioning is a console/IAM-only operation.
+    }
+    match /previewSpark/v1/private/revocation {
+      allow get: if identity();
+      allow update: if admin()
+        && request.resource.data.keys().hasOnly(['after','actor'])
+        && request.resource.data.after == request.time
+        && request.resource.data.after > resource.data.after
+        && request.resource.data.actor == request.auth.uid;
+      allow list, create, delete: if false;
+    }
+    match /previewSpark/v1/players/{uid} {
+      allow read: if admin();
+      allow update: if admin() && renameOK(uid, resource.data, request.resource.data);
+      allow create, delete: if false;
+    }
+    match /previewSpark/v1/audit/{id} {
+      allow read: if admin();
+      allow create: if admin()
+        && auditOK(request.resource.data, request.resource.data.uid, id,
+          get(/databases/$(database)/documents/previewSpark/v1/players/$(request.resource.data.uid)).data,
+          getAfter(/databases/$(database)/documents/previewSpark/v1/players/$(request.resource.data.uid)).data)
+        && getAfter(/databases/$(database)/documents/previewSpark/v1/players/$(request.resource.data.uid)).data.nickname
+           != get(/databases/$(database)/documents/previewSpark/v1/players/$(request.resource.data.uid)).data.nickname;
+      allow update, delete: if false;
+    }
+    match /previewSpark/v1/backups/{id} {
+      allow read: if admin();
+      allow create: if admin()
+        && backupOK(request.resource.data, request.resource.data.uid,
+          get(/databases/$(database)/documents/previewSpark/v1/players/$(request.resource.data.uid)).data)
+        && getAfter(/databases/$(database)/documents/previewSpark/v1/players/$(request.resource.data.uid)).data.lastBackup == id
+        && getAfter(/databases/$(database)/documents/previewSpark/v1/players/$(request.resource.data.uid)).data.nickname
+           != get(/databases/$(database)/documents/previewSpark/v1/players/$(request.resource.data.uid)).data.nickname;
+      allow update, delete: if false;
+    }
+    // Phase 1: no player writes, ranking resets, campaign or other management writes.
+    match /{document=**} { allow read, write: if false; }
+  }
+}

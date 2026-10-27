@@ -1,0 +1,19 @@
+rules_version = '2';
+// Research only. NOT the deployable phase-1 Rules, and NOT wired into any game.
+service cloud.firestore {
+ match /databases/{database}/documents {
+  match /challengeResearch/{uid}/attempts/{attempt} {
+   allow read: if request.auth != null && request.auth.uid == uid;
+   allow create: if request.auth != null && request.auth.uid == uid
+    && request.resource.data.keys().hasOnly(['startedAt','revision','streak'])
+    && request.resource.data.startedAt == request.time
+    && request.resource.data.revision == 0 && request.resource.data.streak == 25;
+   allow update: if request.auth != null && request.auth.uid == uid
+    && request.time < resource.data.startedAt + duration.value(180, 's')
+    && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['revision','streak'])
+    && request.resource.data.revision == resource.data.revision + 1
+    && (request.resource.data.streak == 0 || request.resource.data.streak == resource.data.streak + 1);
+   allow delete: if false;
+  }
+ }
+}
