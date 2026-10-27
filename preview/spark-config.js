@@ -3,7 +3,7 @@
 window.MANABI_SPARK_CONFIG = Object.freeze({
   "enabled": true,
   "playerSyncEnabled": false,
-  "playerSyncTestEnabled": true,
+  "playerSyncTestEnabled": false,
   "playerSyncTestNickname": "同期テスト",
   "environment": "previewSpark/v1",
   "expectedProjectId": "manabi-game-landcheck",
