@@ -4,9 +4,12 @@ import {capture,read,zero,number,localBalances,union,GAMES,error,observeBalances
 const META='mgl_sync_v2',BACKUP='mgl_sync_original_v2';
 const watched=new Set(['mgl_nickname','mgl_economy_v1','mgl_profile','mgl_best','mq_pref_name','mq_pref_place',...GAMES.map(g=>'mgl_'+g),'mgl_limited_icons_v1','mgl_limited_frames_v1']);
 export async function start(){
- if(window.MANABI_ENV?.preview!==true||new URL(location.href).searchParams.has('adminTest')||window.MANABI_SPARK_CONFIG?.playerSyncEnabled!==true)return null;
+ const config=window.MANABI_SPARK_CONFIG||{},url=new URL(location.href),isSyncTest=url.searchParams.get('syncTest')==='1';
+ if(window.MANABI_ENV?.preview!==true||url.searchParams.has('adminTest'))return null;
  const storage=window.manabiStorage,core=window.ManabiEconomyCore,catalog=window.ManabiProfileCatalog;
  if(!storage||!core||!catalog)return null;
+ const testGate=config.playerSyncTestEnabled===true&&isSyncTest&&storage.getItem('mgl_nickname')===config.playerSyncTestNickname;
+ if(config.playerSyncEnabled!==true&&!testGate)return null;
  let api=null,applying=false,timer=null,running=null,again=false,stop=null,connecting=null,lastNotice='';
  const localLock=fn=>navigator.locks?navigator.locks.request('manabi-preview-economy-v1',fn):Promise.reject(error('cross-tab-lock-required'));
  const snapshot=()=>capture(storage,core,catalog);
@@ -54,6 +57,6 @@ export async function start(){
  window.ManabiPlayerSync=publicApi;
  window.addEventListener('online',()=>flush().catch(()=>{}));window.addEventListener('storage',e=>{if(e.key?.endsWith(META)||e.key?.includes('mgl_economy_v1'))schedule();});document.addEventListener('visibilitychange',()=>{if(!document.hidden)flush().catch(()=>{});});window.addEventListener('pageshow',schedule);
  document.addEventListener('manabi-nickname-sync',()=>{const registered=!!storage.getItem('mgl_nickname');for(const [id,hidden] of [['playerWelcome',registered],['playerReady',!registered]]){const n=document.getElementById(id);if(n)n.hidden=hidden;}});
- status('確認用Firebaseへ接続中。端末の記録は保持中。');flush().catch(()=>{});
+ status(testGate?'テスト用プレイヤーを確認用Firebaseへ同期中。ランキングには記録しない。':'確認用Firebaseへ接続中。端末の記録は保持中。');flush().catch(()=>{});
  return publicApi;
 }
