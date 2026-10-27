@@ -1,29 +1,35 @@
-# 確認用Firebase 接続作業の状態
+# 確認用Firebase 接続状態
 
 2026年10月27日。対象：manabi-game-landcheck（Spark）。
 
-## 反映した内容
+## 今回の反映
 
-- spark-auth.jsでmanabi-game-landcheckを明示的に許可。ローカルテスト用demo-manabi-preview以外の別プロジェクトは拒否。
-- 本番manabi-game-land、既知の本番apiKey/appId、誤ったauthDomainの拒否を維持。
-- spark-config.jsのexpectedProjectId/projectId/authDomainを設定。
-- apiKey/appIdは未取得のため空欄、enabled:falseを維持。接続完了とは扱わない。
-- ブラウザーキャッシュ用の参照バージョンを更新。
+- ユーザーから提供された登録済みWebアプリの公開firebaseConfigを正確に設定。
+- expectedProjectId、projectId：manabi-game-landcheck。
+- authDomain：manabi-game-landcheck.firebaseapp.com。
+- appId：1:499579497285:web:b272cb00a535b583a3ec2c。
+- enabled:trueへ変更。管理者パスワード・秘密鍵は取得・要求・保存していない。
+- spark-auth.jsの明示的な確認用許可と本番ID・既知の本番apiKey/appId拒否を維持。
+- 古い設定が残らないよう管理室の参照バージョンを更新。
 
-## 今回実際に確認したこと
+## 実施した確認
 
-- 構成チェック5件成功：指定ID許可、本番拒否、未承認ID拒否、環境・ドメイン・既知の本番認証設定の混在拒否、空欄・無効設定で停止。
-- 実Firebaseの未認証GETで previewSpark/v1/private/admin と previewSpark/v1/players/phase1-test-player は両方403 PERMISSION_DENIED。文書の内容は取得していない。
-- 未認証の書き込み、一般プレイヤー認証によるアクセス、実管理者ログイン、名前変更、保存、再読み込み、ログアウトは今回の実Firebaseでは未検証。
-- 本番データ・本番側ファイル・Rules・課金設定は変更していない。
+- 提供値と設定ファイルの一致、enabled、環境名、projectId・authDomain・expectedProjectIdの整合、appIdとmessagingSenderIdの整合を確認。
+- 本番プロジェクトと既知の本番apiKeyへ差し替えた設定が引き続き拒否されることを確認。
+- Firebase Authenticationの公開プロジェクト設定取得がHTTP 200。返却された番号499579497285と、登録済みauthDomainが今回の構成に一致。
+- 実Firebaseの管理者ログイン、プレイヤー一覧、名前変更、保存・再読み込み、ログアウトは管理者本人によるテスト待ち。これらを成功済みとは扱わない。
 
-## 未完了の理由・次の操作
+## 管理者本人のテスト
 
-登録済みWebアプリのapiKey/appIdを取得するFirebase連携は現時点で未接続。
-公開Hosting設定の /__/firebase/init.json は404だった。これは公開Web設定がこの場所から取得できなかったという意味であり、Authentication・Firestoreの不具合を示すものではない。取得目的でHostingを新設する必要はない。
+https://romanamatya.github.io/manabi-game-land/preview/control-room.html?v=ready-20261027
 
-公式Firebase連携を追加して確認用プロジェクトの登録済みWebアプリ設定を読むか、Firebase Console → 歯車 → プロジェクトの設定 → 全般 → マイアプリ → Webアプリ → SDKの設定と構成のfirebaseConfigから公開設定を渡す。
+1. 上記URLを開き、管理者本人が登録したパスワードだけを入力する。パスワードをチャットへ送らない。
+2. 一覧を確認し、確認用テストプレイヤーがある場合だけ名前変更を試す。
+3. 更新・再読み込みで名前が残ることと、操作履歴を確認する。
+4. ログアウト後、管理画面が閉じることを確認する。
 
-パスワード・秘密鍵・サービスアカウントJSONは不要。パスワードを取得・要求・保存しない。
+一覧は確認用Firestoreのplayersだけを表示する。現在端末内だけにある確認用ゲーム記録は自動取り込みしない。一覧が空でも接続エラーとは限らない。
 
-公開設定がそろったらapiKey/appIdを照合してenabled:trueに変更し、管理者本人がサイトでパスワードを入力する方法で実認証テストを進める。管理者のパスワードを開発側へ送らない。
+管理室が内部で利用する技術IDは admin-preview@manabi-game-landcheck.invalid。登録済みユーザーと一致している必要がある。メール入力欄は表示しない。
+
+今回の変更はpreview内だけ。本番ファイル・本番Firebase・Rules・ポイント・ランキング・称号・ショップ・課金設定は変更していない。

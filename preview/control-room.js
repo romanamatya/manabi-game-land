@@ -1,4 +1,4 @@
-import {client,errorText} from './spark-auth.js?v=connect-20261027';
+import {client,errorText} from './spark-auth.js?v=ready-20261027';
 const $=id=>document.getElementById(id),S=window.ManabiUpgradeShared,core=window.ManabiEconomyCore,catalog=window.ManabiProfileCatalog;
 let api=null,data=null,events=null,active='players',period=7,query='',sort='nickname',sortDirection=1,detail=null,ticket=0,pending=null,working=false;
 const el=(tag,text,cls)=>{const n=document.createElement(tag);if(text!==undefined)n.textContent=String(text);if(cls)n.className=cls;return n},button=(text,run)=>{const b=el('button',text);b.type='button';b.onclick=run;return b},date=n=>n?new Date(n).toLocaleString('ja-JP',{timeZone:'Asia/Tokyo'}):'—',pct=n=>n===null||n===undefined?'—':n.toFixed(1)+'％',change=n=>n===null||n===undefined?'比較対象なし':(n>=0?'＋':'')+n.toFixed(1)+'ポイント';
