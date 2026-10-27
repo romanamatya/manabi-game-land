@@ -1,5 +1,5 @@
-import {validateBackend,contractFor} from './data-contract.js';
-import {createFirestoreStore} from './firebase-store.js';
+import {validateBackend,contractFor} from './data-contract.js?v=preflight-20261028-1';
+import {createFirestoreStore} from './firebase-store.js?v=preflight-20261028-1';
 const config = window.MANABI_SPARK_CONFIG;
 const error = code => Object.assign(new Error(code), {code});
 const validName = value => typeof value === 'string' && value === value.trim() && value.length >= 1 && value.length <= 12 && !/[<>\r\n]/.test(value);
@@ -17,6 +17,7 @@ export function errorText(e) {
     'permission-denied': '管理権限がないか、認証が失効している。再ログインして。',
     'admin-required': '管理者として認証されていない。',
     'session-revoked': '管理セッションが終了した。少し待って、パスワードで入り直して。',
+    'rename-not-enabled': '名前変更は切り替え確認待ちのため停止中。閲覧は利用できる。',
     'feature-unverified': 'この機能は基盤の確認後に接続するため、現在は利用できない。',
     'auth/weak-password': '新しいパスワードは12文字以上にして。',
     'auth/requires-recent-login': '現在のパスワードで入り直してから操作して。',
@@ -37,7 +38,7 @@ export function validateConfig(c) {
 let pending;
 export function client() {
   if (!pending) pending = (async () => {
-    validateConfig(config); // Reject production BEFORE loading or initializing any SDK.
+    validateConfig(config); // Validate release and environment gates BEFORE loading any SDK.
     const sdks = await Promise.all(['app', 'auth', 'firestore'].map(n => import('https://www.gstatic.com/firebasejs/13.1.0/firebase-' + n + '.js')));
     return createAdminClient(config, sdks);
   })().catch(e => {pending = null; throw e;});
@@ -76,7 +77,7 @@ export function createAdminOperations(c,{auth,db},A,F) {
     return user;
   }
 
-  async function rename(input) {const user=await verify();return store.rename(user,input);}
+  async function rename(input) {const user=await verify();if(contract.mode==='production'){const role=await F.getDocFromServer(ref('private','admin'));if(role.data()?.renameEnabled!==true)throw error('rename-not-enabled');}return store.rename(user,input);}
 
   async function call(action, input = {}) {
     await verify();

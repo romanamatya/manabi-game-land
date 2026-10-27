@@ -70,3 +70,7 @@ I've set up prototype Security Rules to keep the data in Firestore safe. They ar
 端末の旧データはバックアップキーに保持する。財布のバックアップ復元は同じ端末の全タブを閉じ、現残高・購入履歴と突合して管理者が行う。自動で古い残高へ戻す操作は用意しない。
 
 今回、ランキングのリセット・世代変更・3分間チャレンジ公開・課金設定変更は行わない。
+
+## 本番最終準備（2026-10-28）
+
+最新の切替順序・Console操作・テスト範囲・復旧判断は [PRODUCTION-CUTOVER.md](PRODUCTION-CUTOVER.md) を参照。最新提案はdistributionの記録だけを追加し、新算数2本・国語のランキングキーを許可しない。private/adminのrenameEnabledが欠落またはfalseなら改名を拒否する。以前の全追加記録キーを許可する案から範囲を縮小した。実際の現行Rulesはまだ取得していない。名前変更後は旧Rulesへの単純復帰をせず、互換保存を維持する復旧案をレビューする。

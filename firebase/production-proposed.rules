@@ -3,7 +3,7 @@ rules_version = '2';
 // Do not deploy without explicit approval, existing Rules backup and Emulator review.
 // Existing /players keeps its flat score fields. Only the administrator may add
 // lastAudit, lastBackup and adminUpdatedAt. /productionAdmin/v1/private contains
-// {uid:string,enabled:bool} and revocation {after:timestamp,actor?:string}.
+// {uid:string,enabled:bool,renameEnabled?:bool=false} and revocation {after:timestamp,actor?:string}.
 // Audit and backup documents are immutable, administrator-only and transaction-coupled.
 service cloud.firestore {
  match /databases/{database}/documents {
@@ -16,9 +16,11 @@ service cloud.firestore {
    return identity() && request.auth.token.auth_time*1000>
     get(/databases/$(database)/documents/productionAdmin/v1/private/revocation).data.after.toMillis();
   }
+  function renameEnabled() {return admin() && get(/databases/$(database)/documents/productionAdmin/v1/private/admin).data.get('renameEnabled',false)==true;}
+  function legacyNameOK(n) {return n is string && n.size()>0 && n.size()<=12;}
   function nameOK(n) {return n is string && n.size()>0 && n.size()<=12 && !n.matches('.*[<>\\r\\n].*');}
   function playerOK(p) {
-   return p.keys().hasOnly(['nickname','points','bestStreak','prefNameBestStreak','prefPlaceBestStreak','alphabetBestStreak','distributionBestStreak','kotowazaBestStreak','distribution2BestStreak','exchangeAssociationBestStreak','appearance','updatedAt','lastAudit','lastBackup','adminUpdatedAt']) && nameOK(p.nickname);
+   return p.keys().hasOnly(['nickname','points','bestStreak','prefNameBestStreak','prefPlaceBestStreak','alphabetBestStreak','distributionBestStreak','appearance','updatedAt','lastAudit','lastBackup','adminUpdatedAt']) && legacyNameOK(p.nickname);
   }
   function auditOK(a,uid,id,old,next) {
    return a.keys().hasOnly(['actor','at','uid','target','action','reason','backupId','beforeName','afterName'])
@@ -54,14 +56,14 @@ service cloud.firestore {
    allow create:if request.auth!=null && request.auth.uid==uid && playerOK(request.resource.data)
     && !request.resource.data.keys().hasAny(['lastAudit','lastBackup','adminUpdatedAt']);
    allow update:if request.auth!=null && request.auth.uid==uid && playerOK(request.resource.data)
-    && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['nickname','points','bestStreak','prefNameBestStreak','prefPlaceBestStreak','alphabetBestStreak','distributionBestStreak','kotowazaBestStreak','distribution2BestStreak','exchangeAssociationBestStreak','appearance','updatedAt'])
+    && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['nickname','points','bestStreak','prefNameBestStreak','prefPlaceBestStreak','alphabetBestStreak','distributionBestStreak','appearance','updatedAt'])
     && (!resource.data.keys().hasAny(['adminUpdatedAt']) || request.resource.data.nickname==resource.data.nickname);
-   allow update:if admin() && renameOK(uid,resource.data,request.resource.data);
+   allow update:if renameEnabled() && renameOK(uid,resource.data,request.resource.data);
    allow delete:if false;
   }
   match /productionAdmin/v1/audit/{id} {
    allow read:if admin();
-   allow create:if admin() && auditOK(request.resource.data,request.resource.data.uid,id,
+   allow create:if renameEnabled() && auditOK(request.resource.data,request.resource.data.uid,id,
     get(/databases/$(database)/documents/players/$(request.resource.data.uid)).data,
     getAfter(/databases/$(database)/documents/players/$(request.resource.data.uid)).data)
     && getAfter(/databases/$(database)/documents/players/$(request.resource.data.uid)).data.nickname
@@ -70,7 +72,7 @@ service cloud.firestore {
   }
   match /productionAdmin/v1/backups/{id} {
    allow read:if admin();
-   allow create:if admin() && backupOK(request.resource.data,request.resource.data.uid,
+   allow create:if renameEnabled() && backupOK(request.resource.data,request.resource.data.uid,
     get(/databases/$(database)/documents/players/$(request.resource.data.uid)).data)
     && getAfter(/databases/$(database)/documents/players/$(request.resource.data.uid)).data.lastBackup==id
     && getAfter(/databases/$(database)/documents/players/$(request.resource.data.uid)).data.nickname

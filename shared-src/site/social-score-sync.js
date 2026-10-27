@@ -1,9 +1,9 @@
-import {validateBackend,GAME_FIELDS} from './data-contract.js';
+import {validatePlayerBackend,GAME_FIELDS} from './data-contract.js';
 import {createFirestoreStore} from './firebase-store.js';
 const config=window.MANABI_SPARK_CONFIG,game=document.body?.dataset.scoreGame;
 // Preview synchronization and production's existing ranking service are independent switches.
 if(config?.mode==='production'&&config.legacyScoreSyncEnabled===true&&!new URL(location.href).searchParams.has('adminTest')&&config.rankingGameIds?.includes(game)&&GAME_FIELDS[game]){
- validateBackend(config);
+ validatePlayerBackend(config);
  const {legacyPlayerClient}=await import('./legacy-player-client.js');const client=await legacyPlayerClient(config),store=client.store;
  const storage=window.manabiStorage,uid=client.uid;let running=false,dirty=false;const status=document.createElement('p');status.id='rankingSyncStatus';status.setAttribute('role','status');document.body.append(status);
  async function flush(){dirty=true;if(running)return;running=true;try{while(dirty){dirty=false;let state={};try{state=JSON.parse(storage.getItem('mgl_'+game)||'{}')}catch{}const local={nickname:storage.getItem('mgl_nickname'),best:game==='keisan'?Number(storage.getItem('mgl_best'))||0:Number(state.best)||0,points:Number(storage.getItem('mgl_points'))||0};const saved=await store.saveLegacy(uid,local,game,window.ManabiProfile.appearance(storage)),name=saved.nickname;if(saved.best>local.best){if(game==='keisan')storage.setItem('mgl_best',String(saved.best));else storage.setItem('mgl_'+game,JSON.stringify({...state,best:saved.best}));window.dispatchEvent(new CustomEvent('manabi-remote-best',{detail:saved.best}));}if(name!==local.nickname){storage.setItem('mgl_nickname',name);const el=document.getElementById('playerName');if(el)el.textContent=name;document.dispatchEvent(new Event('manabi-nickname-sync'));window.dispatchEvent(new Event('manabi-profile-change'));}status.textContent='ランキング保存済み';}}catch(e){dirty=true;status.textContent='ランキング保存待ち。端末の記録は保持中。';}finally{running=false;}}
