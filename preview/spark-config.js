@@ -2,6 +2,7 @@
 // Contains no admin password or service-account credentials. Preview only.
 window.MANABI_SPARK_CONFIG = Object.freeze({
   "enabled": true,
+  "playerSyncEnabled": false,
   "environment": "previewSpark/v1",
   "expectedProjectId": "manabi-game-landcheck",
   "firebase": {
@@ -13,3 +14,4 @@ window.MANABI_SPARK_CONFIG = Object.freeze({
     "appId": "1:499579497285:web:b272cb00a535b583a3ec2c"
   }
 });
+

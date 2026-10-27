@@ -1,0 +1,10 @@
+import {test} from 'node:test';
+import assert from 'node:assert/strict';
+globalThis.window={MANABI_ENV:{preview:true},manabiStorage:{getItem(){throw Error('storage must not be read while inactive')}}};
+globalThis.location={href:'https://romanamatya.github.io/manabi-game-land/preview/index.html'};
+const {start}=await import('../../player-sync.js');
+const M=await import('../../player-sync-model.js');
+test('configuration-wait feature flag preserves legacy local play without an Auth call',async()=>{assert.equal(window.MANABI_SPARK_CONFIG.playerSyncEnabled,false);assert.equal(await start(),null)});
+test('admin test mode cannot initialize player synchronization',async()=>{window.MANABI_SPARK_CONFIG={...window.MANABI_SPARK_CONFIG,playerSyncEnabled:true};location.href='https://romanamatya.github.io/manabi-game-land/preview/games/keisan.html?adminTest=1';assert.equal(await start(),null)});
+test('production environment cannot initialize preview synchronization',async()=>{window.MANABI_ENV.preview=false;location.href='https://romanamatya.github.io/manabi-game-land/index.html';assert.equal(await start(),null)});
+test('offline earned observation is monotonic and never treats purchase deductions as negative earnings',()=>{let m={earned:M.zero(),seenBalances:{...M.zero(),math:200}};m=M.observeBalances(m,{...M.zero(),math:201});assert.equal(m.earned.math,1);m=M.observeBalances(m,{...M.zero(),math:151});assert.equal(m.earned.math,1);m=M.observeBalances(m,{...M.zero(),math:152});assert.equal(m.earned.math,2);m=M.observeBalances(m,{...M.zero(),math:152});assert.equal(m.earned.math,2)});

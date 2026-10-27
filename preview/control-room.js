@@ -20,12 +20,13 @@ function renderPlayers(){
  search.oninput=()=>{const position=search.selectionStart;query=search.value;renderPlayers();$('playerSearch').focus();$('playerSearch').setSelectionRange(position,position)};
  toolbar.append(search,select([['nickname','名前順'],['lastPlayedAt','最終プレイ日順'],['status','状態順']],sort,v=>{sort=v;renderPlayers()}),button('更新',refresh));n.append(toolbar);
  const rows=data.players.filter(p=>!query||String(p.nickname||'').includes(query)||p.uid.includes(query)).sort((a,b)=>String(a[sort]??'').localeCompare(String(b[sort]??''),'ja',{numeric:true})*(sort==='lastPlayedAt'?-1:1));
- n.append(table(['名前・ID','最終プレイ','教科別ポイント','称号','最高連続正解記録','状態','操作'],rows.map(p=>{
+ n.append(table(['名前・ID','最終プレイ','教科別ポイント','称号','最高連続正解記録','所持・装備','状態','操作'],rows.map(p=>{
   const identity=el('div',p.nickname||'（名前なし）');identity.append(el('small',p.uid));
   const titles=el('details');titles.append(el('summary',(p.titles||[]).length+'個'));for(const id of p.titles||[])titles.append(el('div',catalog.flatMap(g=>g.titles).find(t=>t.id===id)?.name||id));
+  const possessions=el('details'),owned=p.owned||[],appearance=p.appearance||{};possessions.append(el('summary','購入・限定 '+owned.length+'個'));for(const id of owned)possessions.append(el('div',core.catalog.find(i=>i.id===id)?.name||id));possessions.append(el('div','アイコン：'+(appearance.icon||'cat')),el('div','枠：'+(appearance.frame||'plain')),el('div','称号：'+(appearance.badge||'未設定')),el('div','教科別アイコン：'+JSON.stringify(appearance.subjectIcons||{})),el('div','教科別の枠：'+JSON.stringify(appearance.subjectFrames||{})));
   const actions=el('div',undefined,'actions');
   actions.append(button('名前変更',()=>ask('名前変更：'+p.nickname,'プレイヤーIDと記録を保持し、変更前の情報と履歴を同時に保存する。',[formField('nickname','新しい名前','text',p.nickname)],(v,r)=>mutate('rename',{uid:p.uid,nickname:v.nickname,expectedNickname:p.nickname},r))));
-  return [identity,date(p.lastPlayedAt),Object.entries(p.balances||{}).map(([s,v])=>({japanese:'国',math:'算',social:'社',science:'理',english:'英'}[s])+':'+v).join(' / ')||'—',titles,Object.entries(p.best||{}).map(([g,v])=>(S.names[g]||g)+':'+v).join(' / ')||'—',p.status==='suspended'?'利用停止':'利用中',actions];
+  return [identity,date(p.lastPlayedAt),Object.entries(p.balances||{}).map(([s,v])=>({japanese:'国',math:'算',social:'社',science:'理',english:'英'}[s])+':'+v).join(' / ')||'—',titles,Object.entries(p.best||{}).map(([g,v])=>(S.names[g]||g)+':'+v).join(' / ')||'—',possessions,p.status==='suspended'?'利用停止':'利用中',actions];
  })));
  n.append(el('p','確認用Firebaseに保存されたプレイヤーのみ表示。端末内だけの確認用ゲーム記録は自動取り込みしない。','muted'));
  if(data.playerCursor)n.append(button('次の100人を読み込む',async()=>{try{const result=await api.call('admin:players',{cursor:data.playerCursor});const seen=new Set(data.players.map(p=>p.uid));data.players.push(...result.rows.filter(p=>!seen.has(p.uid)));data.playerCursor=result.cursor;renderPlayers()}catch(e){$('status').textContent=errorText(e)}}));
@@ -46,4 +47,5 @@ $('passwordChangeCancel').onclick=()=>{if(!changingPassword)$('passwordDialog').
 $('passwordDialog').addEventListener('cancel',e=>{if(changingPassword)e.preventDefault()});
 $('passwordChangeForm').onsubmit=async e=>{e.preventDefault();if(changingPassword)return;if($('newPassword').value!==$('repeatPassword').value){$('passwordChangeError').textContent='新しいパスワードが一致していない。';return}changingPassword=true;$('passwordChangeSubmit').disabled=true;try{await api.changePassword($('oldPassword').value,$('newPassword').value);$('passwordDialog').close();lock();$('loginError').textContent='パスワードを変更した。新しいパスワードで入り直して。'}catch(error){$('passwordChangeError').textContent=errorText(error)+' 認証が失効した場合は、ログインからやり直して。'}finally{changingPassword=false;$('passwordChangeSubmit').disabled=false;$('passwordChangeForm').reset()}};
 try{api=await client();api.watch(async user=>{lock();revocationUnsubscribe?.();if(user){await refresh();if(!changingPassword)revocationUnsubscribe=api.watchRevocation(error=>{if(!changingPassword){lock();$('loginError').textContent=errorText(error)}})}})}catch(error){lock();$('loginError').textContent=errorText(error)}
+
 
