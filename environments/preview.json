@@ -1,0 +1,14 @@
+{
+  "environment": "preview",
+  "projectId": "manabi-game-landcheck",
+  "firebase": {
+    "apiKey": "AIzaSyApmJCHLHndX2nLNMCbfRpnv0ZKQzdZOwg",
+    "authDomain": "manabi-game-landcheck.firebaseapp.com",
+    "projectId": "manabi-game-landcheck",
+    "appId": "1:499579497285:web:b272cb00a535b583a3ec2c"
+  },
+  "playerSyncEnabled": false,
+  "adminEnabled": true,
+  "dataSchema": "previewSpark/v1",
+  "productionReleaseApproved": false
+}

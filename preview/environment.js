@@ -1,1 +1,1 @@
-window.MANABI_ENV = Object.freeze({preview:true,publicPreview:true});
+(()=>{const previewPath=location.pathname.split('/').includes('preview');if(previewPath!==true)throw Error('site-environment-path-mismatch');window.MANABI_ENV=Object.freeze({"preview":true,"publicPreview":true,"environment":"preview","expectedProjectId":"manabi-game-landcheck"});})();

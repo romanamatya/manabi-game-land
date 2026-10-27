@@ -1,0 +1,14 @@
+{
+  "environment": "production",
+  "projectId": "manabi-game-land",
+  "firebase": {
+    "apiKey": "AIzaSyAhm6WMqV7yGmNRRDCeZcOk5HH-dlga9no",
+    "authDomain": "manabi-game-land.firebaseapp.com",
+    "projectId": "manabi-game-land",
+    "appId": "1:723974836914:web:4e57af8336083f82a72fab"
+  },
+  "playerSyncEnabled": false,
+  "adminEnabled": false,
+  "dataSchema": "legacy-players",
+  "productionReleaseApproved": false
+}
