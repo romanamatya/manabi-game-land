@@ -48,7 +48,7 @@ function refreshEquipped(){const accountName=document.getElementById('playerName
 function decorateTower(){if(!gameId)return;const tower=document.querySelector('#titleList')||document.querySelector('#tower');if(!tower)return;observer?.disconnect();for(const step of tower.children){if(step.querySelector('.mq-badge'))continue;const at=Number(step.dataset.need),item=model.badges.find(b=>b.game===gameId&&b.at===at);if(!item)continue;const text=el('span',{class:'mq-tower-text'});while(step.firstChild)text.append(step.firstChild);step.append(identity.badge(item.id,32),text);step.classList.add('mq-tower-badge')}observer?.observe(tower,{childList:true})}
 let observer=isGame?new MutationObserver(decorateTower):null;decorateTower();
 window.addEventListener('manabi-badge-detail',e=>{activeBadge=e.detail.id;detailReadOnly=e.detail.readonly;open('badge')});
-const nativeSet=storage.setItem.bind(storage),gameKeys=new Set(['mgl_best','mgl_pref-name','mgl_pref-place','mgl_alphabet','mgl_kotowaza','mgl_distribution']);
+const nativeSet=storage.setItem.bind(storage),gameKeys=new Set(['mgl_best','mgl_pref-name','mgl_pref-place','mgl_alphabet','mgl_kotowaza','mgl_distribution','mgl_distribution2','mgl_exchangeAssociation']);
 
 function showUnlocked(items){let toast=document.getElementById('mqUnlockToast');if(!toast){toast=el('div',{id:'mqUnlockToast',class:'mq-toast',role:'status','aria-live':'polite'});document.body.append(toast)}toast.replaceChildren(el('strong',{},'🎉 新しいアイコン・枠を獲得！'),el('p',{},items.map(i=>i.name).join('・')));const pick=el('button',{type:'button'},'見てみる');pick.onclick=()=>{clearTimeout(toastTimer);toast.remove();open('avatar')};const dismiss=el('button',{type:'button'},'あとで');dismiss.style.marginLeft='8px';dismiss.onclick=()=>toast.remove();toast.append(pick,dismiss);clearTimeout(toastTimer);toastTimer=setTimeout(()=>toast.remove(),12000)}
 function earnedIds(rows){return new Set(model.badges.filter(b=>rows.some(r=>r.id===b.game&&r.best>=b.at)).map(b=>b.id))}
@@ -58,3 +58,4 @@ storage.setItem=(key,value)=>{const before=gameKeys.has(key)?model.records(stora
 window.addEventListener('manabi-economy-change',()=>{model.syncLimited(storage);profile=model.profile(storage);apply();if(dialog.open&&['points','avatar'].includes(active))renderPanel()});
 window.addEventListener('pageshow',()=>{profile=model.profile(storage);apply()});apply();
 })();
+
