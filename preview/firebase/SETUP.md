@@ -1,13 +1,13 @@
 # 管理室 第1弾：確認用Firebaseの初期設定
 
-2026年10月27日。**Firebase設定待ち。コードの準備とローカル検証は済んだが、実環境の稼働完了ではない。**
+2026年10月27日。**ユーザーから確認用Firebase初期設定完了の報告あり。公開Web設定のapiKey・appId取得待ちで、実環境の稼働完了ではない。**
 
 管理室： https://romanamatya.github.io/manabi-game-land/preview/control-room.html
 
 ## 1. 確認用プロジェクト
 
 1. [Firebase Console](https://console.firebase.google.com/)→「プロジェクトを追加／作成」。
-2. 名前は「マナビクエスト確認用」。IDは `manabi-quest-preview-任意の末尾` のように **previewを含む別ID**。既存の `manabi-game-land` は選ばない。
+2. 使用するプロジェクトIDは **`manabi-game-landcheck`**（ユーザー指定・作成済み）。本番の `manabi-game-land` は選ばない。新たなプロジェクト作成は不要。コードはこの確認用IDを明示的に許可する。
 3. Google Analyticsは不要。料金プランが **Spark** であることを確認する。課金アカウント、Blaze、Cloud Functions、Storageは不要。
 4. 既存の別の確認用プロジェクトを使う場合は、先にデータとRulesを保存する。今回のRulesは第1弾専用で、児童による書き込みはまだ許可しない。ゲームがFirebaseへ書き込み中の環境へ、そのまま適用しない。
 
@@ -50,11 +50,11 @@
 window.MANABI_SPARK_CONFIG = Object.freeze({
   enabled: true,
   environment: 'previewSpark/v1',
-  expectedProjectId: '確認用プロジェクトID',
+  expectedProjectId: 'manabi-game-landcheck',
   firebase: {
     apiKey: '公開Web設定のapiKey',
-    authDomain: '確認用プロジェクトID.firebaseapp.com',
-    projectId: '確認用プロジェクトID',
+    authDomain: 'manabi-game-landcheck.firebaseapp.com',
+    projectId: 'manabi-game-landcheck',
     appId: '公開Web設定のappId'
   }
 });

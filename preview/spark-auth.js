@@ -1,6 +1,8 @@
 const config = window.MANABI_SPARK_CONFIG;
 const BASE = 'previewSpark/v1';
 const PRODUCTION = 'manabi-game-land';
+// The second ID is reserved for the local Firebase Emulator test suite.
+const ALLOWED_PREVIEW_PROJECTS = new Set(['manabi-game-landcheck', 'demo-manabi-preview']);
 const error = code => Object.assign(new Error(code), {code});
 const validName = value => typeof value === 'string' && value === value.trim() && value.length >= 1 && value.length <= 12 && !/[<>\r\n]/.test(value);
 
@@ -30,7 +32,7 @@ export function errorText(e) {
 export function validateConfig(c) {
   if (!c?.enabled || !c.firebase?.projectId) throw error('backend-not-configured');
   const f = c.firebase;
-  if (c.environment !== BASE || f.projectId === PRODUCTION || !f.projectId.includes('preview') ||
+  if (c.environment !== BASE || f.projectId === PRODUCTION || !ALLOWED_PREVIEW_PROJECTS.has(f.projectId) ||
       c.expectedProjectId !== f.projectId || f.authDomain !== f.projectId + '.firebaseapp.com' ||
       f.apiKey === 'AIzaSyAhm6WMqV7yGmNRRDCeZcOk5HH-dlga9no' ||
       f.appId === '1:723974836914:web:4e57af8336083f82a72fab') throw error('production-project-rejected');
@@ -149,3 +151,4 @@ export async function createAdminClient(c, [appSdk, A, F]) {
     }
   };
 }
+
