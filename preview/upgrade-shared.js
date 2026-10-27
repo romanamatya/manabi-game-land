@@ -2,7 +2,7 @@
 'use strict';
 const highest={keisan:20,'pref-name':47,'pref-place':47,alphabet:26,kotowaza:20,distribution:25};
 const fields={keisan:'bestStreak','pref-name':'prefNameBestStreak','pref-place':'prefPlaceBestStreak',alphabet:'alphabetBestStreak',kotowaza:'kotowazaBestStreak',distribution:'distributionBestStreak'};
-const names={keisan:'計算のきまり','pref-name':'都道府県の名前','pref-place':'都道府県の場所',alphabet:'アルファベット',kotowaza:'ことわざ・慣用句',distribution:'分配法則'};
+const names={keisan:'計算のきまり','pref-name':'都道府県の名前','pref-place':'都道府県の場所',alphabet:'アルファベット',kotowaza:'ことわざ・慣用句',distribution:'分配のきまり①'};
 function assert(ok,message){if(!ok)throw Error(message)}
 function game(id){assert(Object.hasOwn(highest,id),'unknown-game');return id}
 function priority(s){const ids=s.o.map((_,i)=>i).filter(i=>s.l<0||(i>=s.l&&i<s.r));return ids.find(i=>s.o[i]>=2)??ids[0]??-1}
