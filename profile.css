@@ -29,3 +29,6 @@
 
 /* Requested record and title alignment */
 .mq-identity{max-width:100%;flex-wrap:wrap;justify-content:flex-start}.mq-identity-name{font-size:20px!important;font-weight:700;white-space:normal;overflow-wrap:anywhere;min-width:0}.titles li,#tower li,#titleList li{text-align:left!important;justify-content:flex-start!important}.mq-celebration{animation-duration:1s!important;pointer-events:none}.mq-celebration-center{animation-duration:1s!important}
+
+
+.mq-face-image{display:block;width:100%;height:100%;object-fit:contain;border-radius:50%}.mq-frame-art{position:absolute;z-index:2;left:-12%;top:-12%;width:124%;height:124%;object-fit:contain;pointer-events:none}
