@@ -1,0 +1,18 @@
+{
+  "receivedDateJapan": "2026-10-28",
+  "projectId": "manabi-game-land",
+  "source": "user-supplied-current-console-copy",
+  "independentlyFetchedFromConsole": false,
+  "consolePublicationTime": null,
+  "sourcePath": "firebase/production-current-20261028.rules",
+  "sourceSHA256": "dd6e3a0b19cc9c07e26abbebb2b799cb8f375518f1dcf5c7078a65d926c76893",
+  "equivalentToPriorProvidedPolicy": true,
+  "comparison": "Full policy after removing comments/whitespace and expanding combined create/update allow into two identical clauses",
+  "candidateUnchanged": true,
+  "recoveryUnchanged": true,
+  "rulesDeployed": false,
+  "authChanged": false,
+  "livePlayerDataTouched": false,
+  "authProviderStatus": "awaiting-read-only-confirmation",
+  "nextAction": "Read production Authentication > Sign-in method > Email/Password status; do not change it"
+}

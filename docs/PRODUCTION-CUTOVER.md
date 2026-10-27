@@ -4,7 +4,7 @@
 
 ## 現行Rulesの確認状態
 
-現在Consoleで公開中のRules全文は未取得。こちらのConsole接続ではGoogleログイン画面が表示された。`production-baseline-provided.rules` は以前ユーザーから提供された内容であり、ライブ取得済みとは扱わない。最新全文を受け取ってから最終比較を行う。未知のコレクションの許可を削除する案をそのまま公開しない。
+2026-10-28にユーザーから本番Consoleの公開中Rulesとして全文を受領し、`firebase/production-current-20261028.rules` に原文を保存した。コメント・空白とcreate/updateの共通化を除けば、以前の提供基準と全体の権限式が一致する。したがって下表の差分を、受領した現行Rulesに対する差分として確定した。こちらのブラウザでConsoleから直接取得したものではなく、公開日時は未確認。公開直前には再変更がないことを確認する。
 
 ```
 node tools/prepare-production.mjs --project manabi-game-land --current-rules /path/to/rules-before.rules
@@ -12,14 +12,14 @@ node tools/prepare-production.mjs --project manabi-game-land --current-rules /pa
 
 このコマンドはFirebaseに接続せず、`.release/preflight/` に入力・提案・復旧Rules、rules.diff、PREFLIGHT.jsonだけを生成する。入力の出所・SHA256・未承認事項・実環境未確認を記録する。引数省略時は過去に提供されたRulesとの暫定比較になる。公開中のルートにファイルを出力しない。
 
-## 暫定基準との差分
+## 受領した現行Rulesとの差分
 
-|対象|以前提供されたRules|最新の提案|影響|
+|対象|受領した現行Rules|最新の提案|影響|
 |---|---|---|---|
 |playersの読み取り|認証済み利用者|同じ|既存ランキングを維持|
 |自分のpoints・旧4ゲーム記録・appearance|自己UID、既存キーのみ|同じ基本範囲|旧クライアントの保存互換性を維持|
 |既存ニックネーム|文字列1〜12文字|プレイヤー保存は同じ|以前許可された文字が保存を妨げない|
-|distributionBestStreak|許可キーにない|追加|公開中の分配のきまり①に必要。実際の現行Rulesとの照合が必要|
+|distributionBestStreak|許可キーにない|追加|公開中の分配のきまり①に必要。今回の受領Rulesには存在しないことを確認|
 |新算数2本・国語の記録キー|許可なし|今回も許可しない|新算数2本の本番ランキングなしを維持|
 |管理権限|管理室用文書の許可なし|本番専用パスワードAuth・登録UID・enabled・失効時刻で検証|確認用のアカウントを流用しない|
 |管理者の名前変更|許可なし|renameEnabled=trueの場合のみ、履歴と全変更前バックアップを同時作成|初期値false。項目欠落時も拒否|
@@ -71,7 +71,7 @@ I've set up prototype Security Rules to keep the data in Firestore safe. They ar
 
 ### 改名・追加フィールドの保存前
 
-次段階を停止し、改名許可をfalseのまま保つ。公開前コードへ本番ルートだけを戻す。管理メタデータや追加記録フィールドが一切保存されていないと確認できた場合だけ、実際に退避した旧Rulesへの復帰を検討する。提供版をライブ退避版と見なさない。
+次段階を停止し、改名許可をfalseのまま保つ。公開前コードへ本番ルートだけを戻す。管理メタデータや追加記録フィールドが一切保存されていないと確認できた場合だけ、実際に退避した旧Rulesへの復帰を検討する。古い整理版を今回の公開版原文だと見なさない。今回受領した原文についても公開直前に変更がないか確認する。
 
 ### 改名または追加フィールド保存後
 
@@ -86,13 +86,16 @@ I've set up prototype Security Rules to keep the data in Firestore safe. They ar
 
 ## Firebase Consoleでの本人操作
 
-**今行うのはAだけ。B以降は個別承認後、一つずつ案内する。**
+**Aは全文受領・照合済み。次はB-0の状態確認だけ。B-1以降の変更は個別承認後、一つずつ案内する。**
 
 A：現行Rulesの取得（読取のみ）
 1. Firebase ConsoleでプロジェクトIDが `manabi-game-land` と確認する。
 2. 左の「構築（Build）」→「Firestore Database」→「ルール（Rules）」を開く。複数DBがある場合は既存サイトの(default)を確認する。
 3. 現在公開中の全文をコピーして、手元にも日付付きテキストで保存する。編集途中の下書きがある場合は公開版を選び、公開日時も控える。
 4. 全文をチャットに貼る。**編集・公開ボタンは押さない。パスワードは送らない。**
+
+B-0：認証の状態確認（読取のみ）
+「Authentication」→「ログイン方法（Sign-in method）」で「メール/パスワード」が有効か無効かを確認して伝える。まだ切り替えたり、ユーザーを作成したりしない。
 
 B：認証設定の承認後
 1. 「Authentication」→「ログイン方法（Sign-in method）」で「メール/パスワード」を確認。既に有効なら変更不要。無効なら承認後だけ有効化する。メールリンク方式は不要。匿名・Google等の既存プロバイダは変更しない。
@@ -116,3 +119,11 @@ F：改名許可の承認後
 - https://firebase.google.com/docs/firestore/security/get-started
 - https://firebase.google.com/docs/auth/web/password-auth
 - https://support.google.com/firebase/answer/6400802?hl=ja
+
+## 受領原文の識別情報
+
+- 受領日：2026-10-28（日本時間）
+- 原文SHA256：`dd6e3a0b19cc9c07e26abbebb2b799cb8f375518f1dcf5c7078a65d926c76893`
+- 提案Rules SHA256：`bdd446a3155bd98569833a54f21cc72e6325079b1ba7512ec3cb34c3aac8149f`
+- 復旧Rules SHA256：`856ecea5231e057c9a73e81d4895383edb70d93dca5cff64a1b39d3beba035a3`
+- 提案・復旧Rulesは49件のテスト成功時から変更していない。今回は原文保存・比較・手順書更新のみで、Firebaseへの接続・設定変更・データ操作は行っていない。

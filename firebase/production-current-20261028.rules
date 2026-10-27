@@ -1,0 +1,47 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /players/{playerId} {
+      // ランキングはログインした人が見られる
+      allow read: if request.auth != null;
+
+      // 自分のデータだけ登録できる
+      allow create: if request.auth != null
+        && request.auth.uid == playerId
+        && request.resource.data.keys().hasOnly([
+          'nickname',
+          'points',
+          'bestStreak',
+          'prefNameBestStreak',
+          'prefPlaceBestStreak',
+          'alphabetBestStreak',
+          'appearance',
+          'updatedAt'
+        ])
+        && request.resource.data.nickname is string
+        && request.resource.data.nickname.size() > 0
+        && request.resource.data.nickname.size() <= 12;
+
+      // 自分のデータだけ更新できる
+      allow update: if request.auth != null
+        && request.auth.uid == playerId
+        && request.resource.data.keys().hasOnly([
+          'nickname',
+          'points',
+          'bestStreak',
+          'prefNameBestStreak',
+          'prefPlaceBestStreak',
+          'alphabetBestStreak',
+          'appearance',
+          'updatedAt'
+        ])
+        && request.resource.data.nickname is string
+        && request.resource.data.nickname.size() > 0
+        && request.resource.data.nickname.size() <= 12;
+
+      // 削除は禁止
+      allow delete: if false;
+    }
+  }
+}
