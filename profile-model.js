@@ -20,9 +20,10 @@ function profile(storage){return normalize(read(storage,'mgl_profile'),records(s
 function unlocked(rows){return [...icons.map(i=>({...i,kind:'icon'})),...frames.map(i=>({...i,kind:'frame'}))].filter(i=>(i.game||i.anyTitle)&&available(i,rows))}
 function next(row){return row.titles.find(t=>t.at>row.best)||null}
 function appearance(storage){const {icon,frame,badge}=profile(storage);return {icon,frame,badge}}
-function playerRows(player){const fields={keisan:'bestStreak','pref-name':'prefNameBestStreak','pref-place':'prefPlaceBestStreak',alphabet:'alphabetBestStreak',distribution:'distributionBestStreak'};return games.map(g=>({...g,best:number(player[fields[g.id]])}))}
+function playerRows(player){const fields={keisan:'bestStreak','pref-name':'prefNameBestStreak','pref-place':'prefPlaceBestStreak',alphabet:'alphabetBestStreak',distribution:'distributionBestStreak',distribution2:'distribution2BestStreak',exchangeAssociation:'exchangeAssociationBestStreak'};return games.map(g=>({...g,best:number(player[fields[g.id]])}))}
 function appearanceFor(player){return normalize(player.appearance,playerRows(player))}
 function subjectPoints(rows){return [{name:'国語',ids:[]},{name:'算数',ids:['keisan','distribution']},{name:'社会',ids:['pref-name','pref-place']},{name:'理科',ids:[]},{name:'英語',ids:['alphabet']}].map(s=>{const games=rows.filter(r=>s.ids.includes(r.id));return {...s,games,points:s.name==='算数'?(games.find(r=>r.id==='keisan')?.points||0):games.reduce((sum,r)=>sum+r.points,0)}})}
 window.ManabiProfile={subjectPoints,games,badges,icons,frames,records,available,condition,normalize,profile,unlocked,next,appearance,playerRows,appearanceFor};
 })();
+
 
