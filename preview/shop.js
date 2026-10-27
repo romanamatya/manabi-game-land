@@ -28,3 +28,4 @@ $('cancelPurchase').onclick=()=>{if(!busy)$('purchaseDialog').close()};$('purcha
 window.addEventListener('manabi-economy-change',render);window.addEventListener('manabi-profile-change',render);render();if(!economy.testing)economy.refresh().catch(()=>{$('shopStatus').textContent='ポイントへの接続待ち。保存済みの残高を表示中。'});
 })();
 
+

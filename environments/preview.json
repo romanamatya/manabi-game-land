@@ -10,5 +10,28 @@
   "playerSyncEnabled": false,
   "adminEnabled": true,
   "dataSchema": "previewSpark/v1",
-  "productionReleaseApproved": false
+  "productionReleaseApproved": false,
+  "productionAuthVerified": false,
+  "productionRulesApproved": false,
+  "legacyScoreSyncEnabled": false,
+  "gameIds": [
+    "keisan",
+    "pref-name",
+    "pref-place",
+    "alphabet",
+    "distribution",
+    "distribution2",
+    "exchangeAssociation",
+    "kotowaza"
+  ],
+  "rankingGameIds": [
+    "keisan",
+    "pref-name",
+    "pref-place",
+    "alphabet",
+    "distribution",
+    "kotowaza",
+    "distribution2",
+    "exchangeAssociation"
+  ]
 }

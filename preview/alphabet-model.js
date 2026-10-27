@@ -7,3 +7,4 @@ function normalize(value={}){const number=n=>Number.isSafeInteger(Number(n))&&Nu
 function result(state,correct,awarded=correct?1:0){return {...state,points:state.points+awarded,streak:correct?state.streak+1:0,best:correct?Math.max(state.best,state.streak+1):state.best,queue:correct?state.queue.slice(1):[]}}
 window.AlphabetModel={letters,shuffle,choices,normalize,result};
 })();
+

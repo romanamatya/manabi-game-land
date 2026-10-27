@@ -7,3 +7,4 @@ const examples=[{nickname:'そら',bestStreak:32,alphabetBestStreak:14,appearanc
 function localPlayers(){try{const v=JSON.parse(window.manabiStorage.getItem('leaderboard_players')||'[]');return Array.isArray(v)?v:[]}catch{return []}}
 window.ManabiLeaderboard={games,leaders,ranking,render,examples,localPlayers};
 })();
+

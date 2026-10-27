@@ -4,3 +4,4 @@ body:has(#login:not([hidden])) header{justify-content:center;background:transpar
 
 
 [hidden]{display:none!important}#passwordLogin button:disabled{opacity:.55}button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid #e4ad3e;outline-offset:3px}td:first-child{white-space:normal;min-width:140px;overflow-wrap:anywhere}#playerSearch{min-width:260px}#content .muted{white-space:normal}#content td small{font-size:11px;max-width:240px}
+

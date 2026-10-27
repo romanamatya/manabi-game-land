@@ -1,0 +1,14 @@
+{
+  "name": "manabi-shared-foundation",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test tools/foundation.test.mjs tests/*.test.mjs",
+    "test:rules": "firebase emulators:exec --project demo-manabi-foundation --only auth,firestore --config firebase/emulator.json \"node --test tests/rules/*.test.mjs\""
+  },
+  "devDependencies": {
+    "firebase": "11.10.0",
+    "firebase-tools": "13.35.1",
+    "@firebase/rules-unit-testing": "4.0.1"
+  }
+}

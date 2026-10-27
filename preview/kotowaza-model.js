@@ -7,3 +7,4 @@ function choices(q,slot,random=Math.random){const out=shuffle(q.distractors,rand
 function answer(state,correct){if(state.position>=state.queue.length)return {...state};const streak=correct?state.streak+1:0;return {...state,position:state.position+1,streak,best:Math.max(state.best,streak)}}
 return {shuffle,start,choices,answer};
 });
+

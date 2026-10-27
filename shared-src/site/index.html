@@ -20,26 +20,8 @@ function showRecords(){const records=displayExamples?window.ManabiLeaderboard.ex
 $('previewRecords').onclick=()=>{displayExamples=!displayExamples;showRecords()};
 $('playerForm').onsubmit=e=>{e.preventDefault();const value=$('nickname').value.trim();if(!value||value.length>12||/[<>\n\r]/.test(value))return;storage.setItem('mgl_nickname',value);showLocal();};
 $('refreshBoard').onclick=showRecords;showLocal();showRecords();
-}else{
-const {initializeApp}=await import("https://www.gstatic.com/firebasejs/13.1.0/firebase-app.js");
-const {getAuth,signInAnonymously,onAuthStateChanged}=await import("https://www.gstatic.com/firebasejs/13.1.0/firebase-auth.js");
-const {getFirestore,doc,getDoc,setDoc,collection,query,orderBy,limit,getDocs}=await import("https://www.gstatic.com/firebasejs/13.1.0/firebase-firestore.js");
-const firebaseConfig={apiKey:"AIzaSyAhm6WMqV7yGmNRRDCeZcOk5HH-dlga9no",authDomain:"manabi-game-land.firebaseapp.com",projectId:"manabi-game-land",storageBucket:"manabi-game-land.firebasestorage.app",messagingSenderId:"723974836914",appId:"1:723974836914:web:4e57af8336083f82a72fab"};
-const app=initializeApp(firebaseConfig),auth=getAuth(app),db=getFirestore(app);
-const $=id=>document.getElementById(id);
-let uid=null,nick="",online=false;
-const validName=s=>s.length>=1&&s.length<=12&&!/[<>\n\r]/.test(s);
-function showPlayer(){ $("playerWelcome").hidden=!!nick;$("playerReady").hidden=!nick;$("playerName").textContent=nick;}
-function status(s){$("syncStatus").textContent=s;}
-async function saveProfile(){if(!uid||!nick)return;await setDoc(doc(db,"players",uid),{nickname:nick,appearance:window.ManabiProfile.appearance(window.manabiStorage),updatedAt:Date.now()},{merge:true});}
-for(const event of ['manabi-profile-change','manabi-economy-change'])window.addEventListener(event,()=>{if(uid&&nick)saveProfile().catch(()=>status('見た目は端末に保存。オンラインへの保存は未完了。'))});
-async function refresh(){const button=$('refreshBoard');button.disabled=true;try{const snap=await getDocs(collection(db,'players'));const records=snap.docs.map(item=>({id:item.id,...item.data()}));window.ManabiLeaderboard.render(records);$('boardStatus').textContent='各ゲームの最高連続正解。同率1位は全員表示。';}catch(e){window.ManabiLeaderboard.render([],{error:true});$('boardStatus').textContent='記録を取得できない。時間をおいて更新する。';}finally{button.disabled=false}}
-$("refreshBoard").onclick=refresh;
-$("playerForm").onsubmit=async e=>{e.preventDefault();const value=$("nickname").value.trim();if(!validName(value)){alert("ニックネームは1〜12文字で入力する");return;}nick=value;window.manabiStorage.setItem("mgl_nickname",nick);showPlayer();if(uid){try{await saveProfile();status("オンラインに登録しました");await refresh()}catch(e){status("名前はこの端末に保存しました。オンライン登録は未完了です。")}}};
-nick=window.manabiStorage.getItem("mgl_nickname")||"";if(!validName(nick))nick="";showPlayer();
-onAuthStateChanged(auth,async user=>{if(!user)return;uid=user.uid;try{const ref=doc(db,"players",uid),snapshot=await getDoc(ref);if(snapshot.exists()&&snapshot.data().nickname){nick=String(snapshot.data().nickname).slice(0,12);window.manabiStorage.setItem("mgl_nickname",nick);showPlayer();}else if(nick){await saveProfile();}online=true;status("オンライン接続中");}catch(e){status("オンラインへの接続を確認してください");}await refresh();});
-signInAnonymously(auth).catch(()=>{if(nick)status("この端末には名前を保存しました。オンライン認証に失敗しました。");refresh()});
-window.mglSaveScore=async(points,best)=>{if(!uid||!nick)return;try{const ref=doc(db,"players",uid);await setDoc(ref,{nickname:nick,bestStreak:best,points:points,updatedAt:Date.now()},{merge:true});status("記録をオンラインに保存しました");}catch(e){status("記録のオンライン保存に失敗しました");}};
+}else{const {startProductionHome}=await import('./home-data.js');await startProductionHome(window.manabiStorage);
 }</script><script>(()=>{const dialog=document.getElementById('nicknameDialog'),welcome=document.getElementById('playerWelcome');function sync(){const nickname=window.manabiStorage.getItem('mgl_nickname')||'';const registered=nickname.trim().length>0&&nickname.length<=12&&!/[<>\n\r]/.test(nickname);if(registered){if(dialog.open)dialog.close()}else{if(!dialog.open)dialog.showModal();document.getElementById('nickname').focus()}}dialog.addEventListener('cancel',e=>e.preventDefault());new MutationObserver(sync).observe(welcome,{attributes:true,attributeFilter:['hidden']});window.addEventListener('pageshow',sync);sync()})();</script></body></html>
+
 
 

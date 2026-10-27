@@ -33,3 +33,4 @@ export function observeBalances(meta,balances){
  for(const s of SUBJECTS)next.earned[s]=number(next.earned[s])+Math.max(0,number(balances[s])-number(next.seenBalances?.[s]));
  next.seenBalances=Object.fromEntries(SUBJECTS.map(s=>[s,number(balances[s])]));return next;
 }
+

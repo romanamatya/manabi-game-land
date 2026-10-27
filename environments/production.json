@@ -10,5 +10,24 @@
   "playerSyncEnabled": false,
   "adminEnabled": false,
   "dataSchema": "legacy-players",
-  "productionReleaseApproved": false
+  "productionReleaseApproved": false,
+  "productionAuthVerified": false,
+  "productionRulesApproved": false,
+  "legacyScoreSyncEnabled": false,
+  "gameIds": [
+    "keisan",
+    "pref-name",
+    "pref-place",
+    "alphabet",
+    "distribution",
+    "distribution2",
+    "exchangeAssociation"
+  ],
+  "rankingGameIds": [
+    "keisan",
+    "pref-name",
+    "pref-place",
+    "alphabet",
+    "distribution"
+  ]
 }

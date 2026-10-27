@@ -11,3 +11,4 @@ if(first){state=model.answerFirst(state,value);save();feedback(ok,'正しい式�
 const firstValue=state.firstAnswer,result=model.finish(state,value);state=result.state;save();stats();feedback(ok,'正しい計算：'+model.method(question,'distributed').text,('100×'+question.m+'と'+Math.abs(question.n-100)+'×'+question.m+'を計算して、'+(100*question.m)+(question.n<100?'から':'に')+(Math.abs(question.n-100)*question.m)+(question.n<100?'を引くよ。':'を足すよ。'))+(result.correct?' 2つとも正解！1問正解。':firstValue!==question.n-100?' 第1段階が不正解だったので、この問題の得点は0pt。連続正解は0から。':' この問題の得点は0pt。連続正解は0から。'),'次の問題へ');await window.ManabiEconomy.answer(context,{split:firstValue,method:value});stats()}
 window.addEventListener('manabi-economy-change',stats);window.addEventListener('manabi-remote-best',e=>{state.best=Math.max(state.best,Number(e.detail)||0);save();stats()});window.addEventListener('pagehide',()=>clearTimeout(timer));window.addEventListener('pageshow',e=>{if(e.persisted)draw()});draw();
 })();
+

@@ -1,15 +1,14 @@
+import {validateBackend,contractFor} from './data-contract.js';
+import {createFirestoreStore} from './firebase-store.js';
 const config = window.MANABI_SPARK_CONFIG;
-const BASE = 'previewSpark/v1';
-const PRODUCTION = 'manabi-game-land';
-// The second ID is reserved for the local Firebase Emulator test suite.
-const ALLOWED_PREVIEW_PROJECTS = new Set(['manabi-game-landcheck', 'demo-manabi-preview']);
 const error = code => Object.assign(new Error(code), {code});
 const validName = value => typeof value === 'string' && value === value.trim() && value.length >= 1 && value.length <= 12 && !/[<>\r\n]/.test(value);
 
 export function errorText(e) {
   return ({
-    'backend-not-configured': '確認用Firebaseは設定待ち。管理機能はまだ利用できない。',
-    'production-project-rejected': '接続設定が確認用プロジェクトと一致しないため停止した。',
+    'backend-not-configured': 'この環境の認証・権限は確認待ち。管理機能は安全のため停止中。',
+    'production-project-rejected': '接続設定が環境と一致しないため停止した。',
+    'environment-project-mismatch': '環境とFirebase接続先が一致しないため停止した。',
     'auth/invalid-credential': 'パスワードを確認して。',
     'auth/wrong-password': 'パスワードを確認して。',
     'auth/user-not-found': 'パスワードを確認して。',
@@ -30,13 +29,9 @@ export function errorText(e) {
 }
 
 export function validateConfig(c) {
-  if (!c?.enabled || !c.firebase?.projectId) throw error('backend-not-configured');
-  const f = c.firebase;
-  if (c.environment !== BASE || f.projectId === PRODUCTION || !ALLOWED_PREVIEW_PROJECTS.has(f.projectId) ||
-      c.expectedProjectId !== f.projectId || f.authDomain !== f.projectId + '.firebaseapp.com' ||
-      f.apiKey === 'AIzaSyAhm6WMqV7yGmNRRDCeZcOk5HH-dlga9no' ||
-      f.appId === '1:723974836914:web:4e57af8336083f82a72fab') throw error('production-project-rejected');
-  if (!f.apiKey || !f.appId) throw error('backend-not-configured');
+ const contract=validateBackend(c);
+ if(typeof location!=='undefined'&&location.pathname.split('/').includes('preview')!==(contract.mode==='preview'))throw error('environment-project-mismatch');
+ return contract;
 }
 
 let pending;
@@ -52,24 +47,22 @@ export function client() {
 // The explicit SDK argument also lets the same adapter run against local emulators.
 export async function createAdminClient(c, [appSdk, A, F]) {
   validateConfig(c);
-  const name = 'manabi-shared-admin-preview-spark';
+  const contract=validateConfig(c);
+  const name=contract.appName;
   const app = appSdk.getApps().find(a => a.name === name) || appSdk.initializeApp(c.firebase, name);
   if (app.options.projectId !== c.expectedProjectId) throw error('production-project-rejected');
-  const auth = A.getAuth(app), db = F.getFirestore(app);
-  const alias = 'admin-preview@' + c.firebase.projectId + '.invalid';
-  await A.setPersistence(auth, A.browserLocalPersistence);
-  await auth.authStateReady();
-  const ref = (kind, id) => F.doc(db, BASE, kind, id);
-  const col = kind => F.collection(db, BASE, kind);
-  const plain = value => value?.toMillis ? value.toMillis() : Array.isArray(value) ? value.map(plain) : value && typeof value === 'object' ? Object.fromEntries(Object.entries(value).map(([k, v]) => [k, plain(v)])) : value;
-  const list = async (kind, cursor) => {
-    const constraints = [F.orderBy(F.documentId())];
-    if (cursor) constraints.push(F.startAfter(cursor));
-    constraints.push(F.limit(100));
-    const snap = await F.getDocsFromServer(F.query(col(kind), ...constraints));
-    return {rows: snap.docs.map(d => plain({...d.data(), id: d.id, ...(kind === 'players' ? {uid: d.id} : {})})), cursor: snap.size === 100 ? snap.docs.at(-1).id : null};
-  };
-
+  const auth=A.getAuth(app),db=F.getFirestore(app);
+  await A.setPersistence(auth,A.browserLocalPersistence);await auth.authStateReady();
+  return createAdminOperations(c,{auth,db},A,F);
+}
+// Domain operations are separately testable without enabling the production entry point.
+export function createAdminOperations(c,{auth,db},A,F) {
+  const contract=validateBackend(c,{requireEnabled:false}),alias=contract.alias;
+  const store=createFirestoreStore(contract.mode,F,db,{catalog:window.ManabiProfileCatalog||[]});
+  const ref=(kind,id)=>F.doc(db,kind==='players'?contract.players:contract.base+'/'+kind,id);
+  const col=kind=>F.collection(db,kind==='players'?contract.players:contract.base+'/'+kind);
+  const plain=value=>value?.toMillis?value.toMillis():Array.isArray(value)?value.map(plain):value&&typeof value==='object'?Object.fromEntries(Object.entries(value).map(([k,v])=>[k,plain(v)])):value;
+  const list=async(kind,cursor)=>{if(kind!=='players')throw error('invalid-input');return plain(await store.list(cursor));};
   async function verify() {
     const user = auth.currentUser;
     if (!user) throw error('admin-required');
@@ -83,26 +76,7 @@ export async function createAdminClient(c, [appSdk, A, F]) {
     return user;
   }
 
-  async function rename(input) {
-    const user = await verify();
-    const nickname = typeof input.nickname === 'string' ? input.nickname.trim() : '';
-    const reason = typeof input.reason === 'string' ? input.reason.trim() : '';
-    if (!input.uid || input.uid === user.uid || !validName(nickname) || reason.length < 2 || reason.length > 300 || typeof input.expectedNickname !== 'string') throw error('invalid-input');
-    const target = ref('players', input.uid), audit = F.doc(col('audit')), backup = F.doc(col('backups'));
-    return F.runTransaction(db, async tx => {
-      const before = await tx.get(target);
-      if (!before.exists()) throw error('player-not-found');
-      const player = before.data();
-      if (player.nickname !== input.expectedNickname) throw error('name-conflict');
-      if (player.nickname === nickname) return {ok: true, unchanged: true};
-      const at = F.serverTimestamp();
-      tx.set(backup, {actor: user.uid, at, uid: input.uid, target: 'players/' + input.uid, kind: 'rename', data: player});
-      tx.set(audit, {actor: user.uid, at, uid: input.uid, target: 'players/' + input.uid, action: 'rename', reason, backupId: backup.id, beforeName: player.nickname, afterName: nickname});
-      // Update only admin-owned fields, preserving concurrent gameplay/points writes.
-      tx.update(target, {nickname, lastAudit: audit.id, lastBackup: backup.id, adminUpdatedAt: at});
-      return {ok: true, auditId: audit.id};
-    });
-  }
+  async function rename(input) {const user=await verify();return store.rename(user,input);}
 
   async function call(action, input = {}) {
     await verify();
@@ -151,4 +125,6 @@ export async function createAdminClient(c, [appSdk, A, F]) {
     }
   };
 }
+
+
 

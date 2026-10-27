@@ -22,3 +22,4 @@ except subprocess.CalledProcessError:commit=None
 manifest={'source_commit':commit,'mode':'public-preview','cloud_writes':False,'storage_prefix':'manabi_public_preview:','files':{str(p.relative_to(target)):hashlib.sha256(p.read_bytes()).hexdigest() for p in sorted(target.rglob('*')) if p.is_file()}}
 (target/'version.json').write_text(json.dumps(manifest,ensure_ascii=False,indent=2)+'\n')
 print(f'Prepared {len(manifest["files"])} preview files from {commit}')
+
