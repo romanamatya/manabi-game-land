@@ -15,7 +15,7 @@
  if(!registered&&!isHome){document.documentElement.style.visibility='hidden';location.replace(new URL(location.pathname.includes('/games/')?'../index.html':'index.html',location.href).href)}
  if(preview){capture()}
  if(preview&&!adminTest&&!syncTest){document.addEventListener('DOMContentLoaded',capture);window.addEventListener('pageshow',capture);window.addEventListener('manabi-profile-change',capture);window.addEventListener('manabi-economy-change',capture);}
- if(preview&&!adminTest)document.addEventListener('DOMContentLoaded',()=>{window.ManabiPlayerSyncReady=import(new URL('player-sync.js?v=00f79972cbc2',runtimeURL).href).then(m=>m.start());window.ManabiPlayerSyncReady.catch(()=>{});});
+ if(preview&&!adminTest)document.addEventListener('DOMContentLoaded',()=>{window.ManabiPlayerSyncReady=import(new URL('player-sync.js?v=f427bef8ead0',runtimeURL).href).then(m=>m.start());window.ManabiPlayerSyncReady.catch(()=>{});});
  if(preview)document.addEventListener('DOMContentLoaded',()=>{document.title='【確認用】'+document.title;const badge=document.createElement('div');badge.textContent=adminTest||syncTest?'テストプレイ · ランキングには記録しない':'確認用 · 本番には影響しない';badge.setAttribute('aria-label','本番と記録を分離した確認用サイト');Object.assign(badge.style,{position:'fixed',bottom:'5px',left:'8px',zIndex:'2000',padding:'4px 9px',background:'#fff6d8',border:'1px solid #dfc56c',borderRadius:'7px',color:'#665120',font:'11px system-ui',pointerEvents:'none'});document.body.append(badge)});
 })();
 
