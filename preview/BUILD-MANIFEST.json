@@ -122,8 +122,8 @@
     },
     {
       "path": "games/multiplicationProperties.html",
-      "sourceSHA256": "0211a02df2dcbf726f9c646cf8d41b5798dfc248d8c3b7cbfb468c2a3e5d6011",
-      "outputSHA256": "77222bbaac7e2956a0d4f876488a77576384e5ebbf03ed9422dab24b38b7998a"
+      "sourceSHA256": "a2f7afdf04f594b24c281cc53e3211be4ed437bd87c007b103784796972254d9",
+      "outputSHA256": "c4215a9dcb79ebed40f61748eae38af0c2a4aba8123a2f713ad5365e76fbcea4"
     },
     {
       "path": "games/pref-name.html",
@@ -242,13 +242,13 @@
     },
     {
       "path": "multiplication-properties-game.js",
-      "sourceSHA256": "960159c9f5c78c52ca16d9eb2ebeb053890fac54d9429a53ed9616ae48276666",
-      "outputSHA256": "960159c9f5c78c52ca16d9eb2ebeb053890fac54d9429a53ed9616ae48276666"
+      "sourceSHA256": "1588f9c1cb87e2ad8e394added724f6718fa34db5dacf2182e118fa2177dcf96",
+      "outputSHA256": "1588f9c1cb87e2ad8e394added724f6718fa34db5dacf2182e118fa2177dcf96"
     },
     {
       "path": "multiplication-properties-model.js",
-      "sourceSHA256": "b6b6bbf7972e32979cef5b3b0d109377b107fb7f672b05c7757718de50180c58",
-      "outputSHA256": "b6b6bbf7972e32979cef5b3b0d109377b107fb7f672b05c7757718de50180c58"
+      "sourceSHA256": "b9c1617665183540a8ec3da36eac5ba7747161282f20785b2c111f05a078dd7b",
+      "outputSHA256": "b9c1617665183540a8ec3da36eac5ba7747161282f20785b2c111f05a078dd7b"
     },
     {
       "path": "multiplication-properties.css",
@@ -292,8 +292,8 @@
     },
     {
       "path": "qa/multiplication-landscape.html",
-      "sourceSHA256": "389bb31f82c82c3dd00cd16c1e27b986c550da5461ad4739c9e5bec0f8c24451",
-      "outputSHA256": "389bb31f82c82c3dd00cd16c1e27b986c550da5461ad4739c9e5bec0f8c24451"
+      "sourceSHA256": "44300b41cf61ffe38e419dac4ffa58ce5071847b65ab924faefb9605266f0c87",
+      "outputSHA256": "44300b41cf61ffe38e419dac4ffa58ce5071847b65ab924faefb9605266f0c87"
     },
     {
       "path": "ranking-page.js",
