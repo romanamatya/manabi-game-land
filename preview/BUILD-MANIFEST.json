@@ -67,8 +67,8 @@
     },
     {
       "path": "economy-core.js",
-      "sourceSHA256": "0fd38b3feb09c5983a9f26f384e70e6079bcb5226b6148203db71725d2327a11",
-      "outputSHA256": "0fd38b3feb09c5983a9f26f384e70e6079bcb5226b6148203db71725d2327a11"
+      "sourceSHA256": "170b2311970d49050c16bfc07a9493cb1bba553ce47467b5b0675c121846ecb9",
+      "outputSHA256": "170b2311970d49050c16bfc07a9493cb1bba553ce47467b5b0675c121846ecb9"
     },
     {
       "path": "economy.js",
@@ -122,8 +122,8 @@
     },
     {
       "path": "games/multiplicationProperties.html",
-      "sourceSHA256": "0d426a99240516bc5d4316185e717b49d0a3d8bff2f87283487672562755a1de",
-      "outputSHA256": "6ffcb13f95b478000d5bd467afc08ec56fada0674864b6c018a85d55443f879d"
+      "sourceSHA256": "0211a02df2dcbf726f9c646cf8d41b5798dfc248d8c3b7cbfb468c2a3e5d6011",
+      "outputSHA256": "77222bbaac7e2956a0d4f876488a77576384e5ebbf03ed9422dab24b38b7998a"
     },
     {
       "path": "games/pref-name.html",
@@ -241,6 +241,21 @@
       "outputSHA256": "2f5c0a652a6e8a2f768926433c3f31bbc317eb239a52c6960a58afdc423a449d"
     },
     {
+      "path": "multiplication-properties-game.js",
+      "sourceSHA256": "960159c9f5c78c52ca16d9eb2ebeb053890fac54d9429a53ed9616ae48276666",
+      "outputSHA256": "960159c9f5c78c52ca16d9eb2ebeb053890fac54d9429a53ed9616ae48276666"
+    },
+    {
+      "path": "multiplication-properties-model.js",
+      "sourceSHA256": "b6b6bbf7972e32979cef5b3b0d109377b107fb7f672b05c7757718de50180c58",
+      "outputSHA256": "b6b6bbf7972e32979cef5b3b0d109377b107fb7f672b05c7757718de50180c58"
+    },
+    {
+      "path": "multiplication-properties.css",
+      "sourceSHA256": "b91ff90b6bc6642cca50d137705b4b38ed741b990a1ab4aedcbd8cb01682b3c7",
+      "outputSHA256": "b91ff90b6bc6642cca50d137705b4b38ed741b990a1ab4aedcbd8cb01682b3c7"
+    },
+    {
       "path": "player-sync-api.js",
       "sourceSHA256": "9c4e4db7ca4e7b6787671f39ac55fba7ffcc19c84c343a4e3932b4c46dc2fddb",
       "outputSHA256": "bc7a4b30d9cc932af0988ca6e0787640915ce35b8f1e3bc66b9801c7c6a81fd0"
@@ -274,6 +289,11 @@
       "path": "profile.css",
       "sourceSHA256": "d99c31aa66920874991a7ac09f922966eaa39a76bf32d1d72dd8e7cda4e8e725",
       "outputSHA256": "d99c31aa66920874991a7ac09f922966eaa39a76bf32d1d72dd8e7cda4e8e725"
+    },
+    {
+      "path": "qa/multiplication-landscape.html",
+      "sourceSHA256": "389bb31f82c82c3dd00cd16c1e27b986c550da5461ad4739c9e5bec0f8c24451",
+      "outputSHA256": "389bb31f82c82c3dd00cd16c1e27b986c550da5461ad4739c9e5bec0f8c24451"
     },
     {
       "path": "ranking-page.js",
