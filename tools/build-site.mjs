@@ -2,6 +2,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import crypto from 'node:crypto';
 import vm from 'node:vm';
+import {GAME_FIELDS} from '../shared-src/site/data-contract.js';
 import {fileURLToPath} from 'node:url';
 import {validateEnvironment, environmentScript} from './site-environment.mjs';
 
@@ -47,7 +48,7 @@ for (const id of config.rankingGameIds) {
 }
 const releaseCatalog = config.gameIds.map(id => {
   const game = catalogById.get(id);
-  return {id, name: game.name, field: game.field || `${id}BestStreak`, rankingEnabled: config.rankingGameIds.includes(id)};
+  return {id, name: game.name, field: game.field || GAME_FIELDS[id] || `${id}BestStreak`, rankingEnabled: config.rankingGameIds.includes(id)};
 });
 
 const entries = [];
