@@ -11,7 +11,7 @@ async function bytes(p){try{return await fs.readFile(p)}catch(e){if(e.code==='EN
 export async function prepare({baseline=root,candidate=path.join(root,'.release/production'),output=path.join(root,'.release/site-package'),inventory,rules=path.join(root,'firebase/production-distribution-only.rules')}={}){
  baseline=path.resolve(baseline);candidate=path.resolve(candidate);output=path.resolve(output);
  if(!output.startsWith(path.join(root,'.release')+path.sep)||output===candidate||baseline===candidate)throw Error('unsafe-package-output');
- const m=JSON.parse(await fs.readFile(path.join(candidate,'BUILD-MANIFEST.json'))),config=JSON.parse(await fs.readFile(path.join(root,'environments/production.json')));
+ const m=JSON.parse(await fs.readFile(path.join(candidate,'BUILD-MANIFEST.json'))),config=m.runtimeConfig||JSON.parse(await fs.readFile(path.join(root,'environments/production.json')));
  if(m.environment!=='production'||m.projectId!=='manabi-game-land'||m.playerSyncEnabled!==false)throw Error('wrong-production-build');
  const live=inventory||JSON.parse(await fs.readFile(path.join(root,'environments/production-inventory.json')));
  for(const id of live.gameIds)if(!m.gameCatalog.some(g=>g.id===id))throw Error('existing-game-missing:'+id);

@@ -10,9 +10,15 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const mode = process.argv[2] || 'preview';
 if (!['preview', 'production'].includes(mode)) throw Error('unknown-environment');
 
-const config = validateEnvironment(JSON.parse(await fs.readFile(path.join(root, 'environments', `${mode}.json`), 'utf8')));
+const options=Object.fromEntries(process.argv.slice(3).reduce((a,v,i,all)=>i%2===0?[...a,[v,all[i+1]]]:a,[]));
+for(const k of Object.keys(options))if(!['--config','--output'].includes(k))throw Error('unknown-build-option');
+const configPath=options['--config']?path.resolve(options['--config']):path.join(root,'environments',`${mode}.json`);
+if(options['--config']&&!configPath.startsWith(path.join(root,'.release')+path.sep))throw Error('review-config-required');
+const config=validateEnvironment(JSON.parse(await fs.readFile(configPath,'utf8')));
+if(config.environment!==mode)throw Error('environment-mode-mismatch');
 const source = path.join(root, 'shared-src/site');
-const out = path.join(root, mode === 'preview' ? 'preview' : '.release/production');
+const out=options['--output']?path.resolve(options['--output']):path.join(root,mode==='preview'?'preview':'.release/production');
+if(options['--output']&&(mode!=='production'||!out.startsWith(path.join(root,'.release')+path.sep)))throw Error('unsafe-production-output');
 const blocked = mode === 'production' && !config.productionReleaseApproved;
 if (out === root || (mode === 'production' && !out.startsWith(path.join(root, '.release') + path.sep))) {
   throw Error('unsafe-production-output');
@@ -99,6 +105,7 @@ const manifest = {
   environment: mode,
   projectId: config.projectId,
   runtimeBlocked: blocked,
+  runtimeConfig: config,
   playerSyncEnabled: false,
   publicRootTouched: false,
   sourceRoot: 'shared-src/site',

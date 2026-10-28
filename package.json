@@ -8,7 +8,8 @@
     "build:preview": "node tools/build-site.mjs preview",
     "prepare:production": "node tools/build-site.mjs production",
     "build:both": "npm run build:preview && npm run prepare:production",
-    "prepare:release": "npm run build:both && node tools/release-package.mjs && npm test"
+    "prepare:release": "npm run build:both && node tools/release-package.mjs && npm test",
+    "prepare:final": "npm run build:both && node tools/finalize-production.mjs && npm test"
   },
   "devDependencies": {
     "firebase": "11.10.0",
