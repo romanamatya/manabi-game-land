@@ -40,9 +40,24 @@ function makeQuestion(id,values,op,easyPair,target){
  const [i,j]=groupPairs[correctIndex], rest=[0,1,2].find(k=>k!==i&&k!==j), group=pairResults[correctIndex],result=op==='+'?group+nums[rest]:group*nums[rest];
  const symbol=op==='+'?'＋':'×', choices=[`(${a} ${symbol} ${b}) ${symbol} ${c}`,`(${a} ${symbol} ${c}) ${symbol} ${b}`,`${a} ${symbol} (${b} ${symbol} ${c})`];
  const selectedPair=groupPairs[correctIndex], restIndex=[0,1,2].find(k=>!selectedPair.includes(k));
- return {id,a,b,c,op,values:[a,b,c],question:`${a} ${symbol} ${b} ${symbol} ${c}`,choices,correct:correctIndex,group,rest:nums[restIndex],result,solution:`(${fmt(nums[selectedPair[0]])} ${symbol} ${fmt(nums[selectedPair[1]])}) ${symbol} ${fmt(nums[restIndex])} ＝ ${fmt(group)} ${symbol} ${fmt(nums[restIndex])} ＝ ${fmt(result)}`,easyPair,target};
+ const type=id.startsWith('decimal-add-')?'decimal-addition':id.startsWith('125x8-')?'multiply-125x8':op==='+'?'integer-addition':'integer-multiplication';
+ return {id,type,a,b,c,op,values:[a,b,c],question:`${a} ${symbol} ${b} ${symbol} ${c}`,choices,correct:correctIndex,group,rest:nums[restIndex],result,solution:`(${fmt(nums[selectedPair[0]])} ${symbol} ${fmt(nums[selectedPair[1]])}) ${symbol} ${fmt(nums[restIndex])} ＝ ${fmt(group)} ${symbol} ${fmt(nums[restIndex])} ＝ ${fmt(result)}`,easyPair,target};
 }
-function shuffledChoices(q,r=Math.random){return shuffle(q.choices.map((_,i)=>i),r)}
+function shuffleQuestionDeck(questions,previousType='',r=Math.random){
+ const buckets=new Map();for(const q of questions){const a=buckets.get(q.type)||[];a.push(q);buckets.set(q.type,a)}
+ for(const [type,items] of buckets)buckets.set(type,shuffle(items,r));
+ const order=[];let last=previousType,remaining=questions.length;
+ while(remaining){let candidates=[...buckets].filter(([type,items])=>items.length&&type!==last);if(!candidates.length)candidates=[...buckets].filter(([,items])=>items.length);
+  const max=Math.max(...candidates.map(([,items])=>items.length));candidates=candidates.filter(([,items])=>items.length===max);const [type,items]=candidates[Math.floor(r()*candidates.length)];order.push(items.pop());last=type;remaining--;
+ }
+ return order;
+}
+function randomizedChoiceOrder(q,counts=[0,0,0],last=-1,r=Math.random){
+ const min=Math.min(...counts);let positions=[0,1,2].filter(i=>counts[i]===min&&i!==last);if(!positions.length)positions=[0,1,2].filter(i=>counts[i]===min);
+ const position=positions[Math.floor(r()*positions.length)],other=shuffle([0,1,2].filter(i=>i!==q.correct),r),order=[];order[position]=q.correct;
+ let j=0;for(let i=0;i<3;i++)if(i!==position)order[i]=other[j++];const nextCounts=[...counts];nextCounts[position]++;
+ return {order,position,counts:nextCounts};
+}
 function exchangeQuestions(){
  const out=[];
  addition.forEach(([a,b,c,target],i)=>out.push(makeQuestion(`add-${i+1}`,[a,c,b],'+',[0,2],target)));
@@ -65,5 +80,5 @@ function validateExchangeQuestions(){
  }
  return {count:qs.length,decimalCount:qs.filter(q=>q.id.startsWith('decimal-add-')).length,'125Count':qs.filter(q=>q.id.startsWith('125x8-')).length,additionCount:qs.filter(q=>q.op==='+').length,multiplicationCount:qs.filter(q=>q.op==='×').length};
 }
-return {shuffle,factorQuestions,formatFactor,factorAnswer,correctFactor,factorValue,exchangeQuestions,shuffledChoices,validateExchangeQuestions};
+return {shuffle,factorQuestions,formatFactor,factorAnswer,correctFactor,factorValue,exchangeQuestions,shuffleQuestionDeck,randomizedChoiceOrder,validateExchangeQuestions};
 });

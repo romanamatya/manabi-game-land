@@ -50,9 +50,9 @@ test('125×8 questions place the useful pair in different positions and explain 
 
 test('answer order is shuffled and balanced across positions',()=>{
  let seed=24681357;const rng=()=>{seed=(seed*48271)%2147483647;return seed/2147483647};
- const counts=[0,0,0];
- for(let n=0;n<3000;n++)counts[model.shuffledChoices(questions[n%questions.length],rng).indexOf(questions[n%questions.length].correct)]++;
- assert.ok(counts.every(n=>n>850&&n<1150),counts.join(','));
+ let counts=[0,0,0],last=-1;
+ for(let n=0;n<3000;n++){const q=questions[n%questions.length],r=model.randomizedChoiceOrder(q,counts,last,rng);counts=r.counts;last=r.position}
+ assert.ok(Math.max(...counts)-Math.min(...counts)<=1);
 });
 
 test('preview game wires storage adapter before economy runtime and keeps production game isolated',()=>{
@@ -62,7 +62,42 @@ test('preview game wires storage adapter before economy runtime and keeps produc
  assert.ok(production.includes('math-production-points.js'));
  assert.ok(!production.includes('economy.js?v='));
  for(const page of [preview,production]){
-  assert.match(page,/\.titles li\{padding:13px 10px;font-size:14px;line-height:1\.6\}/);
-  assert.doesNotMatch(page,/\.titles li\{padding:3px\}/);
+  assert.match(page,/\.titles #tower li\{font-size:14px;line-height:1\.6\}/);
+  assert.match(page,/\.titles #tower \.mq-badge\{--badge-size:32px;width:32px;height:32px\}/);
+  assert.match(page,/\.titles li\{padding:3px\}/);
  }
+});
+
+
+test('question decks visit every item once, avoid adjacent types, and avoid the previous cycle boundary',()=>{
+ let seed=39173,previousType='';const rng=()=>{seed=(seed*48271)%2147483647;return seed/2147483647};
+ for(let cycle=0;cycle<8;cycle++){
+  const deck=model.shuffleQuestionDeck(questions,previousType,rng);
+  assert.equal(deck.length,questions.length);
+  assert.equal(new Set(deck.map(q=>q.id)).size,questions.length);
+  assert.notEqual(deck[0].type,previousType);
+  for(let i=1;i<deck.length;i++)assert.notEqual(deck[i-1].type,deck[i].type,`${cycle}:${i}`);
+  previousType=deck.at(-1).type;
+ }
+});
+
+test('correct option positions remain balanced and never repeat in a long run',()=>{
+ let seed=5421;const rng=()=>{seed=(seed*48271)%2147483647;return seed/2147483647};
+ let counts=[0,0,0],last=-1;
+ for(let i=0;i<questions.length*8;i++){
+  const q=questions[i%questions.length],result=model.randomizedChoiceOrder(q,counts,last,rng);
+  assert.equal(result.order[result.position],q.correct);
+  assert.equal(new Set(result.order).size,3);
+  if(last>=0)assert.notEqual(result.position,last);
+  counts=result.counts;last=result.position;
+ }
+ assert.ok(Math.max(...counts)-Math.min(...counts)<=1);
+});
+
+test('three-second automatic transition is scoped to successful exchange answers',()=>{
+ const game=readFileSync(new URL('../shared-src/site/math-new-game.js',import.meta.url),'utf8');
+ assert.match(game,/kind==='exchangeAssociation'&&ok\)autoNextTimer=setTimeout/);
+ assert.match(game,/\},3000\)/);
+ assert.match(game,/document\.addEventListener\('visibilitychange'/);
+ assert.match(game,/if\(!locked\)return;locked=false;clearAutoAdvance\(\);next\(\)/);
 });
