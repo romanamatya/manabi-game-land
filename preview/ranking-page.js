@@ -1,4 +1,4 @@
-import {legacyPlayerClient} from './legacy-player-client.js?v=math-concepts-20261028-2';
+import {legacyPlayerClient} from './legacy-player-client.js?v=cbb922213162';
 const $=id=>document.getElementById(id),api=window.ManabiLeaderboard,game=api.games.find(g=>g.id===new URLSearchParams(location.search).get('game'));
 let displayExamples=false,remote=null;
 function show(records){const rows=api.ranking(records,game.field);$('rows').replaceChildren(...rows.map(r=>{const tr=document.createElement('tr');if(r.rank===1)tr.className='first';for(const [i,text] of [r.rank+'位',r.nickname+'さん',r.best+'問連続'].entries()){const td=document.createElement('td');if(i===1&&window.ManabiIdentity){td.append(window.ManabiIdentity.identity(r.person,{size:38,badgeSize:38,game:game.id}))}else td.textContent=text;tr.append(td)}return tr}));$('table').hidden=!rows.length;$('empty').hidden=!!rows.length;$('empty').textContent='記録なし';}

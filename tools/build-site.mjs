@@ -1,15 +1,108 @@
-import fs from 'node:fs/promises';import path from 'node:path';import crypto from 'node:crypto';import vm from 'node:vm';import {fileURLToPath} from 'node:url';import {validateEnvironment,environmentScript} from './site-environment.mjs';
-const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..'),mode=process.argv[2]||'preview';if(!['preview','production'].includes(mode))throw Error('unknown-environment');const config=validateEnvironment(JSON.parse(await fs.readFile(path.join(root,'environments',mode+'.json'),'utf8'))),source=path.join(root,'shared-src/site'),out=path.join(root,mode==='preview'?'preview':'.release/production'),blocked=mode==='production'&&!config.productionReleaseApproved;
-if(out===root||mode==='production'&&!out.startsWith(path.join(root,'.release')+path.sep))throw Error('unsafe-production-output');
-const entries=[];async function walk(dir,rel=''){for(const e of await fs.readdir(dir,{withFileTypes:true})){const next=path.join(rel,e.name);if(e.isDirectory())await walk(path.join(dir,e.name),next);else{let original=await fs.readFile(path.join(dir,e.name),'utf8'),text=original;
-if(next==='environment.js')text=environmentScript(config);
-if(next==='profile-catalog.js'){const sandbox={window:{}};vm.runInNewContext(original,sandbox);const games=sandbox.window.ManabiProfileCatalog.filter(g=>config.gameIds.includes(g.id)).map(g=>({...g,rankingEnabled:config.rankingGameIds.includes(g.id)}));text='window.ManabiProfileCatalog='+JSON.stringify(games)+';\n';}
-if(next.endsWith('.html')){if(!text.includes('src="environment.js')&&!text.includes('src="../environment.js'))text=text.replace(/<head>/,'<head><script src="'+(next.startsWith('games/')?'../':'')+'environment.js"></script>');text=text.replace(/(<script[^>]+src="(?:\.\.\/)?economy-core\.js[^\"]*"><\/script>)/,'$1<script src="'+(next.startsWith('games/')?'../':'')+'storage-adapters.js"></script>');if(mode==='production'&&next==='index.html')text=text.replace(/<a class="mq-admin-login"[^>]*>[\s\S]*?<\/a>/g,'');if(mode==='production')text=text.replace(/<article\b[^>]*>[\s\S]*?<\/article>/g,part=>{const id=part.match(/games\/([^/"?]+)\.html/)?.[1];return id&&!config.gameIds.includes(id)?'':part});if(mode==='production'&&next.startsWith('games/')&&!config.gameIds.includes(path.basename(next,'.html')))text='<!doctype html><html lang="ja"><meta charset="utf-8"><title>未公開</title><p>このゲームは本番公開されていない。</p></html>';if(blocked){text=text.replace(/<script\b([^>]*)>/g,(m,a)=>'<script type="application/x-manabi-blocked"'+a.replace(/\btype="[^"]*"/g,'')+'>');text=text.replace('</body>','<section role="status" style="position:fixed;inset:0;background:white;z-index:2147483647;padding:3rem;font:20px system-ui"><h1>本番向け確認出力・未承認</h1><p>本番の認証・Rules・公開承認が未確認のため、全スクリプトを停止している。Firebaseへの通信とデータ保存は行わない。</p></section></body>');}}
-// One cache version for the entire generated dependency graph.
-// Keep relative module dependencies on the same release as the page.
-text=text.replace(/([\"\'])(\.{1,2}\/[^\"\'\s?]+\.js)\1/g,'$1$2?v=math-concepts-20261028-2$1');
-text=text.replace(/(src="(?:\.\.\/)?environment\.js)"/g,'$1?v=math-concepts-20261028-2"');
-text=text.replace(/((?:[A-Za-z0-9_-]+)\.(?:js|css))\?v=[^"'\s<>]*/g,'$1?v=math-concepts-20261028-2');
-await fs.mkdir(path.dirname(path.join(out,next)),{recursive:true});await fs.writeFile(path.join(out,next),text);entries.push({path:next,sourceSHA256:crypto.createHash('sha256').update(original).digest('hex'),outputSHA256:crypto.createHash('sha256').update(text).digest('hex')});}}}
-await walk(source);const assetSource=path.join(root,mode==='preview'?'preview/assets':'assets');if(mode==='production'){try{await fs.cp(assetSource,path.join(out,'assets'),{recursive:true});}catch(e){if(e.code!=='ENOENT')throw e;}}
-await fs.writeFile(path.join(out,'BUILD-MANIFEST.json'),JSON.stringify({environment:mode,projectId:config.projectId,runtimeBlocked:blocked,playerSyncEnabled:false,publicRootTouched:false,files:entries},null,2)+'\n');console.log(`Generated ${entries.length} shared source files for ${mode}; runtimeBlocked=${blocked}; live production root untouched`);
+import fs from 'node:fs/promises';
+import path from 'node:path';
+import crypto from 'node:crypto';
+import vm from 'node:vm';
+import {fileURLToPath} from 'node:url';
+import {validateEnvironment, environmentScript} from './site-environment.mjs';
+
+const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+const mode = process.argv[2] || 'preview';
+if (!['preview', 'production'].includes(mode)) throw Error('unknown-environment');
+
+const config = validateEnvironment(JSON.parse(await fs.readFile(path.join(root, 'environments', `${mode}.json`), 'utf8')));
+const source = path.join(root, 'shared-src/site');
+const out = path.join(root, mode === 'preview' ? 'preview' : '.release/production');
+const blocked = mode === 'production' && !config.productionReleaseApproved;
+if (out === root || (mode === 'production' && !out.startsWith(path.join(root, '.release') + path.sep))) {
+  throw Error('unsafe-production-output');
+}
+
+async function listFiles(dir, rel = '') {
+  const result = [];
+  for (const entry of await fs.readdir(dir, {withFileTypes: true})) {
+    const next = path.join(rel, entry.name);
+    if (entry.isDirectory()) result.push(...await listFiles(path.join(dir, entry.name), next));
+    else result.push(next.split(path.sep).join('/'));
+  }
+  return result.sort();
+}
+
+const sourceFiles = await listFiles(source);
+const sourceDigests = new Map();
+for (const rel of sourceFiles) {
+  sourceDigests.set(rel, crypto.createHash('sha256').update(await fs.readFile(path.join(source, rel))).digest('hex'));
+}
+const buildId = crypto.createHash('sha256')
+  .update(JSON.stringify({mode, config, source: [...sourceDigests]}))
+  .digest('hex').slice(0, 12);
+
+const catalogContext = {window: {}};
+vm.runInNewContext(await fs.readFile(path.join(source, 'profile-catalog.js'), 'utf8'), catalogContext);
+const fullCatalog = catalogContext.window.ManabiProfileCatalog;
+const catalogById = new Map(fullCatalog.map(game => [game.id, game]));
+if (catalogById.size !== fullCatalog.length) throw Error('duplicate-game-id-in-catalog');
+for (const id of config.gameIds) if (!catalogById.has(id)) throw Error(`unknown-game-id:${id}`);
+for (const id of config.rankingGameIds) {
+  if (!config.gameIds.includes(id)) throw Error(`ranking-game-not-published:${id}`);
+}
+const releaseCatalog = config.gameIds.map(id => {
+  const game = catalogById.get(id);
+  return {id, name: game.name, field: game.field || `${id}BestStreak`, rankingEnabled: config.rankingGameIds.includes(id)};
+});
+
+const entries = [];
+for (const rel of sourceFiles) {
+  const original = await fs.readFile(path.join(source, rel), 'utf8');
+  let text = original;
+  if (rel === 'environment.js') text = environmentScript(config);
+  if (rel === 'profile-catalog.js') {
+    const games = config.gameIds.map(id => ({...catalogById.get(id), rankingEnabled: config.rankingGameIds.includes(id)}));
+    text = `window.ManabiProfileCatalog=${JSON.stringify(games)};\n`;
+  }
+  if (rel.endsWith('.html')) {
+    if (!text.includes('src="environment.js') && !text.includes('src="../environment.js')) {
+      text = text.replace('<head>', `<head><script src="${rel.startsWith('games/') ? '../' : ''}environment.js"></script>`);
+    }
+    text = text.replace(/(<script[^>]+src="(?:\.\.\/)?economy-core\.js[^\"]*"><\/script>)/, `$1<script src="${rel.startsWith('games/') ? '../' : ''}storage-adapters.js"></script>`);
+    if (mode === 'production' && rel === 'index.html') text = text.replace(/<a class="mq-admin-login"[^>]*>[\s\S]*?<\/a>/g, '');
+    if (mode === 'production') {
+      text = text.replace(/<article\b[^>]*>[\s\S]*?<\/article>/g, article => {
+        const id = article.match(/games\/([^/"?]+)\.html/)?.[1];
+        return id && !config.gameIds.includes(id) ? '' : article;
+      });
+      if (rel.startsWith('games/') && !config.gameIds.includes(path.basename(rel, '.html'))) {
+        text = '<!doctype html><html lang="ja"><meta charset="utf-8"><title>未公開</title><p>このゲームは本番公開されていない。</p></html>';
+      }
+    }
+    if (blocked) {
+      text = text.replace(/<script\b([^>]*)>/g, (match, attrs) => `<script type="application/x-manabi-blocked"${attrs.replace(/\btype="[^"]*"/g, '')}>`);
+      text = text.replace('</body>', '<section role="status" style="position:fixed;inset:0;background:white;z-index:2147483647;padding:3rem;font:20px system-ui"><h1>本番向け確認出力・未承認</h1><p>本番の認証・Rules・公開承認が未確認のため、全スクリプトを停止している。Firebaseへの通信とデータ保存は行わない。</p></section></body>');
+    }
+  }
+  // A source/config digest invalidates caches consistently across both environments.
+  const relativeModule = new RegExp(`([\"'])((?:\\.\\.?/)[^\"'\\s?]+\\.js)\\1`, 'g');
+  text = text.replace(relativeModule, `$1$2?v=${buildId}$1`);
+  text = text.replace(/(src="(?:\.\.\/)?environment\.js)"/g, `$1?v=${buildId}"`);
+  text = text.replace(/((?:[A-Za-z0-9_-]+)\.(?:js|css))\?v=[^"'\s<>]*/g, `$1?v=${buildId}`);
+  await fs.mkdir(path.dirname(path.join(out, rel)), {recursive: true});
+  await fs.writeFile(path.join(out, rel), text);
+  entries.push({path: rel, sourceSHA256: sourceDigests.get(rel), outputSHA256: crypto.createHash('sha256').update(text).digest('hex')});
+}
+
+if (mode === 'production') {
+  try { await fs.cp(path.join(root, 'assets'), path.join(out, 'assets'), {recursive: true}); }
+  catch (error) { if (error.code !== 'ENOENT') throw error; }
+}
+const manifest = {
+  buildId,
+  environment: mode,
+  projectId: config.projectId,
+  runtimeBlocked: blocked,
+  playerSyncEnabled: false,
+  publicRootTouched: false,
+  sourceRoot: 'shared-src/site',
+  gameCatalog: releaseCatalog,
+  files: entries
+};
+await fs.writeFile(path.join(out, 'BUILD-MANIFEST.json'), JSON.stringify(manifest, null, 2) + '\n');
+console.log(`Generated ${entries.length} shared source files for ${mode}; build=${buildId}; runtimeBlocked=${blocked}; live production root untouched`);
