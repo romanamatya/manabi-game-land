@@ -1,0 +1,7 @@
+{
+  "source": "production subject-selection HTML and repository production files",
+  "verifiedDate": "2026-10-28",
+  "gameIds": ["keisan", "pref-name", "pref-place", "alphabet", "distribution", "distribution2", "exchangeAssociation", "kotowaza"],
+  "rulesEvidence": "User-published distribution-only Rules, 2026-10-28 21:04 Console display; zero-record live test user-confirmed",
+  "rulesIndependentlyFetched": false
+}
