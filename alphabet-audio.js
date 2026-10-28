@@ -8,4 +8,3 @@ function create(synthesis,Utterance,onError=()=>{},AudioCtor,base='../assets/aud
 }
 window.AlphabetAudio={create};
 })();
-

@@ -14,4 +14,3 @@ function answerFirst(state,value){if(state.stage!=='split')return {...state};con
 function finish(state,value,random=Math.random){if(state.stage!=='calculate')return {state:{...state},correct:false,completed:false};if(!['distributed','once','sign','factor'].includes(value))throw Error('invalid-answer');const q=question(state.queue[state.position]),correct=state.firstAnswer===q.n-100&&value==='distributed',streak=correct?state.streak+1:0;let queue=state.queue,position=state.position+1,cycle=state.cycle;if(position===64){queue=deck(random,state.queue[63]);position=0;cycle++}return {completed:true,correct,state:{...state,queue,position,cycle,stage:'split',firstAnswer:null,streak,best:Math.max(state.best,streak),points:state.points+(correct?1:0)}}}
 return {numbers,multipliers,ids,question,deck,splitText,method,choices,start,answerFirst,finish};
 });
-
