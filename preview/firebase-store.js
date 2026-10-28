@@ -1,4 +1,4 @@
-import {contractFor,normalizePlayer,legacyScorePatch,error} from './data-contract.js?v=preflight-20261028-1';
+import {contractFor,normalizePlayer,legacyScorePatch,error} from './data-contract.js?v=math-concepts-20261028-1';
 export function createFirestoreStore(mode,F,db,{catalog=[]}={}){
  // Rules can reject a stale backup before a transaction conflict is retried.
  // Retry the complete read/write transaction; never relax validation or write outside it.

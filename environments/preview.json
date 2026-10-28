@@ -22,7 +22,9 @@
     "distribution",
     "distribution2",
     "exchangeAssociation",
-    "kotowaza"
+    "kotowaza",
+    "multiplicationProperties",
+    "shapeExpressions"
   ],
   "rankingGameIds": [
     "keisan",
@@ -32,6 +34,8 @@
     "distribution",
     "kotowaza",
     "distribution2",
-    "exchangeAssociation"
+    "exchangeAssociation",
+    "multiplicationProperties",
+    "shapeExpressions"
   ]
 }
