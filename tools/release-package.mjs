@@ -2,12 +2,22 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import crypto from 'node:crypto';
+import vm from 'node:vm';
 import {fileURLToPath} from 'node:url';
 const hash=b=>crypto.createHash('sha256').update(b).digest('hex');
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 const safe=p=>typeof p==='string'&&!p.startsWith('/')&&!p.split('/').includes('..')&&!p.includes('\\');
 const excluded=p=>/^(?:admin\.|control-room\.|spark-auth\.|spark-config\.|player-sync|qa\/)|review\.html$/.test(p);
 async function bytes(p){try{return await fs.readFile(p)}catch(e){if(e.code==='ENOENT')return null;throw e}}
+
+export function materializeProfileAssets(catalogSource,coreSource,profileSource){
+ const context={};context.window=context;vm.createContext(context);
+ for(const source of [catalogSource,coreSource,profileSource])vm.runInContext(source,context,{timeout:1000});
+ const profile=context.ManabiProfile;
+ if(!profile||!Array.isArray(profile.icons)||!Array.isArray(profile.frames)||!Array.isArray(profile.badges))throw Error('profile-registry-unavailable');
+ return [...new Set([...profile.icons,...profile.frames,...profile.badges].map(item=>item.image).filter(image=>typeof image==='string'))].sort();
+}
+
 export async function prepare({baseline=root,candidate=path.join(root,'.release/production'),output=path.join(root,'.release/site-package'),inventory,rules=path.join(root,'firebase/production-distribution-only.rules')}={}){
  baseline=path.resolve(baseline);candidate=path.resolve(candidate);output=path.resolve(output);
  if(!output.startsWith(path.join(root,'.release')+path.sep)||output===candidate||baseline===candidate)throw Error('unsafe-package-output');
@@ -31,7 +41,7 @@ export async function prepare({baseline=root,candidate=path.join(root,'.release/
  if(before){await fs.mkdir(path.dirname(path.join(output,'rollback',p)),{recursive:true});await fs.writeFile(path.join(output,'rollback',p),before);}
  }
  // New assets must already be present in the unchanged production asset tree.
- const missingAssets=[];const assets=new Set();for(const e of entries.filter(f=>f.path.endsWith('.html')||f.path.endsWith('.js'))){const text=await fs.readFile(path.join(candidate,e.path),'utf8');for(const match of text.matchAll(/(?:\.\.\/)?assets\/[A-Za-z0-9_./-]+\.(?:png|svg|jpg|mp3|woff2)/g))assets.add(match[0].replace(/^\.\.\//,''));}
+ const missingAssets=[];const registrySources=await Promise.all(['profile-catalog.js','economy-core.js','profile-model.js'].map(p=>fs.readFile(path.join(candidate,p),'utf8')));const assets=new Set(materializeProfileAssets(...registrySources));for(const e of entries.filter(f=>f.path.endsWith('.html')||f.path.endsWith('.js'))){const text=await fs.readFile(path.join(candidate,e.path),'utf8');for(const match of text.matchAll(/(?:\.\.\/)?assets\/[A-Za-z0-9_./-]+\.(?:png|svg|jpg|mp3|woff2)/g))assets.add(match[0].replace(/^\.\.\//,''));}
  for(const asset of assets){if(!safe(asset))throw Error('unsafe-asset-path');const before=await bytes(path.join(baseline,asset));if(before)continue;const next=await bytes(path.join(candidate,asset))||await bytes(path.join(root,'preview',asset));if(!next){missingAssets.push(asset);continue;}entries.push({path:asset,beforeSHA256:null,afterSHA256:hash(next)});await fs.mkdir(path.dirname(path.join(output,'forward',asset)),{recursive:true});await fs.writeFile(path.join(output,'forward',asset),next);}
  if(missingAssets.length)blockers.push('missing-production-assets:'+missingAssets.join(','));
  const plan={version:1,buildId:m.buildId,projectId:m.projectId,sourceRoot:m.sourceRoot,liveInventory:live,storage,rulesSHA256:hash(ruleText),runtimeBlocked:m.runtimeBlocked,blockers,ready:blockers.length===0,entries,productionTouched:false,firebaseContacted:false};
