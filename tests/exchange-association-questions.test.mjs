@@ -54,3 +54,15 @@ test('answer order is shuffled and balanced across positions',()=>{
  for(let n=0;n<3000;n++)counts[model.shuffledChoices(questions[n%questions.length],rng).indexOf(questions[n%questions.length].correct)]++;
  assert.ok(counts.every(n=>n>850&&n<1150),counts.join(','));
 });
+
+test('preview game wires storage adapter before economy runtime and keeps production game isolated',()=>{
+ const preview=readFileSync(new URL('../preview/games/exchangeAssociation.html',import.meta.url),'utf8');
+ const production=readFileSync(new URL('../games/exchangeAssociation.html',import.meta.url),'utf8');
+ assert.ok(preview.indexOf('storage-adapters.js')<preview.indexOf('economy.js'));
+ assert.ok(production.includes('math-production-points.js'));
+ assert.ok(!production.includes('economy.js?v='));
+ for(const page of [preview,production]){
+  assert.match(page,/\.titles li\{padding:13px 10px;font-size:14px;line-height:1\.6\}/);
+  assert.doesNotMatch(page,/\.titles li\{padding:3px\}/);
+ }
+});
