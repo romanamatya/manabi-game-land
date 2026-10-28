@@ -1,0 +1,15 @@
+(()=>{
+ const preview=window.MANABI_ENV?.preview===true;
+ const adminTest=true;
+ const storagePrefix='manabi_math_addition_candidate:';
+ if(adminTest)localStorage.setItem(storagePrefix+'mgl_nickname','テストプレイヤー');
+ function capture(){if(!preview||adminTest)return;const prefix='manabi_preview:',nickname=localStorage.getItem(prefix+'mgl_nickname');if(!nickname)return;let players=[];try{players=JSON.parse(localStorage.getItem(prefix+'leaderboard_players')||'[]');if(!Array.isArray(players))players=[]}catch{}let name={},place={},alphabet={};try{name=JSON.parse(localStorage.getItem(prefix+'mgl_pref-name')||'{}')}catch{}try{place=JSON.parse(localStorage.getItem(prefix+'mgl_pref-place')||'{}')}catch{}try{alphabet=JSON.parse(localStorage.getItem(prefix+'mgl_alphabet')||'{}')}catch{}let appearance={};try{appearance=JSON.parse(localStorage.getItem(prefix+'mgl_profile')||'{}')}catch{}const old=players.find(p=>p.nickname===nickname)||{};const player={nickname,appearance:{icon:appearance.icon,frame:appearance.frame,badge:appearance.badge},bestStreak:Math.max(Number(old.bestStreak)||0,Number(localStorage.getItem(prefix+'mgl_best'))||0),prefNameBestStreak:Math.max(Number(old.prefNameBestStreak)||0,Number(name.best)||0),prefPlaceBestStreak:Math.max(Number(old.prefPlaceBestStreak)||0,Number(place.best)||0),alphabetBestStreak:Math.max(Number(old.alphabetBestStreak)||0,Number(alphabet.best)||0)};players=players.filter(p=>p.nickname!==nickname);players.push(player);localStorage.setItem(prefix+'leaderboard_players',JSON.stringify(players));}
+ window.manabiStorage={getItem:key=>localStorage.getItem(storagePrefix+key),setItem:(key,value)=>{localStorage.setItem(storagePrefix+key,value);if(['mgl_profile','mgl_nickname','mgl_best','mgl_pref-name','mgl_pref-place','mgl_alphabet'].includes(key))capture()},removeItem:key=>localStorage.removeItem(storagePrefix+key)};
+
+ const nickname=window.manabiStorage.getItem('mgl_nickname')||'';
+ const registered=nickname.trim().length>0&&nickname.length<=12&&!/[<>\n\r]/.test(nickname);
+ const isHome=location.pathname==='/'||location.pathname.endsWith('/index.html');
+ if(!registered&&!isHome){document.documentElement.style.visibility='hidden';location.replace(new URL(location.pathname.includes('/games/')?'../index.html':'index.html',location.href).href)}
+ if(preview){capture()}
+ if(preview)document.addEventListener('DOMContentLoaded',()=>{document.title='【確認用】'+document.title;const badge=document.createElement('div');badge.textContent=adminTest?'テストプレイ · ランキングには記録しない':'確認用 · 本番には影響しない';badge.setAttribute('aria-label','本番と記録を分離した確認用サイト');Object.assign(badge.style,{position:'fixed',bottom:'5px',left:'8px',zIndex:'2000',padding:'4px 9px',background:'#fff6d8',border:'1px solid #dfc56c',borderRadius:'7px',color:'#665120',font:'11px system-ui',pointerEvents:'none'});document.body.append(badge)});
+})();
