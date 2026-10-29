@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="ja"><head><meta http-equiv="Content-Security-Policy" content="connect-src 'self'; form-action 'none'"><meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.gstatic.com; style-src 'self' 'unsafe-inline'; img-src 'self' data:; media-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'; frame-src 'none'; worker-src 'none'"><meta name="robots" content="noindex,nofollow"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<script src="../environment.js?v=4fa9564408fb"></script><script src="../environment-runtime.js?v=4fa9564408fb"></script><script src="../economy-core.js?v=4fa9564408fb"></script><script src="../storage-adapters.js?v=4fa9564408fb"></script><script src="../economy.js?v=4fa9564408fb"></script><script src="../profile-catalog.js?v=4fa9564408fb"></script><script src="../profile-model.js?v=4fa9564408fb"></script><script src="../identity-view.js?v=4fa9564408fb"></script><link rel="stylesheet" href="../profile.css?v=4fa9564408fb"><script defer src="../profile-ui.js?v=4fa9564408fb"></script><title>計算のきまり｜マナビクエスト</title><meta name="robots" content="noindex,nofollow">
+<style>
+*{box-sizing:border-box}body{margin:0;padding:16px;background:#f0f7fd;color:#203c57;font-family:system-ui,"Yu Gothic",sans-serif}main{max-width:760px;margin:auto;background:white;border-radius:24px;padding:clamp(16px,4vw,30px);box-shadow:0 8px 28px #20486b16}a{color:#426b91}.hero{background:#e8f4ff;border-radius:18px;padding:18px;margin:14px 0}.hero h1{margin:4px 0;font-size:clamp(25px,5vw,36px)}.hero p{margin:4px 0}.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin:14px 0}.stat{border-radius:14px;text-align:center;padding:13px 4px}.stat:nth-child(1){background:#fff2d6}.stat:nth-child(2){background:#e8f4ff}.stat:nth-child(3){background:#e9f8ed}.stat small{display:block;font-size:clamp(11px,2.5vw,15px);font-weight:700}.stat b{font-size:clamp(26px,5vw,36px)}.rank,.work,.guide{border:1px solid #dfeaf3;border-radius:17px;padding:16px;margin:14px 0}.rank strong{font-size:20px}.progress{height:10px;background:#edf1f5;border-radius:12px;overflow:hidden;margin:12px 0 6px}.bar{height:100%;background:#e9ac41;width:0;transition:width .3s}.muted{color:#54718b;font-size:14px}.work{overflow-x:auto}.work-title{font-weight:700;color:#59748c;margin-bottom:12px}.line{display:grid;grid-template-columns:36px max-content;align-items:center;min-height:61px;width:max-content;min-width:100%;font-size:clamp(25px,5.5vw,39px)}.eq{color:#54718b;text-align:center}.expression{display:flex;align-items:center;gap:2px;white-space:nowrap}.paren,.num{color:#203c57}.op{font:inherit;border:2px solid #a8bdeb;border-radius:11px;background:#eef3ff;color:#23467c;padding:3px 8px;cursor:pointer;touch-action:manipulation}.op:active{transform:scale(.95)}.previous{border-bottom:1px solid #edf2f7}.previous .expression{opacity:.78}#msg{border-radius:14px;background:#eaf5ff;color:#24577d;padding:18px;text-align:center;font-weight:800;font-size:clamp(19px,3.8vw,24px);min-height:68px}#msg.correct{background:#e0f7e9;color:#17683c}#msg.wrong{background:#fff0e8;color:#9a4932}#msg.win{background:#fff1c7;color:#80520a}.guide{background:#f0f7fd}.guide h2{text-align:center;font-size:23px;margin:0 0 12px}.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.step{background:white;border-radius:12px;text-align:center;padding:12px 5px;font-weight:700;font-size:clamp(15px,3vw,19px)}.step b{display:block;color:#24649b;font-size:28px}.guide p{text-align:center;font-weight:700;margin-bottom:0}.actions{display:grid;gap:10px;margin-top:16px}.action{border:0;border-radius:13px;background:#466be2;color:white;font-size:20px;font-weight:700;padding:14px;cursor:pointer}.action.secondary{background:white;color:#315b8d;border:2px solid #9bb9e0}.action[hidden]{display:none}button:focus-visible{outline:3px solid #eead43;outline-offset:3px}
+
+@media (orientation:landscape) and (min-width:700px){
+html,body{width:100%;height:100%;overflow:hidden}
+body{padding:8px;background:#f0f7fd}
+main{height:calc(100dvh - 16px);max-width:none;display:grid;grid-template-columns:minmax(165px,1fr) minmax(460px,3.6fr) minmax(165px,1fr);grid-template-rows:42px minmax(0,1fr) auto;grid-template-areas:"header header header" "stats work rank" "guide msg actions";gap:8px;padding:10px 14px;overflow:hidden;box-shadow:none}
+main>a{position:absolute;top:17px;left:24px;font-size:12px;z-index:1}
+.hero{grid-area:header;margin:0;padding:4px 12px 4px 190px;border-radius:12px;text-align:center;display:flex;align-items:center;justify-content:center;gap:12px}
+.hero h1{font-size:23px;margin:0}.hero small,.hero p{display:none}
+.stats{grid-area:stats;display:flex;flex-direction:column;gap:8px;margin:0;justify-content:center}
+.stat{padding:9px 4px}.stat small{font-size:13px}.stat b{font-size:28px}
+.rank{grid-area:rank;align-self:center;margin:0;padding:12px}.rank strong{font-size:17px}
+.work{grid-area:work;align-self:stretch;justify-self:stretch;display:flex;flex-direction:column;align-items:center;justify-content:center;margin:0;padding:10px 8px;min-height:0;overflow:hidden}
+.work-title{font-size:13px;margin-bottom:4px}
+.line{min-height:min(12vh,72px);font-size:clamp(28px,3.5vw,48px);min-width:0}
+.expression{gap:1px}.op{padding:4px 9px;min-width:48px;min-height:48px}
+#msg{grid-area:msg;align-self:stretch;display:flex;align-items:center;justify-content:center;min-height:50px;padding:8px;font-size:19px}
+.guide{grid-area:guide;margin:0;padding:8px;background:#f0f7fd;align-self:stretch}
+.guide h2{font-size:16px;margin:0 0 6px}.steps{display:flex;flex-direction:column;gap:2px}.step{display:flex;align-items:center;justify-content:center;gap:8px;padding:1px 4px;font-size:14px}.step b{font-size:17px}.guide p{font-size:11px;margin:4px 0 0}
+.actions{grid-area:actions;margin:0;align-self:center}.action{font-size:15px;padding:10px 5px}
+}
+@media (orientation:landscape) and (min-width:700px) and (max-height:600px){
+main{grid-template-rows:35px minmax(0,1fr) auto;padding:6px}
+.line{min-height:11vh;font-size:clamp(25px,3vw,36px)}.op{min-width:40px;min-height:40px;padding:1px 6px}
+.guide p{display:none}.stat{padding:5px 2px}.rank{padding:7px}#msg{font-size:16px}
+}
+
+/* iPad landscape: edge-to-edge scores, centered aligned equations, ascending streak tower */
+.equation-rows{display:grid;grid-template-columns:1fr;justify-items:start;width:max-content;max-width:100%;margin:auto}
+.line{width:100%;min-width:0;grid-template-columns:40px max-content}
+.rank{display:flex;flex-direction:column;gap:7px}
+.tower-title{text-align:center;font-size:18px;font-weight:800}
+#tower{display:flex;flex-direction:column;gap:6px;flex:1;justify-content:space-around}
+.tower-step{border:1px solid #dce7f1;border-radius:10px;background:#f5f8fc;padding:7px 4px;text-align:center;line-height:1.3}
+.tower-step strong{display:block;font-size:clamp(11px,1.35vw,17px)}
+.tower-step small{display:block;font-size:11px}
+.tower-step.passed{border-color:#8ac8a2;background:#e5f6ea}
+.tower-step.current{outline:2px solid #e5ac46;outline-offset:-1px}
+@media (orientation:landscape) and (min-width:700px){
+body{padding:4px}
+main{height:calc(100dvh - 8px);padding:7px;grid-template-columns:minmax(155px,1.12fr) minmax(0,3.5fr) minmax(155px,1.15fr);column-gap:6px}
+.stats{align-self:stretch;justify-content:stretch;gap:7px}
+.stat{flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center;padding:8px 2px}
+.stat small{font-size:clamp(13px,1.45vw,19px)}
+.stat b{font-size:clamp(36px,4.2vw,58px);line-height:1.12}
+.rank{align-self:stretch;min-height:0;padding:8px;margin:0;overflow:hidden}
+.tower-title{font-size:clamp(14px,1.5vw,19px)}
+#tower{min-height:0;gap:4px}
+.tower-step{padding:4px 2px}
+.tower-step strong{font-size:clamp(12px,1.35vw,17px)}
+.tower-step small{font-size:10px}
+.work{align-items:center;justify-content:center;min-width:0}
+.equation-rows{max-width:100%;margin:auto}
+.line{width:100%;min-width:0;grid-template-columns:clamp(30px,3vw,44px) max-content;font-size:clamp(26px,3.5vw,48px)}
+}
+@media (orientation:landscape) and (min-width:700px) and (max-height:600px){
+.stat b{font-size:clamp(31px,3.3vw,43px)}
+.tower-step{padding:2px 1px}.tower-step strong{font-size:12px}
+.tower-step small{font-size:9px}
+}
+.mqlink{display:inline-flex;align-items:center;justify-content:center;gap:3px;text-decoration:none!important;white-space:nowrap;line-height:1.2;padding:3px 7px;border-radius:9px;background:#fff;color:#25374a;box-shadow:0 1px 4px #0002;font-size:clamp(14px,1.8vw,22px);font-weight:1000;letter-spacing:-.04em}.mqlink .mqdot{color:#ffce31;text-shadow:1px 1px #303039,-1px -1px #303039}.mqlink .mqchar{-webkit-text-stroke:.8px #252a3a;paint-order:stroke fill;text-shadow:1px 2px #252a3a}.mqlink:focus-visible{outline:3px solid #376de0}</style><style>.player-mini{font-size:12px;text-align:center;background:#e8f4ff;border-radius:9px;padding:4px}.player-mini a{font-weight:700}</style><style>
+.mqlink{position:fixed!important;inset:8px 12px auto auto!important;width:205px;height:58px;padding:0!important;background:transparent!important;box-shadow:none!important;z-index:1000;display:flex!important}.mqlink img{width:100%;height:100%;object-fit:contain}.mqheader,main>nav{height:0!important;margin:0!important;padding:0!important}header:not(.hero){min-height:60px;padding-right:225px!important}.wrap>h1{margin-top:-9px}body>main>h1{padding-top:36px}.overlay{position:fixed!important;inset:50% auto auto 50%!important;transform:translate(-50%,-50%);width:min(600px,70vw);min-height:170px;z-index:200;pointer-events:none}.mapbox path{vector-effect:non-scaling-stroke;stroke-width:.65}.mapbox .tools{z-index:2}.map-source{font-size:10px;margin:3px 0;line-height:1.3}.titles ul{flex:1;align-content:space-around}.feedback{padding:8px;font-size:14px}.feedback h2{font-size:18px}.feedback p{font-size:13px;margin:7px 0}.question{min-height:28px}.mapbox:focus-visible{outline:3px solid #426bd9}button:focus-visible{outline:3px solid #e7ab31;outline-offset:2px}@media(min-width:700px) and (orientation:landscape){body:has(main>.hero) main{padding-top:65px;grid-template-rows:36px minmax(0,1fr) auto}main>.hero{padding:0;text-align:center}main>nav{display:contents!important}main>a:not(.mqlink){top:27px}main:has(>.hero) .actions{min-height:52px}main:has(>.hero) .hero small{display:none}.mapcol{min-width:0}.layout{grid-template-columns:minmax(115px,16%) minmax(0,1.6fr) minmax(155px,.85fr) minmax(115px,16%)}}
+</style><style>[hidden]{display:none!important}.overlay.good{color:#17844d;background:#f0fff5f5;border:4px solid #48b779;border-radius:20px;display:flex;align-items:center;justify-content:center;font-size:48px;font-weight:900}.overlay.bad{color:#b32f2f;background:#fff4f4f5;border:4px solid #eb6262;border-radius:20px;display:flex;align-items:center;justify-content:center;font-size:48px;font-weight:900}</style></head><body data-score-game="keisan"><main><nav style="display:flex;justify-content:center;margin-bottom:8px"><a class="mqlink" href="../index.html" aria-label="マナビクエストのトップへ戻る"><img src="../assets/title.png" alt="マナビクエスト"></a></nav>
+<a href="../math.html">← ゲーム選択にもどる</a>
+<header class="hero"><small>マナビクエスト</small><h1>🧮 計算のきまり</h1><p>計算する記号をタップして、ポイントを集めよう！</p></header>
+<div class="stats"><div class="stat"><small>⭐ ポイント</small><b id="points">0</b></div><div class="stat"><small>🔥 連続正解</small><b id="streak">0</b></div><div class="stat"><small>🏆 最高記録</small><b id="best">0</b></div></div>
+<section class="rank" aria-label="連続正解の称号タワー"><div class="tower-title">🚀 称号タワー</div><div id="tower"></div></section>
+<section class="work" id="work" aria-label="計算式"></section>
+<div id="msg" role="status" aria-live="polite">どの記号から計算する？</div>
+<section class="guide"><h2>💡 計算する順番</h2><div class="steps"><div class="step"><b>①</b>（ ）の中</div><div class="step"><b>②</b>×・÷</div><div class="step"><b>③</b>＋・－</div></div><p>同じ順番なら、左から計算。</p></section>
+<div class="actions"><button class="action" id="next" hidden>次の問題 ▶</button><button class="action secondary" id="retry" hidden>↻ 間違えた問題に再チャレンジ</button></div>
+</main><div class="overlay" id="resultOverlay" role="status" aria-live="polite" hidden></div><script>
+const signs=['＋','－','×','÷'],rand=(a,b)=>Math.floor(Math.random()*(b-a+1))+a;
+const titles=[{at:20,name:'計算博士',icon:'👑'},{at:10,name:'計算名人',icon:'🏅'},{at:5,name:'計算の達人',icon:'🥉'},{at:3,name:'計算ルーキー',icon:'⭐'},{at:0,name:'スタート',icon:'🌱'}];
+let pointContext=null,pointSteps=[];let current,original,history=[],points=Number(window.manabiStorage.getItem("mgl_points")||0),streak=0,best=Number(window.manabiStorage.getItem("mgl_best")||0),mistake=false,finished=false,retryMode=false,missed=[],awarded=new Set(),questionId=0,activeId=0,advanceTimer=null;
+const clone=s=>({n:[...s.n],o:[...s.o],l:s.l,r:s.r});
+function calc(a,b,o){return o===0?a+b:o===1?a-b:o===2?a*b:a/b}
+function priority(s){const ids=s.o.map((_,i)=>i).filter(i=>s.l<0||(i>=s.l&&i<s.r));return ids.find(i=>s.o[i]>=2)??ids[0]??-1}
+function reduce(s,i){const n=[...s.n],o=[...s.o];n.splice(i,2,calc(n[i],n[i+1],o[i]));o.splice(i,1);let l=s.l,r=s.r;if(l>=0){if(i>=l&&i<r){r--;if(l===r){l=-1;r=-1}}else if(i<l){l--;r--}}return {n,o,l,r}}
+function valid(s){let x=clone(s);while(x.o.length){const i=priority(x);if(i<0)return false;const v=calc(x.n[i],x.n[i+1],x.o[i]);if(!Number.isInteger(v)||v<0||v>999)return false;x=reduce(x,i)}return true}
+function generate(){for(let k=0;k<20000;k++){const n=Array.from({length:4},()=>rand(1,12)),o=Array.from({length:3},()=>rand(0,3)),size=Math.random()<.75?rand(2,3):0,l=size?rand(0,4-size):-1,s={n,o,l,r:size?l+size-1:-1};if(o.some(x=>x<2)&&o.some(x=>x>=2)&&valid(s))return s}return {n:[8,6,2,3],o:[0,3,2],l:1,r:3}}
+function parts(s){const out=[];s.n.forEach((n,i)=>{if(i===s.l)out.push(['paren','（']);out.push(['num',String(n)]);if(i===s.r)out.push(['paren','）']);if(i<s.o.length)out.push(['op',signs[s.o[i]],i])});return out}
+function row(s,index,interactive){const line=document.createElement('div');line.className='line'+(interactive?'':' previous');const eq=document.createElement('span');eq.className='eq';eq.textContent=index?'＝':'';line.append(eq);const exp=document.createElement('div');exp.className='expression';for(const [kind,val,i] of parts(s)){const el=document.createElement(kind==='op'&&interactive?'button':'span');el.className=kind;el.textContent=val;if(kind==='op'&&interactive){el.type='button';el.setAttribute('aria-label',val+' を計算');el.onclick=()=>choose(i)}exp.append(el)}line.append(exp);return line}
+let overlayTimer;function flash(ok){const el=document.getElementById('resultOverlay');clearTimeout(overlayTimer);el.textContent=ok?'⭕ 正解！':'❌ 不正解';el.className='overlay '+(ok?'good':'bad');el.hidden=false;overlayTimer=setTimeout(()=>el.hidden=true,1200)}function message(t,kind=''){const m=document.getElementById('msg');m.className=kind;m.textContent=t}
+function render(){const w=document.getElementById('work');w.replaceChildren();const rows=document.createElement('div');rows.className='equation-rows';history.forEach((s,i)=>rows.append(row(s,i,false)));rows.append(row(current,history.length,!finished));w.append(rows);document.getElementById('points').textContent=window.ManabiEconomy.balance('keisan');document.getElementById('streak').textContent=streak;document.getElementById('best').textContent=best;const tower=document.getElementById('tower');tower.replaceChildren();for(const t of titles){const step=document.createElement('div');step.dataset.need=t.at;step.className='tower-step'+(streak>=t.at?' passed':'')+(streak>=t.at&&!titles.some(x=>x.at>t.at&&x.at<=streak)?' current':'');const name=document.createElement('strong');name.textContent=(t.at?'':t.icon+' ')+t.name;const count=document.createElement('small');count.textContent=t.at?t.at+'問連続':'スタート';step.append(name,count);tower.append(step)}document.getElementById('next').hidden=!finished||!mistake;document.getElementById('retry').hidden=!finished||!missed.length;document.getElementById('retry').textContent='↻ 間違えた問題に再チャレンジ（'+missed.length+'問）'}
+function hint(s){return s.l>=0?'まずは（ ）の中から考えよう！':s.o.some(x=>x>=2)?'× と ÷ を先に計算しよう！':'＋ と － は左から順番に計算しよう！'}
+function choose(i){if(finished)return;pointSteps.push(i);if(i!==priority(current)){flash(false);mistake=true;streak=0;message('計算の順番を確認。'+hint(current),'wrong');render();return}history.push(clone(current));current=reduce(current,i);if(!current.o.length){flash(true);finished=true;const win=!mistake&&!awarded.has(activeId);window.ManabiEconomy.answer(pointContext,pointSteps);if(win){streak++;best=Math.max(best,streak);awarded.add(activeId);window.manabiStorage.setItem('mgl_best',String(best));if(window.mglSaveScore)window.mglSaveScore(points,best)}if(mistake){if(!missed.some(x=>x.id===activeId))missed.push({id:activeId,s:clone(original)});message('計算終了。次の問題へ。','wrong')}else{missed=missed.filter(x=>x.id!==activeId);message(win?'🎉 正解！':'計算終了。','win')}}else message('次の計算へ。','correct');render();if(finished&&!mistake){clearTimeout(advanceTimer);advanceTimer=setTimeout(()=>{if(finished&&activeId===completedId)newGame()},1500);const completedId=activeId}}
+function start(s,id,retry){clearTimeout(advanceTimer);pointSteps=[];pointContext=window.ManabiEconomy.begin('keisan',s);current=clone(s);original=clone(s);activeId=id;history=[];mistake=false;finished=false;retryMode=retry;message(retry?'間違えた問題をもう一度。':'どの記号から計算する？');render()}
+function newGame(){const s=generate();start(s,++questionId,false)}
+document.getElementById('next').onclick=newGame;
+document.getElementById('retry').onclick=()=>{if(!finished||!missed.length)return;const entry=missed[0];start(entry.s,entry.id,true)};
+newGame();window.addEventListener('manabi-remote-best',e=>{best=Math.max(best,e.detail);render()});
+</script><script type="module" src="../social-score-sync.js?v=4fa9564408fb"></script></body></html>
+
+
