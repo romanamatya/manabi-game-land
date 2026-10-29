@@ -1,5 +1,6 @@
-import {validateBackend,contractFor} from './data-contract.js?v=f427bef8ead0';
-import {createFirestoreStore} from './firebase-store.js?v=f427bef8ead0';
+import {createManagementStore} from './management-store.js?v=6b47ef680515';
+import {validateBackend,contractFor} from './data-contract.js?v=6b47ef680515';
+import {createFirestoreStore} from './firebase-store.js?v=6b47ef680515';
 const config = window.MANABI_SPARK_CONFIG;
 const error = code => Object.assign(new Error(code), {code});
 const validName = value => typeof value === 'string' && value === value.trim() && value.length >= 1 && value.length <= 12 && !/[<>\r\n]/.test(value);
@@ -18,6 +19,8 @@ export function errorText(e) {
     'admin-required': '管理者として認証されていない。',
     'session-revoked': '管理セッションが終了した。少し待って、パスワードで入り直して。',
     'rename-not-enabled': '名前変更は切り替え確認待ちのため停止中。閲覧は利用できる。',
+    'management-not-enabled':'管理機能の追加Rulesは確認待ち。既存のプレイヤー管理は引き続き利用できる。',
+    'device-only-ranking':'このゲームは端末保存のみ。共有ランキングのリセット対象外。',
     'feature-unverified': 'この機能は基盤の確認後に接続するため、現在は利用できない。',
     'auth/weak-password': '新しいパスワードは12文字以上にして。',
     'auth/requires-recent-login': '現在のパスワードで入り直してから操作して。',
@@ -60,6 +63,7 @@ export async function createAdminClient(c, [appSdk, A, F]) {
 export function createAdminOperations(c,{auth,db},A,F) {
   const contract=validateBackend(c,{requireEnabled:false}),alias=contract.alias;
   const store=createFirestoreStore(contract.mode,F,db,{catalog:window.ManabiProfileCatalog||[]});
+  const management=createManagementStore(contract.mode,F,db,{players:cursor=>store.list(cursor),rankingGameIds:c.managedRankingGameIds||[]});
   const ref=(kind,id)=>F.doc(db,kind==='players'?contract.players:contract.base+'/'+kind,id);
   const col=kind=>F.collection(db,kind==='players'?contract.players:contract.base+'/'+kind);
   const plain=value=>value?.toMillis?value.toMillis():Array.isArray(value)?value.map(plain):value&&typeof value==='object'?Object.fromEntries(Object.entries(value).map(([k,v])=>[k,plain(v)])):value;
@@ -86,11 +90,14 @@ export function createAdminOperations(c,{auth,db},A,F) {
         list('players'),
         F.getDocsFromServer(F.query(col('audit'), F.orderBy('at', 'desc'), F.limit(100)))
       ]);
-      return {players: players.rows, playerCursor: players.cursor, audit: history.docs.map(d => plain({...d.data(), id: d.id})), games: [], rankings: [], campaigns: [], backups: [], notice: null};
+      const more=c.managementEnabled===true?await management.snapshot():{games:(window.ManabiProfileCatalog||[]).map(g=>({id:g.id,published:true,generation:0,rankingSupported:false})),rankings:[],campaigns:[],backups:[],notice:null,managementAudit:[]};
+      const rankings=more.rankings||[];
+      return {players:players.rows,playerCursor:players.cursor,...more,rankings,managementReady:c.managementEnabled===true,audit:[...history.docs.map(d=>plain({...d.data(),id:d.id})),...more.managementAudit].sort((a,b)=>(b.at||0)-(a.at||0)).slice(0,100)};
     }
     if (action === 'admin:players') return list('players', input.cursor);
     if (input.confirm !== true) throw error('invalid-input');
     if (action === 'admin:rename') return rename(input);
+    if(['visibility','campaign','notice','reset','rankingBackup'].some(v=>action==='admin:'+v)){if(c.managementEnabled!==true)throw error('management-not-enabled');const user=await verify();return management.mutate(user,action.slice(6),input);}
     throw error('feature-unverified');
   }
 

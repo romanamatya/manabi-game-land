@@ -37,5 +37,7 @@
     "exchangeAssociation",
     "multiplicationProperties",
     "shapeExpressions"
-  ]
+  ],
+  "managementEnabled": false,
+  "managedRankingGameIds": []
 }
