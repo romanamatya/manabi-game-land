@@ -1,4 +1,4 @@
-import {GAME_IDS,policyFor,normalPolicy} from './management-model.js?v=e58f88243579';
+import {GAME_IDS,policyFor,normalPolicy} from './management-model.js?v=0d24843cdf01';
 const fresh=new Set();let settings=new Map(),connected=false,loaded=false,pending;
 const current=()=>location.pathname.includes('/games/')?location.pathname.split('/').at(-1).replace('.html',''):null;
 function gate(error=false){const id=current();if(!id)return;
