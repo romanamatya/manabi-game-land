@@ -1,0 +1,89 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /players/{playerId} {
+      // ランキングはログインした人が見られる
+      allow read: if request.auth != null;
+
+      // Distribution-only proposal. No administrator paths or permissions added.
+      function validDistribution() {
+        return request.resource.data.distributionBestStreak is int
+          && request.resource.data.distributionBestStreak >= 0;
+      }
+      // 自分のデータだけ登録できる
+      allow create: if (!request.resource.data.keys().hasAny(['distributionBestStreak']) || validDistribution())
+        && request.auth != null
+        && request.auth.uid == playerId
+        && request.resource.data.keys().hasOnly([
+          'nickname',
+          'points',
+          'bestStreak',
+          'prefNameBestStreak',
+          'prefPlaceBestStreak',
+          'alphabetBestStreak',
+          'distributionBestStreak',
+          'appearance',
+          'updatedAt'
+        ])
+        && request.resource.data.nickname is string
+        && request.resource.data.nickname.size() > 0
+        && request.resource.data.nickname.size() <= 12;
+
+      // 自分のデータだけ更新できる
+      allow update: if (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['distributionBestStreak'])
+          || (request.resource.data.keys().hasAny(['distributionBestStreak']) && validDistribution()
+            && request.resource.data.distributionBestStreak >= resource.data.get('distributionBestStreak', 0)))
+        && request.auth != null
+        && request.auth.uid == playerId
+        && request.resource.data.keys().hasOnly([
+          'nickname',
+          'points',
+          'bestStreak',
+          'prefNameBestStreak',
+          'prefPlaceBestStreak',
+          'alphabetBestStreak',
+          'distributionBestStreak',
+          'appearance',
+          'updatedAt'
+        ])
+        && request.resource.data.nickname is string
+        && request.resource.data.nickname.size() > 0
+        && request.resource.data.nickname.size() <= 12;
+
+      // 削除は禁止
+      allow delete: if false;
+    }
+    // PROPOSAL ONLY: production authority provisioning and activation require separate approval.
+    function chAdmin(){let a=get(/databases/$(database)/documents/productionAdmin/v1/private/admin).data;return request.auth!=null && request.auth.token.firebase.sign_in_provider=='password' && a.enabled==true && a.uid==request.auth.uid && request.auth.token.auth_time*1000>get(/databases/$(database)/documents/productionAdmin/v1/private/revocation).data.after.toMillis();}
+    function chNameOK(n){return n is string && n.size()>0 && n.size()<=12 && !n.matches('.*[<>\\r\\n].*');}
+    // 120-second protocol proposal. Player documents and legacy score fields are never changed.
+    // Public control: season UUID, 120 seconds, protocol 2; contains no player PII.
+    // Runs/results are owner/admin private. Entries contain nickname/icon/badge and score only.
+    function chGame(g){return g in ['keisan','pref-name','pref-place','alphabet','distribution','distribution2','exchangeAssociation','kotowaza','multiplicationProperties','shapeExpressions'];}
+    function chGames(g){return g is list && g.size()==10 && g.toSet().size()==10 && g.hasOnly(['keisan','pref-name','pref-place','alphabet','distribution','distribution2','exchangeAssociation','kotowaza','multiplicationProperties','shapeExpressions']);}
+    function chOwner(u){return request.auth!=null && request.auth.uid==u && request.auth.token.firebase.sign_in_provider=='anonymous';}
+    function chReady(){let v=get(/databases/$(database)/documents/productionAdmin/v1/challengeVerification/ready).data;return v.enabled==true && v.protocol==2 && v.durationSeconds==120 && chGames(v.games);}
+    function chShape(s){return s.keys().hasOnly(['protocol','uid','game','season','attemptId','durationSeconds','phase','startedAt','deadline','sequence','streak','best','questionId','correct']) && s.protocol==2 && s.durationSeconds==120 && s.uid is string && s.uid.size()>0 && s.uid.size()<=128 && chGame(s.game) && s.season is string && s.season.size()>0 && s.season.size()<=64 && s.attemptId is string && s.attemptId.size()>0 && s.attemptId.size()<=64 && s.startedAt is timestamp && (s.deadline==null||s.deadline is timestamp) && s.phase in ['starting','running','ended'] && s.sequence is int && s.sequence>=0 && s.sequence<=10000 && s.streak is int && s.streak>=0 && s.streak<=s.sequence && s.best is int && s.best>=s.streak && s.best<=s.sequence && s.questionId is string && s.questionId.size()<=64 && s.correct is bool;}
+    function chSeason(s){return get(/databases/$(database)/documents/productionAdmin/v1/challengeControl/current).data.season==s && chReady();}
+    function chEarned(u,g){let p=get(/databases/$(database)/documents/players/$(u)).data;let fields={'keisan':'bestStreak','pref-name':'prefNameBestStreak','pref-place':'prefPlaceBestStreak','alphabet':'alphabetBestStreak','distribution':'distributionBestStreak','distribution2':'distribution2BestStreak','exchangeAssociation':'exchangeAssociationBestStreak','kotowaza':'kotowazaBestStreak','multiplicationProperties':'multiplicationPropertiesBestStreak','shapeExpressions':'shapeExpressionsBestStreak'};return p.get(fields[g],0)>={'keisan':20,'pref-name':47,'pref-place':47,'alphabet':26,'distribution':25,'distribution2':25,'exchangeAssociation':25,'kotowaza':20,'multiplicationProperties':25,'shapeExpressions':25}[g];}
+    function chStart(s){return chShape(s) && chOwner(s.uid) && chSeason(s.season) && chEarned(s.uid,s.game) && s.phase=='starting' && s.startedAt==request.time && s.deadline==null && s.sequence==0 && s.streak==0 && s.best==0 && s.questionId=='' && s.correct==false;}
+    function chUpdate(o,s){return chShape(s) && chOwner(s.uid) && s.uid==o.uid && s.game==o.game && s.season==o.season && s.attemptId==o.attemptId && s.startedAt==o.startedAt && chSeason(s.season) && (
+      o.phase=='starting' && s.diff(o).affectedKeys().hasOnly(['phase','deadline']) && s.phase=='running' && s.deadline==o.startedAt+duration.value(120,'s')
+      || o.phase=='running' && s.phase=='running' && request.time<o.deadline && s.deadline==o.deadline && s.diff(o).affectedKeys().hasOnly(['sequence','streak','best','questionId','correct']) && s.sequence==o.sequence+1 && s.questionId.size()>0 && s.questionId!=o.questionId && s.streak==(s.correct?o.streak+1:0) && s.best==(s.streak>o.best?s.streak:o.best)
+      || o.phase=='running' && s.phase=='ended' && request.time>=o.deadline && s.diff(o).affectedKeys().hasOnly(['phase']));}
+    match /productionAdmin/v1/challengeVerification/ready {allow get:if request.auth!=null;allow list,write:if false;}
+    match /productionAdmin/v1/challengeControl/current {
+      allow get:if true;allow list,delete:if false;
+      allow create,update:if chAdmin() && chReady() && request.resource.data.keys().hasOnly(['protocol','durationSeconds','season','games','revision','at','backupId','auditId']) && request.resource.data.protocol==2 && request.resource.data.durationSeconds==120 && chGames(request.resource.data.games) && request.resource.data.season is string && request.resource.data.season.size()>0 && request.resource.data.season.size()<=64 && request.resource.data.backupId is string && request.resource.data.backupId.size()<=64 && request.resource.data.auditId is string && request.resource.data.auditId.size()<=64 && request.resource.data.revision is int && request.resource.data.revision==(resource==null?1:resource.data.revision+1) && request.resource.data.at==request.time && getAfter(/databases/$(database)/documents/productionAdmin/v1/challengeSeasonBackups/$(request.resource.data.backupId)).data.previous==(resource==null?null:resource.data) && getAfter(/databases/$(database)/documents/productionAdmin/v1/challengeSeasonAudit/$(request.resource.data.auditId)).data.season==request.resource.data.season && getAfter(/databases/$(database)/documents/productionAdmin/v1/challengeSeasonAudit/$(request.resource.data.auditId)).data.backupId==request.resource.data.backupId;
+    }
+    match /productionAdmin/v1/challengeSeasonBackups/{id} {allow read:if chAdmin();allow create:if chAdmin() && request.resource.data.keys().hasOnly(['actor','at','protocol','durationSeconds','previous','rows','games']) && request.resource.data.actor==request.auth.uid && request.resource.data.at==request.time && request.resource.data.protocol==2 && request.resource.data.durationSeconds==120 && chGames(request.resource.data.games) && request.resource.data.rows is list && request.resource.data.rows.size()<=1000 && getAfter(/databases/$(database)/documents/productionAdmin/v1/challengeControl/current).data.backupId==id;allow update,delete:if false;}
+    match /productionAdmin/v1/challengeSeasonAudit/{id} {allow read:if chAdmin();allow create:if chAdmin() && request.resource.data.keys().hasOnly(['actor','at','action','season','backupId','reason']) && request.resource.data.actor==request.auth.uid && request.resource.data.at==request.time && request.resource.data.action=='switchAll120' && request.resource.data.reason is string && request.resource.data.reason.size()>=2 && request.resource.data.reason.size()<=300 && request.resource.data.season is string && request.resource.data.season.size()<=64 && request.resource.data.backupId is string && request.resource.data.backupId.size()<=64 && getAfter(/databases/$(database)/documents/productionAdmin/v1/challengeControl/current).data.auditId==id;allow update,delete:if false;}
+    match /productionAdmin/v1/challengeRuns/{id} {allow get:if chOwner(resource.data.uid)||chAdmin();allow list:if chAdmin();allow create:if chStart(request.resource.data) && id==request.auth.uid+'_'+request.resource.data.game;allow update:if id==request.auth.uid+'_'+request.resource.data.game && (chUpdate(resource.data,request.resource.data) || resource.data.phase=='ended' && chStart(request.resource.data) && request.resource.data.attemptId!=resource.data.attemptId);allow delete:if false;}
+    function chResult(d){let s=getAfter(/databases/$(database)/documents/productionAdmin/v1/challengeRuns/$(d.uid+'_'+d.game)).data;return d.keys().hasOnly(['protocol','uid','game','season','attemptId','durationSeconds','best','at']) && chOwner(d.uid) && chShape(s) && s.phase=='ended' && s.protocol==2 && s.attemptId==d.attemptId && s.season==d.season && d.protocol==2 && d.durationSeconds==120 && d.best==s.best && d.at==request.time && chSeason(d.season);}
+    match /productionAdmin/v1/challengeResults/{id} {allow get:if chOwner(resource.data.uid)||chAdmin();allow list:if chAdmin();allow create:if chResult(request.resource.data) && request.resource.data.attemptId==id;allow update,delete:if false;}
+    function chEntry(d,old){let r=getAfter(/databases/$(database)/documents/productionAdmin/v1/challengeResults/$(d.attemptId)).data;return d.keys().hasOnly(['protocol','uid','game','season','attemptId','durationSeconds','best','at','nickname','icon','badge']) && chOwner(d.uid) && chSeason(d.season) && d.protocol==2 && d.durationSeconds==120 && chGame(d.game) && r.uid==d.uid && r.game==d.game && r.season==d.season && r.protocol==2 && r.durationSeconds==120 && r.at==request.time && d.at==request.time && d.best==(r.best>old?r.best:old) && chNameOK(d.nickname) && d.icon is string && d.icon.size()<=64 && d.badge is string && d.badge.size()<=64;}
+    match /productionAdmin/v1/challengeSeasons/{season}/entries/{id} {allow read:if request.auth!=null;allow create:if chEntry(request.resource.data,0) && request.resource.data.season==season && id==request.auth.uid+'_'+request.resource.data.game;allow update:if chEntry(request.resource.data,resource.data.best) && request.resource.data.season==season && id==request.auth.uid+'_'+request.resource.data.game && request.resource.data.uid==resource.data.uid && request.resource.data.game==resource.data.game;allow delete:if false;}
+
+  }
+}

@@ -39,5 +39,7 @@
     "shapeExpressions"
   ],
   "managementEnabled": true,
-  "managedRankingGameIds": []
+  "managedRankingGameIds": [],
+  "challenge120Enabled": true,
+  "seasonManagementEnabled": false
 }

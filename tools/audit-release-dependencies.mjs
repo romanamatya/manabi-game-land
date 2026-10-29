@@ -27,7 +27,7 @@ export async function audit({site,packageDir}){
   if(/\.png$/i.test(p)&&!b.subarray(0,8).equals(Buffer.from([137,80,78,71,13,10,26,10])))throw Error('invalid-png:'+p);
   if(/\.(?:html|css|js)$/i.test(p)){
    const s=b.toString();
-   if(p.endsWith('.html'))for(const m of s.matchAll(/\b(?:src|href|poster)\s*=\s*["']([^"']+)["']/g))resolve(p,m[1]);
+   if(p.endsWith('.html'))for(const m of s.replace(/(<script\b[^>]*>)[\s\S]*?<\/script>/gi,'$1</script>').matchAll(/\b(?:src|href|poster)\s*=\s*["']([^"']+)["']/g))resolve(p,m[1]);
    for(const m of s.matchAll(/url\(\s*["']?([^\s"')]+)["']?\s*\)/g))resolve(p,m[1]);
    for(const m of s.matchAll(/(?:import\s*\(|from\s+|fetch\s*\()\s*["']([^"']+)["']/g))resolve(p,m[1]);
    for(const m of s.matchAll(/["'`]((?:\.\.\/)?assets\/[A-Za-z0-9_./-]+\.(?:png|svg|jpe?g|webp|mp3|ogg|woff2?|json))["'`]/g))resolve(p,m[1]);

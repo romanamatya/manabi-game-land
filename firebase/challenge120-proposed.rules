@@ -1,0 +1,313 @@
+rules_version = '2';
+// Dedicated PREVIEW Firebase project only. Do not deploy this file to production.
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function identity() {
+      let owner = get(/databases/$(database)/documents/previewSpark/v1/private/admin).data;
+      return request.auth != null && request.auth.token.firebase.sign_in_provider == 'password'
+        && owner.enabled == true && owner.uid == request.auth.uid;
+    }
+    function admin() {
+      return identity() && request.auth.token.auth_time * 1000 >
+        get(/databases/$(database)/documents/previewSpark/v1/private/revocation).data.after.toMillis();
+    }
+    function nameOK(n) {
+      return n is string && n.size() >= 1 && n.size() <= 12
+        && !n.matches('.*[<>\\r\\n].*') && !n.matches('^\\s.*') && !n.matches('.*\\s$');
+    }
+    function auditOK(a, uid, auditId, old, next) {
+      return a.keys().hasOnly(['actor','at','uid','target','action','reason','backupId','beforeName','afterName'])
+        && a.actor == request.auth.uid && a.at == request.time && a.uid == uid
+        && a.target == 'players/' + uid && a.action == 'rename'
+        && a.reason is string && a.reason.size() >= 2 && a.reason.size() <= 300
+        && a.beforeName == old.nickname && a.afterName == next.nickname
+        && a.backupId == next.lastBackup && next.lastAudit == auditId;
+    }
+    function backupOK(b, uid, old) {
+      return b.keys().hasOnly(['actor','at','uid','target','kind','data'])
+        && b.actor == request.auth.uid && b.at == request.time && b.uid == uid
+        && b.target == 'players/' + uid && b.kind == 'rename' && b.data == old;
+    }
+    function renameOK(uid, old, next) {
+      let a = getAfter(/databases/$(database)/documents/previewSpark/v1/audit/$(next.lastAudit)).data;
+      let b = getAfter(/databases/$(database)/documents/previewSpark/v1/backups/$(next.lastBackup)).data;
+      return uid != request.auth.uid && nameOK(next.nickname) && next.nickname != old.nickname
+        && next.diff(old).affectedKeys().hasOnly(['nickname','lastAudit','lastBackup','adminUpdatedAt'])
+        && next.adminUpdatedAt == request.time
+        && !exists(/databases/$(database)/documents/previewSpark/v1/audit/$(next.lastAudit))
+        && !exists(/databases/$(database)/documents/previewSpark/v1/backups/$(next.lastBackup))
+        && auditOK(a, uid, next.lastAudit, old, next) && backupOK(b, uid, old);
+    }
+    match /previewSpark/v1/private/admin {
+      allow get: if identity();
+      allow list, write: if false; // Role provisioning is a console/IAM-only operation.
+    }
+    match /previewSpark/v1/private/revocation {
+      allow get: if identity();
+      allow update: if admin()
+        && request.resource.data.keys().hasOnly(['after','actor'])
+        && request.resource.data.after == request.time
+        && request.resource.data.after > resource.data.after
+        && request.resource.data.actor == request.auth.uid;
+      allow list, create, delete: if false;
+    }
+    match /previewSpark/v1/players/{uid} {
+      allow read: if admin();
+      allow update: if admin() && renameOK(uid, resource.data, request.resource.data);
+      allow create, delete: if false;
+    }
+    match /previewSpark/v1/audit/{id} {
+      allow read: if admin();
+      allow create: if admin()
+        && auditOK(request.resource.data, request.resource.data.uid, id,
+          get(/databases/$(database)/documents/previewSpark/v1/players/$(request.resource.data.uid)).data,
+          getAfter(/databases/$(database)/documents/previewSpark/v1/players/$(request.resource.data.uid)).data)
+        && getAfter(/databases/$(database)/documents/previewSpark/v1/players/$(request.resource.data.uid)).data.nickname
+           != get(/databases/$(database)/documents/previewSpark/v1/players/$(request.resource.data.uid)).data.nickname;
+      allow update, delete: if false;
+    }
+    match /previewSpark/v1/backups/{id} {
+      allow read: if admin();
+      allow create: if admin()
+        && backupOK(request.resource.data, request.resource.data.uid,
+          get(/databases/$(database)/documents/previewSpark/v1/players/$(request.resource.data.uid)).data)
+        && getAfter(/databases/$(database)/documents/previewSpark/v1/players/$(request.resource.data.uid)).data.lastBackup == id
+        && getAfter(/databases/$(database)/documents/previewSpark/v1/players/$(request.resource.data.uid)).data.nickname
+           != get(/databases/$(database)/documents/previewSpark/v1/players/$(request.resource.data.uid)).data.nickname;
+      allow update, delete: if false;
+    }
+
+    // Phase 2 player sync. Password-based admin Rules above remain unchanged.
+    function owner(uid) {
+      return request.auth != null && request.auth.uid == uid
+        && request.auth.token.firebase.sign_in_provider == 'anonymous';
+    }
+    function syncScope(scope) { return scope in ['players','syncTestPlayers']; }
+    function balancesOK(b) { return b is map && b.keys().hasAll(["japanese", "math", "social", "science", "english"]) && b.keys().hasOnly(["japanese", "math", "social", "science", "english"]) && b["japanese"] is int && b["japanese"] >= 0 && b["math"] is int && b["math"] >= 0 && b["social"] is int && b["social"] >= 0 && b["science"] is int && b["science"] >= 0 && b["english"] is int && b["english"] >= 0; }
+    function bestOK(b) { return b is map && b.keys().hasAll(["keisan", "pref-name", "pref-place", "alphabet", "kotowaza", "distribution"]) && b.keys().hasOnly(["keisan", "pref-name", "pref-place", "alphabet", "kotowaza", "distribution"]) && b["keisan"] is int && b["keisan"] >= 0 && b["pref-name"] is int && b["pref-name"] >= 0 && b["pref-place"] is int && b["pref-place"] >= 0 && b["alphabet"] is int && b["alphabet"] >= 0 && b["kotowaza"] is int && b["kotowaza"] >= 0 && b["distribution"] is int && b["distribution"] >= 0; }
+    function appearanceOK(p) {
+      let a=p.appearance;
+      let i=a.get('icon','cat'); let f=a.get('frame','plain');
+      let si=a.get('subjectIcons',{}); let sf=a.get('subjectFrames',{});
+      return a is map && a.keys().hasOnly(['icon','frame','badge','subjectIcons','subjectFrames','limitedOwned','limitedFramesOwned','volume','reduceMotion'])
+        && (i in ['cat','rabbit','penguin','robot','explorer','wizard','ninja','king'] || p.owned.hasAny([i]))
+        && (f in ['plain','star','crown'] || p.owned.hasAny([f]))
+        && (a.get('badge',null)==null || p.titles.hasAny([a.badge]))
+        && a.get('limitedOwned',[]).hasOnly(p.owned) && a.get('limitedFramesOwned',[]).hasOnly(p.owned)
+        && si is map && si.keys().hasOnly(['math','social','english','japanese'])
+        && (si.get('math',null)==null || si.math in ['icon-022','icon-007'] && p.owned.hasAny([si.math]))
+        && (si.get('social',null)==null || si.social in ['icon-031','icon-010'] && p.owned.hasAny([si.social]))
+        && (si.get('english',null)==null || si.english=='icon-032' && p.owned.hasAny([si.english]))
+        && (si.get('japanese',null)==null || si.japanese=='icon-023' && p.owned.hasAny([si.japanese]))
+        && sf is map && sf.keys().hasOnly(['math']) && (sf.get('math',null)==null || sf.math=='frame-11' && p.owned.hasAny(['frame-11']));
+    }
+    function shape(p,uid) {
+      return p.schemaVersion==2 && p.uid==uid && nameOK(p.nickname) && p.status in ['active','suspended']
+        && balancesOK(p.balances) && bestOK(p.best)
+        && p.titles is list && p.titles.size()<=100 && p.titles.hasOnly(["keisan:3", "keisan:5", "keisan:10", "keisan:20", "pref-name:1", "pref-name:5", "pref-name:10", "pref-name:20", "pref-name:30", "pref-name:47", "pref-place:1", "pref-place:5", "pref-place:10", "pref-place:20", "pref-place:30", "pref-place:47", "alphabet:1", "alphabet:5", "alphabet:10", "alphabet:15", "alphabet:20", "alphabet:26", "kotowaza:3", "kotowaza:5", "kotowaza:10", "kotowaza:15", "kotowaza:20", "distribution:5", "distribution:10", "distribution:15", "distribution:20", "distribution:25"])
+        && p.owned is list && p.owned.size()<=100 && p.owned.hasOnly(["cat", "crown", "explorer", "frame-01", "frame-02", "frame-03", "frame-04", "frame-05", "frame-06", "frame-07", "frame-08", "frame-09", "frame-10", "frame-11", "frame-12", "frame-13", "frame-14", "frame-15", "icon-005", "icon-006", "icon-007", "icon-008", "icon-009", "icon-010", "icon-011", "icon-012", "icon-013", "icon-014", "icon-015", "icon-016", "icon-017", "icon-018", "icon-019", "icon-021", "icon-022", "icon-023", "icon-024", "icon-025", "icon-026", "icon-027", "icon-028", "icon-029", "icon-030", "icon-031", "icon-032", "king", "ninja", "penguin", "plain", "rabbit", "robot", "star", "wizard"])
+        && p.revision is int && p.revision>=1 && p.appearanceRevision is int && p.appearanceRevision>=0
+        && p.lastDevice is string && p.lastDevice.size()>=10 && p.lastDevice.size()<=64 && appearanceOK(p);
+    }
+    function earnedTitles(b) { return (b["keisan"]>=20?["keisan:20", "keisan:10", "keisan:5", "keisan:3"]:(b["keisan"]>=10?["keisan:10", "keisan:5", "keisan:3"]:(b["keisan"]>=5?["keisan:5", "keisan:3"]:(b["keisan"]>=3?["keisan:3"]:[])))).concat((b["pref-name"]>=47?["pref-name:47", "pref-name:30", "pref-name:20", "pref-name:10", "pref-name:5", "pref-name:1"]:(b["pref-name"]>=30?["pref-name:30", "pref-name:20", "pref-name:10", "pref-name:5", "pref-name:1"]:(b["pref-name"]>=20?["pref-name:20", "pref-name:10", "pref-name:5", "pref-name:1"]:(b["pref-name"]>=10?["pref-name:10", "pref-name:5", "pref-name:1"]:(b["pref-name"]>=5?["pref-name:5", "pref-name:1"]:(b["pref-name"]>=1?["pref-name:1"]:[]))))))).concat((b["pref-place"]>=47?["pref-place:47", "pref-place:30", "pref-place:20", "pref-place:10", "pref-place:5", "pref-place:1"]:(b["pref-place"]>=30?["pref-place:30", "pref-place:20", "pref-place:10", "pref-place:5", "pref-place:1"]:(b["pref-place"]>=20?["pref-place:20", "pref-place:10", "pref-place:5", "pref-place:1"]:(b["pref-place"]>=10?["pref-place:10", "pref-place:5", "pref-place:1"]:(b["pref-place"]>=5?["pref-place:5", "pref-place:1"]:(b["pref-place"]>=1?["pref-place:1"]:[]))))))).concat((b["alphabet"]>=26?["alphabet:26", "alphabet:20", "alphabet:15", "alphabet:10", "alphabet:5", "alphabet:1"]:(b["alphabet"]>=20?["alphabet:20", "alphabet:15", "alphabet:10", "alphabet:5", "alphabet:1"]:(b["alphabet"]>=15?["alphabet:15", "alphabet:10", "alphabet:5", "alphabet:1"]:(b["alphabet"]>=10?["alphabet:10", "alphabet:5", "alphabet:1"]:(b["alphabet"]>=5?["alphabet:5", "alphabet:1"]:(b["alphabet"]>=1?["alphabet:1"]:[]))))))).concat((b["kotowaza"]>=20?["kotowaza:20", "kotowaza:15", "kotowaza:10", "kotowaza:5", "kotowaza:3"]:(b["kotowaza"]>=15?["kotowaza:15", "kotowaza:10", "kotowaza:5", "kotowaza:3"]:(b["kotowaza"]>=10?["kotowaza:10", "kotowaza:5", "kotowaza:3"]:(b["kotowaza"]>=5?["kotowaza:5", "kotowaza:3"]:(b["kotowaza"]>=3?["kotowaza:3"]:[])))))).concat((b["distribution"]>=25?["distribution:25", "distribution:20", "distribution:15", "distribution:10", "distribution:5"]:(b["distribution"]>=20?["distribution:20", "distribution:15", "distribution:10", "distribution:5"]:(b["distribution"]>=15?["distribution:15", "distribution:10", "distribution:5"]:(b["distribution"]>=10?["distribution:10", "distribution:5"]:(b["distribution"]>=5?["distribution:5"]:[])))))); }
+    function updateShape(old,next) {
+      return old.schemaVersion==2 && next.balances.keys()==old.balances.keys() && bestOK(next.best)
+        && next.titles is list && next.titles.size()<=100
+        && next.owned is list && next.owned.size()<=100
+        && (next.appearance==old.appearance || appearanceOK(next));
+    }
+    function counterOK(d) {
+      return d.keys().hasOnly(['earned','seedBalances','revision','updatedAt']) && balancesOK(d.earned) && d.seedBalances is map
+        && d.updatedAt==request.time && d.revision is int;
+    }
+    function oldEarned(scope,uid,id) {
+      return exists(/databases/$(database)/documents/previewSpark/v1/$(scope)/$(uid)/devices/$(id))
+        ? get(/databases/$(database)/documents/previewSpark/v1/$(scope)/$(uid)/devices/$(id)).data.earned : {"japanese": 0, "math": 0, "social": 0, "science": 0, "english": 0};
+    }
+    function syncChange(scope,uid,old,next) {
+      let d=getAfter(/databases/$(database)/documents/previewSpark/v1/$(scope)/$(uid)/devices/$(next.lastDevice)).data;
+      let e=oldEarned(scope,uid,next.lastDevice);
+      return updateShape(old,next) && old.status=='active' && next.revision==old.revision+1 && next.updatedAt==request.time
+        && next.diff(old).affectedKeys().hasOnly(['balances','best','titles','owned','appearance','appearanceRevision','revision','lastDevice','updatedAt','lastPlayedAt'])
+        && next.lastPlayedAt==request.time && d.revision==next.revision
+        && next.balances["japanese"]==old.balances["japanese"]+d.earned["japanese"]-e["japanese"] && next.balances["math"]==old.balances["math"]+d.earned["math"]-e["math"] && next.balances["social"]==old.balances["social"]+d.earned["social"]-e["social"] && next.balances["science"]==old.balances["science"]+d.earned["science"]-e["science"] && next.balances["english"]==old.balances["english"]+d.earned["english"]-e["english"] && next.best["keisan"] >= old.best["keisan"] && next.best["pref-name"] >= old.best["pref-name"] && next.best["pref-place"] >= old.best["pref-place"] && next.best["alphabet"] >= old.best["alphabet"] && next.best["kotowaza"] >= old.best["kotowaza"] && next.best["distribution"] >= old.best["distribution"]
+        && next.titles.hasAll(old.titles) && (next.titles==old.titles || next.titles.toSet().difference(old.titles.toSet()).hasOnly(earnedTitles(next.best)))
+        && next.owned.hasAll(old.owned) && (next.owned==old.owned || (next.owned.toSet().difference(old.owned.toSet()).hasOnly(["icon-022", "icon-031", "icon-010", "icon-032", "icon-023", "icon-007", "frame-11", "frame-14"]) && (!next.owned.hasAny(["icon-022"]) || old.owned.hasAny(["icon-022"]) || next.best["keisan"]>=20) && (!next.owned.hasAny(["icon-031"]) || old.owned.hasAny(["icon-031"]) || next.best["pref-name"]>=47) && (!next.owned.hasAny(["icon-010"]) || old.owned.hasAny(["icon-010"]) || next.best["pref-place"]>=47) && (!next.owned.hasAny(["icon-032"]) || old.owned.hasAny(["icon-032"]) || next.best["alphabet"]>=26) && (!next.owned.hasAny(["icon-023"]) || old.owned.hasAny(["icon-023"]) || next.best["kotowaza"]>=20) && (!next.owned.hasAny(["icon-007"]) || old.owned.hasAny(["icon-007"]) || next.best["distribution"]>=25) && (!next.owned.hasAny(["frame-11"]) || old.owned.hasAny(["frame-11"]) || next.best["distribution"]>=25) && (!next.owned.hasAny(["frame-14"]) || old.owned.hasAny(["frame-14"]) || next.best["pref-name"]>=30)))
+        && (next.appearance==old.appearance && next.appearanceRevision==old.appearanceRevision
+          || next.appearanceRevision==old.appearanceRevision+1);
+    }
+    function createPlayer(scope,uid,p) {
+      let d=getAfter(/databases/$(database)/documents/previewSpark/v1/$(scope)/$(uid)/devices/$(p.lastDevice)).data;
+      return shape(p,uid) && p.keys().hasOnly(['schemaVersion','uid','nickname','status','balances','best','titles','owned','appearance','appearanceRevision','revision','lastDevice','createdAt','updatedAt','lastPlayedAt','migration'])
+        && p.status=='active' && p.revision==1 && p.appearanceRevision==0 && p.createdAt==request.time && p.updatedAt==request.time && p.lastPlayedAt==request.time
+        && p.migration=={'source':'preview-local-v1','deviceId':p.lastDevice}
+        && d.revision==1 && p.balances["japanese"]==d.seedBalances["japanese"]+d.earned["japanese"] && p.balances["math"]==d.seedBalances["math"]+d.earned["math"] && p.balances["social"]==d.seedBalances["social"]+d.earned["social"] && p.balances["science"]==d.seedBalances["science"]+d.earned["science"] && p.balances["english"]==d.seedBalances["english"]+d.earned["english"];
+    }
+    function price(id) { return {"icon-005": 100, "icon-006": 100, "icon-008": 100, "icon-009": 100, "icon-011": 100, "icon-012": 100, "icon-013": 100, "icon-014": 100, "icon-015": 100, "icon-016": 100, "icon-017": 200, "icon-018": 200, "icon-019": 200, "icon-021": 200, "icon-024": 200, "icon-025": 200, "icon-026": 300, "icon-027": 300, "icon-028": 300, "icon-029": 300, "icon-030": 300, "frame-01": 50, "frame-02": 50, "frame-03": 50, "frame-04": 50, "frame-05": 50, "frame-06": 150, "frame-07": 150, "frame-08": 150, "frame-09": 150, "frame-10": 150, "frame-12": 300, "frame-13": 300, "frame-14": 300, "frame-15": 300}.get(id,0); }
+    function purchaseChange(scope,uid,old,next) {
+      let r=getAfter(/databases/$(database)/documents/previewSpark/v1/$(scope)/$(uid)/purchases/$(next.lastPurchase)).data;
+      return old.schemaVersion==2 && balancesOK(next.balances) && old.status=='active' && next.revision==old.revision+1 && next.updatedAt==request.time
+        && next.diff(old).affectedKeys().hasOnly(['balances','owned','revision','lastPurchase','updatedAt'])
+        && !exists(/databases/$(database)/documents/previewSpark/v1/$(scope)/$(uid)/purchases/$(next.lastPurchase))
+        && r.keys().hasOnly(['productId','subject','price','at','revision'])
+        && r.productId==next.lastPurchase && r.subject in ['japanese','math','social','english'] && r.price==price(r.productId) && r.price>0 && r.at==request.time && r.revision==next.revision
+        && !old.owned.hasAny([r.productId]) && next.owned.hasAll(old.owned) && next.owned.hasAny([r.productId]) && next.owned.size()==old.owned.size()+1
+        && next.balances["japanese"]==old.balances["japanese"]-(r.subject=="japanese"?r.price:0) && next.balances["math"]==old.balances["math"]-(r.subject=="math"?r.price:0) && next.balances["social"]==old.balances["social"]-(r.subject=="social"?r.price:0) && next.balances["science"]==old.balances["science"]-(r.subject=="science"?r.price:0) && next.balances["english"]==old.balances["english"]-(r.subject=="english"?r.price:0);
+    }
+    match /previewSpark/v1/{scope}/{uid} {
+      allow get: if syncScope(scope) && owner(uid);
+      allow create: if syncScope(scope) && owner(uid) && createPlayer(scope,uid,request.resource.data);
+      allow update: if syncScope(scope) && owner(uid) && (request.resource.data.diff(resource.data).affectedKeys().hasAny(['lastPurchase']) ? purchaseChange(scope,uid,resource.data,request.resource.data) : syncChange(scope,uid,resource.data,request.resource.data));
+      match /devices/{id} {
+        allow get: if syncScope(scope) && (owner(uid) || admin());
+        allow create, update: if syncScope(scope) && owner(uid) && counterOK(request.resource.data)
+          && (exists(/databases/$(database)/documents/previewSpark/v1/$(scope)/$(uid)/devices/$(id)) || balancesOK(request.resource.data.seedBalances))
+          && getAfter(/databases/$(database)/documents/previewSpark/v1/$(scope)/$(uid)).data.lastDevice==id
+          && getAfter(/databases/$(database)/documents/previewSpark/v1/$(scope)/$(uid)).data.revision==request.resource.data.revision
+          && (!exists(/databases/$(database)/documents/previewSpark/v1/$(scope)/$(uid))
+            || (getAfter(/databases/$(database)/documents/previewSpark/v1/$(scope)/$(uid)).data.revision==get(/databases/$(database)/documents/previewSpark/v1/$(scope)/$(uid)).data.revision+1
+              && getAfter(/databases/$(database)/documents/previewSpark/v1/$(scope)/$(uid)).data.diff(get(/databases/$(database)/documents/previewSpark/v1/$(scope)/$(uid)).data).affectedKeys().hasOnly(['balances','best','titles','owned','appearance','appearanceRevision','revision','lastDevice','updatedAt','lastPlayedAt'])
+              && ((!exists(/databases/$(database)/documents/previewSpark/v1/$(scope)/$(uid)/devices/$(id)) && request.resource.data.seedBalances=={'japanese':0,'math':0,'social':0,'science':0,'english':0})
+                || (request.resource.data.seedBalances==resource.data.seedBalances
+                  && request.resource.data.earned.japanese>=resource.data.earned.japanese
+                  && request.resource.data.earned.math>=resource.data.earned.math
+                  && request.resource.data.earned.social>=resource.data.earned.social
+                  && request.resource.data.earned.science>=resource.data.earned.science
+                  && request.resource.data.earned.english>=resource.data.earned.english))));
+      }
+      match /purchases/{id} {
+        allow get: if syncScope(scope) && (owner(uid) || admin());
+        allow create: if syncScope(scope) && owner(uid) && request.resource.data.productId==id
+          && purchaseChange(scope,uid,get(/databases/$(database)/documents/previewSpark/v1/$(scope)/$(uid)).data,getAfter(/databases/$(database)/documents/previewSpark/v1/$(scope)/$(uid)).data);
+      }
+    }
+
+    // Public documents contain only game availability, campaign and notice content.
+    // Player data, administrator roles, backups and history remain private.
+    function mgGame(g) { return g in ['keisan','pref-name','pref-place','alphabet','distribution','distribution2','exchangeAssociation','kotowaza','multiplicationProperties','shapeExpressions']; }
+    function mgCampaign(c) {
+      return c is map && c.keys().hasAll(['enabled','endAt','id']) && c.keys().hasOnly(['enabled','endAt','id'])
+        && c.enabled is bool && (c.endAt == null || c.endAt is int && c.endAt > 0 && c.endAt < 9000000000000000)
+        && (c.id == null || c.id is string && c.id.size() >= 1 && c.id.size() <= 64)
+        && (!c.enabled || c.id != null);
+    }
+    function mgShape(d,notice) {
+      return d.revision is int && d.revision > 0 && d.revision < 1000000000 && d.updatedAt == request.time
+        && d.lastAudit is string && d.lastAudit.size() <= 64 && d.lastAudit.size() > 0
+        && d.lastBackup is string && d.lastBackup.size() <= 64 && d.lastBackup.size() > 0
+        && d.published is bool && (notice
+          ? d.keys().hasAll(['title','body','published','revision','updatedAt','lastAudit','lastBackup'])
+            && d.keys().hasOnly(['title','body','published','revision','updatedAt','lastAudit','lastBackup'])
+            && d.title is string && d.title.size() <= 80 && (!d.published || d.title.size() > 0)
+            && d.body is string && d.body.size() <= 3000
+          : d.keys().hasAll(['published','generation','campaign','revision','updatedAt','lastAudit','lastBackup'])
+            && d.keys().hasOnly(['published','generation','campaign','revision','updatedAt','lastAudit','lastBackup','rankingResetAt','rankingBackup'])
+            && d.generation is int && d.generation >= 0 && d.generation < 1000000000 && mgCampaign(d.campaign)
+            && (!('rankingResetAt' in d) || d.rankingResetAt is timestamp)
+            && (!('rankingBackup' in d) || d.rankingBackup is string && d.rankingBackup.size() <= 64));
+    }
+    function mgWrite(target,old,d,notice) {
+      let a=getAfter(/databases/$(database)/documents/previewSpark/v1/managementAudit/$(d.lastAudit)).data;
+      let b=getAfter(/databases/$(database)/documents/previewSpark/v1/managementBackups/$(d.lastBackup)).data;
+      return admin() && mgShape(d,notice) && d.revision == (old == null ? 1 : old.revision + 1)
+        && !exists(/databases/$(database)/documents/previewSpark/v1/managementAudit/$(d.lastAudit))
+        && !exists(/databases/$(database)/documents/previewSpark/v1/managementBackups/$(d.lastBackup))
+        && a.target == target && a.actor == request.auth.uid && a.at == request.time && a.before == old && a.after == d && a.backupId == d.lastBackup
+        && a.reason is string && a.reason.size() >= 2 && a.reason.size() <= 300
+        && b.target == target && b.actor == request.auth.uid && b.at == request.time && b.before == old && b.action == a.action && b.game == a.game
+        && (notice ? a.action == 'notice' && a.game == null
+          : mgGame(a.game) && target == 'previewSpark/v1/gameSettings/' + a.game
+            && (a.action == 'visibility' && d.generation == (old == null ? 0 : old.generation) && d.campaign == (old == null ? {'enabled':false,'endAt':null,'id':null} : old.campaign)
+              || a.action == 'campaign' && d.generation == (old == null ? 0 : old.generation) && d.published == (old == null ? true : old.published)
+              || a.action == 'reset' && d.generation == (old == null ? 1 : old.generation + 1) && d.published == (old == null ? true : old.published) && d.campaign == (old == null ? {'enabled':false,'endAt':null,'id':null} : old.campaign)
+                && d.rankingResetAt == request.time && getAfter(/databases/$(database)/documents/previewSpark/v1/rankingBackups/$(d.rankingBackup)).data.generation == (old == null ? 0 : old.generation)));
+    }
+    match /previewSpark/v1/gameSettings/{game} {
+      allow read: if mgGame(game);
+      allow create: if mgGame(game) && mgWrite('previewSpark/v1/gameSettings/'+game,null,request.resource.data,false);
+      allow update: if mgGame(game) && mgWrite('previewSpark/v1/gameSettings/'+game,resource.data,request.resource.data,false);
+      allow delete: if false;
+    }
+    match /previewSpark/v1/notices/{id} {
+      allow read: if id == 'current';
+      allow create: if id == 'current' && mgWrite('previewSpark/v1/notices/current',null,request.resource.data,true);
+      allow update: if id == 'current' && mgWrite('previewSpark/v1/notices/current',resource.data,request.resource.data,true);
+      allow delete: if false;
+    }
+    match /previewSpark/v1/managementAudit/{id} {
+      allow read: if admin();
+      allow create: if admin() && request.resource.data.actor == request.auth.uid && request.resource.data.at == request.time
+        && request.resource.data.reason is string && request.resource.data.reason.size() >= 2 && request.resource.data.reason.size() <= 300
+        && (request.resource.data.action == 'rankingBackup'
+          ? request.resource.data.keys().hasOnly(['actor','at','action','game','target','reason','backupId']) && mgGame(request.resource.data.game)
+            && request.resource.data.target == 'previewSpark/v1/rankingBackups/'+request.resource.data.backupId
+            && getAfter(/databases/$(database)/documents/previewSpark/v1/rankingBackups/$(request.resource.data.backupId)).data.actor == request.auth.uid
+          : request.resource.data.keys().hasOnly(['actor','at','action','game','target','reason','backupId','before','after'])
+            && request.resource.data.after.lastAudit == id
+            && (request.resource.data.action == 'notice'
+              ? getAfter(/databases/$(database)/documents/previewSpark/v1/notices/current).data.lastAudit == id
+              : mgGame(request.resource.data.game) && getAfter(/databases/$(database)/documents/previewSpark/v1/gameSettings/$(request.resource.data.game)).data.lastAudit == id));
+      allow update, delete: if false;
+    }
+    match /previewSpark/v1/managementBackups/{id} {
+      allow read: if admin();
+      allow create: if admin() && request.resource.data.keys().hasOnly(['actor','at','target','action','game','before'])
+        && request.resource.data.actor == request.auth.uid && request.resource.data.at == request.time
+        && request.resource.data.target is string && request.resource.data.target.size() <= 180
+        && request.resource.data.action in ['notice','visibility','campaign','reset']
+        && (request.resource.data.action == 'notice' ? request.resource.data.game == null && getAfter(/databases/$(database)/documents/previewSpark/v1/notices/current).data.lastBackup == id
+          : mgGame(request.resource.data.game) && getAfter(/databases/$(database)/documents/previewSpark/v1/gameSettings/$(request.resource.data.game)).data.lastBackup == id);
+      allow update, delete: if false;
+    }
+    match /previewSpark/v1/rankingBackups/{id} {
+      allow read: if admin();
+      allow create: if admin() && request.resource.data.keys().hasOnly(['actor','at','game','generation','rows','reason'])
+        && request.resource.data.actor == request.auth.uid && request.resource.data.at == request.time && mgGame(request.resource.data.game)
+        && request.resource.data.generation is int && request.resource.data.generation >= 0 && request.resource.data.generation < 1000000000
+        && request.resource.data.rows is list && request.resource.data.rows.size() <= 1000
+        && request.resource.data.reason is string && request.resource.data.reason.size() >= 2 && request.resource.data.reason.size() <= 300;
+      allow update, delete: if false;
+    }
+    match /previewSpark/v1/campaignHistory/{id} {
+      allow read: if admin();
+      allow create: if admin() && request.resource.data.keys().hasOnly(['actor','at','game','enabled','startAt','endAt','previousCampaign'])
+        && mgGame(request.resource.data.game) && request.resource.data.actor == request.auth.uid && request.resource.data.at == request.time
+        && request.resource.data.enabled is bool && (request.resource.data.startAt == null || request.resource.data.startAt is int)
+        && (request.resource.data.endAt == null || request.resource.data.endAt is int)
+        && (request.resource.data.previousCampaign == null || request.resource.data.previousCampaign is string && request.resource.data.previousCampaign.size() <= 64);
+      allow update, delete: if false;
+    }
+
+    match /previewSpark/v1/settings/notice { allow get: if admin(); allow list, write: if false; }
+
+    // 120-second protocol proposal. Player documents and legacy score fields are never changed.
+    // Public control: season UUID, 120 seconds, protocol 2; contains no player PII.
+    // Runs/results are owner/admin private. Entries contain nickname/icon/badge and score only.
+    function chGame(g){return g in ['keisan','pref-name','pref-place','alphabet','distribution','distribution2','exchangeAssociation','kotowaza','multiplicationProperties','shapeExpressions'];}
+    function chGames(g){return g is list && g.size()==10 && g.toSet().size()==10 && g.hasOnly(['keisan','pref-name','pref-place','alphabet','distribution','distribution2','exchangeAssociation','kotowaza','multiplicationProperties','shapeExpressions']);}
+    function chOwner(u){return request.auth!=null && request.auth.uid==u && request.auth.token.firebase.sign_in_provider=='anonymous';}
+    function chReady(){let v=get(/databases/$(database)/documents/previewSpark/v1/challengeVerification/ready).data;return v.enabled==true && v.protocol==2 && v.durationSeconds==120 && chGames(v.games);}
+    function chShape(s){return s.keys().hasOnly(['protocol','uid','game','season','attemptId','durationSeconds','phase','startedAt','deadline','sequence','streak','best','questionId','correct']) && s.protocol==2 && s.durationSeconds==120 && s.uid is string && s.uid.size()>0 && s.uid.size()<=128 && chGame(s.game) && s.season is string && s.season.size()>0 && s.season.size()<=64 && s.attemptId is string && s.attemptId.size()>0 && s.attemptId.size()<=64 && s.startedAt is timestamp && (s.deadline==null||s.deadline is timestamp) && s.phase in ['starting','running','ended'] && s.sequence is int && s.sequence>=0 && s.sequence<=10000 && s.streak is int && s.streak>=0 && s.streak<=s.sequence && s.best is int && s.best>=s.streak && s.best<=s.sequence && s.questionId is string && s.questionId.size()<=64 && s.correct is bool;}
+    function chSeason(s){return get(/databases/$(database)/documents/previewSpark/v1/challengeControl/current).data.season==s && chReady();}
+    function chEarned(u,g){let p=get(/databases/$(database)/documents/previewSpark/v1/players/$(u)).data;return p.status=='active' && p.best.get(g,0)>={'keisan':20,'pref-name':47,'pref-place':47,'alphabet':26,'distribution':25,'distribution2':25,'exchangeAssociation':25,'kotowaza':20,'multiplicationProperties':25,'shapeExpressions':25}[g];}
+    function chStart(s){return chShape(s) && chOwner(s.uid) && chSeason(s.season) && chEarned(s.uid,s.game) && s.phase=='starting' && s.startedAt==request.time && s.deadline==null && s.sequence==0 && s.streak==0 && s.best==0 && s.questionId=='' && s.correct==false;}
+    function chUpdate(o,s){return chShape(s) && chOwner(s.uid) && s.uid==o.uid && s.game==o.game && s.season==o.season && s.attemptId==o.attemptId && s.startedAt==o.startedAt && chSeason(s.season) && (
+      o.phase=='starting' && s.diff(o).affectedKeys().hasOnly(['phase','deadline']) && s.phase=='running' && s.deadline==o.startedAt+duration.value(120,'s')
+      || o.phase=='running' && s.phase=='running' && request.time<o.deadline && s.deadline==o.deadline && s.diff(o).affectedKeys().hasOnly(['sequence','streak','best','questionId','correct']) && s.sequence==o.sequence+1 && s.questionId.size()>0 && s.questionId!=o.questionId && s.streak==(s.correct?o.streak+1:0) && s.best==(s.streak>o.best?s.streak:o.best)
+      || o.phase=='running' && s.phase=='ended' && request.time>=o.deadline && s.diff(o).affectedKeys().hasOnly(['phase']));}
+    match /previewSpark/v1/challengeVerification/ready {allow get:if request.auth!=null;allow list,write:if false;}
+    match /previewSpark/v1/challengeControl/current {
+      allow get:if true;allow list,delete:if false;
+      allow create,update:if admin() && chReady() && request.resource.data.keys().hasOnly(['protocol','durationSeconds','season','games','revision','at','backupId','auditId']) && request.resource.data.protocol==2 && request.resource.data.durationSeconds==120 && chGames(request.resource.data.games) && request.resource.data.season is string && request.resource.data.season.size()>0 && request.resource.data.season.size()<=64 && request.resource.data.backupId is string && request.resource.data.backupId.size()<=64 && request.resource.data.auditId is string && request.resource.data.auditId.size()<=64 && request.resource.data.revision is int && request.resource.data.revision==(resource==null?1:resource.data.revision+1) && request.resource.data.at==request.time && getAfter(/databases/$(database)/documents/previewSpark/v1/challengeSeasonBackups/$(request.resource.data.backupId)).data.previous==(resource==null?null:resource.data) && getAfter(/databases/$(database)/documents/previewSpark/v1/challengeSeasonAudit/$(request.resource.data.auditId)).data.season==request.resource.data.season && getAfter(/databases/$(database)/documents/previewSpark/v1/challengeSeasonAudit/$(request.resource.data.auditId)).data.backupId==request.resource.data.backupId;
+    }
+    match /previewSpark/v1/challengeSeasonBackups/{id} {allow read:if admin();allow create:if admin() && request.resource.data.keys().hasOnly(['actor','at','protocol','durationSeconds','previous','rows','games']) && request.resource.data.actor==request.auth.uid && request.resource.data.at==request.time && request.resource.data.protocol==2 && request.resource.data.durationSeconds==120 && chGames(request.resource.data.games) && request.resource.data.rows is list && request.resource.data.rows.size()<=1000 && getAfter(/databases/$(database)/documents/previewSpark/v1/challengeControl/current).data.backupId==id;allow update,delete:if false;}
+    match /previewSpark/v1/challengeSeasonAudit/{id} {allow read:if admin();allow create:if admin() && request.resource.data.keys().hasOnly(['actor','at','action','season','backupId','reason']) && request.resource.data.actor==request.auth.uid && request.resource.data.at==request.time && request.resource.data.action=='switchAll120' && request.resource.data.reason is string && request.resource.data.reason.size()>=2 && request.resource.data.reason.size()<=300 && request.resource.data.season is string && request.resource.data.season.size()<=64 && request.resource.data.backupId is string && request.resource.data.backupId.size()<=64 && getAfter(/databases/$(database)/documents/previewSpark/v1/challengeControl/current).data.auditId==id;allow update,delete:if false;}
+    match /previewSpark/v1/challengeRuns/{id} {allow get:if request.auth!=null && (resource==null||chOwner(resource.data.uid)||admin());allow list:if admin();allow create:if chStart(request.resource.data) && id==request.auth.uid+'_'+request.resource.data.game;allow update:if id==request.auth.uid+'_'+request.resource.data.game && (chUpdate(resource.data,request.resource.data) || resource.data.phase=='ended' && chStart(request.resource.data) && request.resource.data.attemptId!=resource.data.attemptId);allow delete:if false;}
+    function chResult(d){let s=getAfter(/databases/$(database)/documents/previewSpark/v1/challengeRuns/$(d.uid+'_'+d.game)).data;return d.keys().hasOnly(['protocol','uid','game','season','attemptId','durationSeconds','best','at']) && chOwner(d.uid) && chShape(s) && s.phase=='ended' && s.protocol==2 && s.attemptId==d.attemptId && s.season==d.season && d.protocol==2 && d.durationSeconds==120 && d.best==s.best && d.at==request.time && chSeason(d.season);}
+    match /previewSpark/v1/challengeResults/{id} {allow get:if request.auth!=null && (resource==null||chOwner(resource.data.uid)||admin());allow list:if admin();allow create:if chResult(request.resource.data) && request.resource.data.attemptId==id;allow update,delete:if false;}
+    function chEntry(d,old){let r=getAfter(/databases/$(database)/documents/previewSpark/v1/challengeResults/$(d.attemptId)).data;return d.keys().hasOnly(['protocol','uid','game','season','attemptId','durationSeconds','best','at','nickname','icon','badge']) && chOwner(d.uid) && chSeason(d.season) && d.protocol==2 && d.durationSeconds==120 && chGame(d.game) && r.uid==d.uid && r.game==d.game && r.season==d.season && r.protocol==2 && r.durationSeconds==120 && r.at==request.time && d.at==request.time && d.best==(r.best>old?r.best:old) && nameOK(d.nickname) && d.icon is string && d.icon.size()<=64 && d.badge is string && d.badge.size()<=64;}
+    match /previewSpark/v1/challengeSeasons/{season}/entries/{id} {allow read:if request.auth!=null;allow create:if chEntry(request.resource.data,0) && request.resource.data.season==season && id==request.auth.uid+'_'+request.resource.data.game;allow update:if chEntry(request.resource.data,resource.data.best) && request.resource.data.season==season && id==request.auth.uid+'_'+request.resource.data.game && request.resource.data.uid==resource.data.uid && request.resource.data.game==resource.data.game;allow delete:if false;}
+
+    match /{document=**} { allow read, write: if false; }
+  }
+}

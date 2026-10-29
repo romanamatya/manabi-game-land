@@ -70,6 +70,7 @@ for (const rel of sourceFiles) {
     if (!text.includes('src="environment.js') && !text.includes('src="../environment.js')) {
       text = text.replace('<head>', `<head><script src="${rel.startsWith('games/') ? '../' : ''}environment.js"></script>`);
     }
+    if(mode==='preview'&&config.challenge120Enabled===true&&rel.startsWith('games/'))text=text.replace(/(<script[^>]+src="(?:\.\.\/)?economy\.js[^\"]*"><\/script>)/, '<script src="../challenge120-core.js"></script><script src="../challenge120-runtime.js"></script><link rel="stylesheet" href="../challenge120.css">$1');
     if(mode==='preview'&&rel!=='control-room.html'&&!rel.startsWith('qa/'))text=text.replace(/(<script[^>]+src="(?:\.\.\/)?environment-runtime\.js[^"]*"><\/script>)/, '$1<script src="'+(rel.startsWith('games/')?'../':'')+'management-gate.js"></script>');
     text = text.replace(/(<script[^>]+src="(?:\.\.\/)?economy-core\.js[^\"]*"><\/script>)/, `$1<script src="${rel.startsWith('games/') ? '../' : ''}storage-adapters.js"></script>`);
     if (mode === 'production' && rel === 'index.html') text = text.replace(/<a class="mq-admin-login"[^>]*>[\s\S]*?<\/a>/g, '');
