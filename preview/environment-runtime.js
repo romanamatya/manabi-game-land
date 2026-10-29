@@ -13,9 +13,9 @@
  const registered=nickname.trim().length>0&&nickname.length<=12&&!/[<>\n\r]/.test(nickname);
  const isHome=location.pathname==='/'||location.pathname.endsWith('/index.html');
  if(!registered&&!isHome){document.documentElement.style.visibility='hidden';location.replace(new URL(location.pathname.includes('/games/')?'../index.html':'index.html',location.href).href)}
- if(preview){capture()}
+ if(preview){capture();if(window.MANABI_BACKEND_CONFIG?.challenge120Enabled===true&&!window.manabiStorage.getItem('mgl_rankings_before_challenge120_v1')){let players=[];try{players=JSON.parse(window.manabiStorage.getItem('leaderboard_players')||'[]')}catch{}window.manabiStorage.setItem('mgl_rankings_before_challenge120_v1',JSON.stringify({protocol:1,at:Date.now(),players}));}}
  if(preview&&!adminTest&&!syncTest){document.addEventListener('DOMContentLoaded',capture);window.addEventListener('pageshow',capture);window.addEventListener('manabi-profile-change',capture);window.addEventListener('manabi-economy-change',capture);}
- if(preview&&!adminTest)document.addEventListener('DOMContentLoaded',()=>{window.ManabiPlayerSyncReady=import(new URL('player-sync.js?v=a22a7e334df2',runtimeURL).href).then(m=>m.start());window.ManabiPlayerSyncReady.catch(()=>{});});
+ if(preview&&!adminTest)document.addEventListener('DOMContentLoaded',()=>{window.ManabiPlayerSyncReady=import(new URL('player-sync.js?v=e58f88243579',runtimeURL).href).then(m=>m.start());window.ManabiPlayerSyncReady.catch(()=>{});});
  if(preview)document.addEventListener('DOMContentLoaded',()=>{document.title='【確認用】'+document.title;const badge=document.createElement('div');badge.textContent=adminTest||syncTest?'テストプレイ · ランキングには記録しない':'確認用 · 本番には影響しない';badge.setAttribute('aria-label','本番と記録を分離した確認用サイト');Object.assign(badge.style,{position:'fixed',bottom:'5px',left:'8px',zIndex:'2000',padding:'4px 9px',background:'#fff6d8',border:'1px solid #dfc56c',borderRadius:'7px',color:'#665120',font:'11px system-ui',pointerEvents:'none'});document.body.append(badge)});
 })();
 
