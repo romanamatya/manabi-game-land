@@ -38,6 +38,6 @@
     "multiplicationProperties",
     "shapeExpressions"
   ],
-  "managementEnabled": false,
+  "managementEnabled": true,
   "managedRankingGameIds": []
 }

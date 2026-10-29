@@ -72,3 +72,11 @@ node_modules/.bin/firebase emulators:exec --project demo-manabi-management --onl
 本番では管理機能を有効にしていない。本番Rules・Auth・管理権限・児童データは未変更。
 
 firebase/production-management-proposed.rules は案のみ。production-proposed.rulesを基礎に追加設計を別ファイルで準備したもので、現在公開中Rulesへの最小差分確定版ではない。実際の現行Rules再取得、専用認証の確認、公開設定を参照する本番児童側の接続、共有ランキングと保存方式の対応、Emulator/実テスト、個別承認が必要。renameEnabledを勝手に有効にしない。
+
+## 2026-10-29 Rules公開後の有効化
+
+ユーザーが通常Chromeで確認用Rulesを公開した後、実Firebaseの公開設定getは404（文書未作成）、private/admin getは403、未認証のgameSettings更新は403であることを確認。設定の公開読み取りと管理書き込み制限が反映されている。管理者パスワードは取得していない。
+
+preview managementEnabled:trueへ変更。playerSyncEnabled:false、managedRankingGameIds:[]を維持。本番用生成物は安全停止のまま公開しない。トップURL /preview/ からもお知らせを表示できるよう調整。42件の回帰テストと生成物ハッシュ検査を再実行して成功。
+
+実管理者による新機能の保存・再読み込みはログインが必要で、未検証。公開のみで全機能の実環境検証完了とは扱わない。
