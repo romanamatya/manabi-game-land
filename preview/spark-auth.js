@@ -1,6 +1,7 @@
-import {createManagementStore} from './management-store.js?v=acba0730169e';
-import {validateBackend,contractFor} from './data-contract.js?v=acba0730169e';
-import {createFirestoreStore} from './firebase-store.js?v=acba0730169e';
+import {createSeasonStore} from './challenge120-season-store.js?v=a22a7e334df2';
+import {createManagementStore} from './management-store.js?v=a22a7e334df2';
+import {validateBackend,contractFor} from './data-contract.js?v=a22a7e334df2';
+import {createFirestoreStore} from './firebase-store.js?v=a22a7e334df2';
 const config = window.MANABI_SPARK_CONFIG;
 const error = code => Object.assign(new Error(code), {code});
 const validName = value => typeof value === 'string' && value === value.trim() && value.length >= 1 && value.length <= 12 && !/[<>\r\n]/.test(value);
@@ -90,13 +91,16 @@ export function createAdminOperations(c,{auth,db},A,F) {
         list('players'),
         F.getDocsFromServer(F.query(col('audit'), F.orderBy('at', 'desc'), F.limit(100)))
       ]);
+      const seasonStore=createSeasonStore(F,db,contract.base,{enabled:c.seasonManagementEnabled===true,legacyRows:async()=>{let out=[],cursor=null;do{const p=await store.list(cursor);out.push(...p.rows);cursor=p.cursor;if(out.length>1000)throw error('ranking-backup-too-large');}while(cursor);return out;}});const season=await seasonStore.snapshot();
       const more=c.managementEnabled===true?await management.snapshot():{games:(window.ManabiProfileCatalog||[]).map(g=>({id:g.id,published:true,generation:0,rankingSupported:false})),rankings:[],campaigns:[],backups:[],notice:null,managementAudit:[]};
       const rankings=more.rankings||[];
-      return {players:players.rows,playerCursor:players.cursor,...more,rankings,managementReady:c.managementEnabled===true,audit:[...history.docs.map(d=>plain({...d.data(),id:d.id})),...more.managementAudit].sort((a,b)=>(b.at||0)-(a.at||0)).slice(0,100)};
+      return {season,players:players.rows,playerCursor:players.cursor,...more,rankings,managementReady:c.managementEnabled===true,audit:[...history.docs.map(d=>plain({...d.data(),id:d.id})),...more.managementAudit].sort((a,b)=>(b.at||0)-(a.at||0)).slice(0,100)};
     }
     if (action === 'admin:players') return list('players', input.cursor);
     if (input.confirm !== true) throw error('invalid-input');
     if (action === 'admin:rename') return rename(input);
+    if(action==='admin:switchSeason'){const user=await verify();if(c.seasonManagementEnabled!==true)throw error('season-management-not-enabled');return createSeasonStore(F,db,contract.base,{enabled:true,legacyRows:async()=>{let rows=[],cursor=null;do{const p=await store.list(cursor);rows.push(...p.rows);cursor=p.cursor;if(rows.length>1000)throw error('ranking-backup-too-large');}while(cursor);return rows;}}).switchAll(user,input);}
+    if(action==='admin:reset'&&c.challenge120Enabled===true)throw error('use-atomic-season-switch');
     if(['visibility','campaign','notice','reset','rankingBackup'].some(v=>action==='admin:'+v)){if(c.managementEnabled!==true)throw error('management-not-enabled');const user=await verify();return management.mutate(user,action.slice(6),input);}
     throw error('feature-unverified');
   }
