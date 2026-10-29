@@ -1,5 +1,5 @@
-import {GAME_IDS,checkedInput,rankingRows} from './management-model.js?v=6b47ef680515';
-import {contractFor} from './data-contract.js?v=6b47ef680515';
+import {GAME_IDS,checkedInput,rankingRows} from './management-model.js?v=acba0730169e';
+import {contractFor} from './data-contract.js?v=acba0730169e';
 export function createManagementStore(mode,F,db,{players,rankingGameIds=[]}={}){
  const c=contractFor(mode),base=c.base,ref=(collection,id)=>F.doc(db,base+'/'+collection,id),col=k=>F.collection(db,base+'/'+k);
  const plain=x=>x?.toMillis?x.toMillis():Array.isArray(x)?x.map(plain):x&&typeof x==='object'?Object.fromEntries(Object.entries(x).map(([k,v])=>[k,plain(v)])):x;
