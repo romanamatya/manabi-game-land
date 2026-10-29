@@ -1,0 +1,88 @@
+{
+  "buildId": "corrected-401602e10d6a",
+  "productionCommit": "ddbf1ad7c0163cbb975e26d7f881c58af8468658",
+  "previousCommit": "a32174ecaa0720bb5410b50e9e6863a365be936c",
+  "pagesRun": 40869985799,
+  "pagesConclusion": "success",
+  "approvedFiles": 88,
+  "verifiedPublicFiles": 141,
+  "allFileHashesMatch": true,
+  "starterIconsLoaded": [
+    "001",
+    "002",
+    "003",
+    "004"
+  ],
+  "gameSmokeTests": {
+    "keisan": {
+      "started": true,
+      "questionDisplayed": true,
+      "answerJudgmentVerified": true,
+      "mode": "adminTest-isolated-device-storage"
+    },
+    "distribution": {
+      "started": true,
+      "questionDisplayed": true,
+      "answerJudgmentVerified": true,
+      "mode": "adminTest-isolated-device-storage"
+    },
+    "distribution2": {
+      "started": true,
+      "questionDisplayed": true,
+      "answerJudgmentVerified": true,
+      "mode": "adminTest-isolated-device-storage"
+    },
+    "exchangeAssociation": {
+      "started": true,
+      "questionDisplayed": true,
+      "answerJudgmentVerified": true,
+      "mode": "adminTest-isolated-device-storage"
+    },
+    "alphabet": {
+      "started": true,
+      "questionDisplayed": true,
+      "answerJudgmentVerified": true,
+      "mode": "adminTest-isolated-device-storage"
+    },
+    "kotowaza": {
+      "started": true,
+      "questionDisplayed": true,
+      "answerJudgmentVerified": true,
+      "mode": "adminTest-isolated-device-storage"
+    },
+    "pref-name": {
+      "started": true,
+      "questionDisplayed": true,
+      "answerJudgmentVerified": true,
+      "mode": "adminTest-isolated-device-storage"
+    },
+    "pref-place": {
+      "started": true,
+      "questionDisplayed": true,
+      "answerJudgmentVerified": true,
+      "mode": "adminTest-isolated-device-storage"
+    },
+    "multiplicationProperties": {
+      "started": true,
+      "questionDisplayed": true,
+      "answerJudgmentVerified": true,
+      "mode": "adminTest-isolated-device-storage"
+    },
+    "shapeExpressions": {
+      "started": true,
+      "questionDisplayed": true,
+      "answerJudgmentVerified": true,
+      "mode": "adminTest-isolated-device-storage"
+    }
+  },
+  "lastTwoGameFilesUnchanged": true,
+  "liveChildDataUsed": false,
+  "firebaseRulesChanged": false,
+  "authenticationSettingsChanged": false,
+  "adminPermissionsChanged": false,
+  "livePositiveFirestoreWritesTested": false,
+  "dataCompatibilityRegressionTestsPassed": 27,
+  "fullPreparationTestsPreviouslyPassed": 60,
+  "newCriticalDefectsObserved": [],
+  "progressPercent": 100
+}
