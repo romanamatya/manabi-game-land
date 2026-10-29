@@ -1,4 +1,4 @@
-import {client,errorText} from './spark-auth.js?v=a22a7e334df2';
+import {client,errorText} from './spark-auth.js?v=e58f88243579';
 const environmentLabel=window.MANABI_SPARK_CONFIG?.mode==='production'?'本番':'確認用';
 const $=id=>document.getElementById(id),S=window.ManabiUpgradeShared,core=window.ManabiEconomyCore,catalog=window.ManabiProfileCatalog;
 let api=null,data=null,events=null,active='players',period=7,query='',sort='nickname',sortDirection=1,detail=null,ticket=0,pending=null,working=false;
