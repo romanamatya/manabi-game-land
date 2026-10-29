@@ -182,6 +182,104 @@ service cloud.firestore {
       }
     }
 
+    // Public documents contain only game availability, campaign and notice content.
+    // Player data, administrator roles, backups and history remain private.
+    function mgGame(g) { return g in ['keisan','pref-name','pref-place','alphabet','distribution','distribution2','exchangeAssociation','kotowaza','multiplicationProperties','shapeExpressions']; }
+    function mgCampaign(c) {
+      return c is map && c.keys().hasAll(['enabled','endAt','id']) && c.keys().hasOnly(['enabled','endAt','id'])
+        && c.enabled is bool && (c.endAt == null || c.endAt is int && c.endAt > 0 && c.endAt < 9000000000000000)
+        && (c.id == null || c.id is string && c.id.size() >= 1 && c.id.size() <= 64)
+        && (!c.enabled || c.id != null);
+    }
+    function mgShape(d,notice) {
+      return d.revision is int && d.revision > 0 && d.revision < 1000000000 && d.updatedAt == request.time
+        && d.lastAudit is string && d.lastAudit.size() <= 64 && d.lastAudit.size() > 0
+        && d.lastBackup is string && d.lastBackup.size() <= 64 && d.lastBackup.size() > 0
+        && d.published is bool && (notice
+          ? d.keys().hasAll(['title','body','published','revision','updatedAt','lastAudit','lastBackup'])
+            && d.keys().hasOnly(['title','body','published','revision','updatedAt','lastAudit','lastBackup'])
+            && d.title is string && d.title.size() <= 80 && (!d.published || d.title.size() > 0)
+            && d.body is string && d.body.size() <= 3000
+          : d.keys().hasAll(['published','generation','campaign','revision','updatedAt','lastAudit','lastBackup'])
+            && d.keys().hasOnly(['published','generation','campaign','revision','updatedAt','lastAudit','lastBackup','rankingResetAt','rankingBackup'])
+            && d.generation is int && d.generation >= 0 && d.generation < 1000000000 && mgCampaign(d.campaign)
+            && (!('rankingResetAt' in d) || d.rankingResetAt is timestamp)
+            && (!('rankingBackup' in d) || d.rankingBackup is string && d.rankingBackup.size() <= 64));
+    }
+    function mgWrite(target,old,d,notice) {
+      let a=getAfter(/databases/$(database)/documents/previewSpark/v1/managementAudit/$(d.lastAudit)).data;
+      let b=getAfter(/databases/$(database)/documents/previewSpark/v1/managementBackups/$(d.lastBackup)).data;
+      return admin() && mgShape(d,notice) && d.revision == (old == null ? 1 : old.revision + 1)
+        && !exists(/databases/$(database)/documents/previewSpark/v1/managementAudit/$(d.lastAudit))
+        && !exists(/databases/$(database)/documents/previewSpark/v1/managementBackups/$(d.lastBackup))
+        && a.target == target && a.actor == request.auth.uid && a.at == request.time && a.before == old && a.after == d && a.backupId == d.lastBackup
+        && a.reason is string && a.reason.size() >= 2 && a.reason.size() <= 300
+        && b.target == target && b.actor == request.auth.uid && b.at == request.time && b.before == old && b.action == a.action && b.game == a.game
+        && (notice ? a.action == 'notice' && a.game == null
+          : mgGame(a.game) && target == 'previewSpark/v1/gameSettings/' + a.game
+            && (a.action == 'visibility' && d.generation == (old == null ? 0 : old.generation) && d.campaign == (old == null ? {'enabled':false,'endAt':null,'id':null} : old.campaign)
+              || a.action == 'campaign' && d.generation == (old == null ? 0 : old.generation) && d.published == (old == null ? true : old.published)
+              || a.action == 'reset' && d.generation == (old == null ? 1 : old.generation + 1) && d.published == (old == null ? true : old.published) && d.campaign == (old == null ? {'enabled':false,'endAt':null,'id':null} : old.campaign)
+                && d.rankingResetAt == request.time && getAfter(/databases/$(database)/documents/previewSpark/v1/rankingBackups/$(d.rankingBackup)).data.generation == (old == null ? 0 : old.generation)));
+    }
+    match /previewSpark/v1/gameSettings/{game} {
+      allow read: if mgGame(game);
+      allow create: if mgGame(game) && mgWrite('previewSpark/v1/gameSettings/'+game,null,request.resource.data,false);
+      allow update: if mgGame(game) && mgWrite('previewSpark/v1/gameSettings/'+game,resource.data,request.resource.data,false);
+      allow delete: if false;
+    }
+    match /previewSpark/v1/notices/{id} {
+      allow read: if id == 'current';
+      allow create: if id == 'current' && mgWrite('previewSpark/v1/notices/current',null,request.resource.data,true);
+      allow update: if id == 'current' && mgWrite('previewSpark/v1/notices/current',resource.data,request.resource.data,true);
+      allow delete: if false;
+    }
+    match /previewSpark/v1/managementAudit/{id} {
+      allow read: if admin();
+      allow create: if admin() && request.resource.data.actor == request.auth.uid && request.resource.data.at == request.time
+        && request.resource.data.reason is string && request.resource.data.reason.size() >= 2 && request.resource.data.reason.size() <= 300
+        && (request.resource.data.action == 'rankingBackup'
+          ? request.resource.data.keys().hasOnly(['actor','at','action','game','target','reason','backupId']) && mgGame(request.resource.data.game)
+            && request.resource.data.target == 'previewSpark/v1/rankingBackups/'+request.resource.data.backupId
+            && getAfter(/databases/$(database)/documents/previewSpark/v1/rankingBackups/$(request.resource.data.backupId)).data.actor == request.auth.uid
+          : request.resource.data.keys().hasOnly(['actor','at','action','game','target','reason','backupId','before','after'])
+            && request.resource.data.after.lastAudit == id
+            && (request.resource.data.action == 'notice'
+              ? getAfter(/databases/$(database)/documents/previewSpark/v1/notices/current).data.lastAudit == id
+              : mgGame(request.resource.data.game) && getAfter(/databases/$(database)/documents/previewSpark/v1/gameSettings/$(request.resource.data.game)).data.lastAudit == id));
+      allow update, delete: if false;
+    }
+    match /previewSpark/v1/managementBackups/{id} {
+      allow read: if admin();
+      allow create: if admin() && request.resource.data.keys().hasOnly(['actor','at','target','action','game','before'])
+        && request.resource.data.actor == request.auth.uid && request.resource.data.at == request.time
+        && request.resource.data.target is string && request.resource.data.target.size() <= 180
+        && request.resource.data.action in ['notice','visibility','campaign','reset']
+        && (request.resource.data.action == 'notice' ? request.resource.data.game == null && getAfter(/databases/$(database)/documents/previewSpark/v1/notices/current).data.lastBackup == id
+          : mgGame(request.resource.data.game) && getAfter(/databases/$(database)/documents/previewSpark/v1/gameSettings/$(request.resource.data.game)).data.lastBackup == id);
+      allow update, delete: if false;
+    }
+    match /previewSpark/v1/rankingBackups/{id} {
+      allow read: if admin();
+      allow create: if admin() && request.resource.data.keys().hasOnly(['actor','at','game','generation','rows','reason'])
+        && request.resource.data.actor == request.auth.uid && request.resource.data.at == request.time && mgGame(request.resource.data.game)
+        && request.resource.data.generation is int && request.resource.data.generation >= 0 && request.resource.data.generation < 1000000000
+        && request.resource.data.rows is list && request.resource.data.rows.size() <= 1000
+        && request.resource.data.reason is string && request.resource.data.reason.size() >= 2 && request.resource.data.reason.size() <= 300;
+      allow update, delete: if false;
+    }
+    match /previewSpark/v1/campaignHistory/{id} {
+      allow read: if admin();
+      allow create: if admin() && request.resource.data.keys().hasOnly(['actor','at','game','enabled','startAt','endAt','previousCampaign'])
+        && mgGame(request.resource.data.game) && request.resource.data.actor == request.auth.uid && request.resource.data.at == request.time
+        && request.resource.data.enabled is bool && (request.resource.data.startAt == null || request.resource.data.startAt is int)
+        && (request.resource.data.endAt == null || request.resource.data.endAt is int)
+        && (request.resource.data.previousCampaign == null || request.resource.data.previousCampaign is string && request.resource.data.previousCampaign.size() <= 64);
+      allow update, delete: if false;
+    }
+
+    match /previewSpark/v1/settings/notice { allow get: if admin(); allow list, write: if false; }
+
     match /{document=**} { allow read, write: if false; }
   }
 }
