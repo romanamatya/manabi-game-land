@@ -1,7 +1,7 @@
-import {createSeasonStore} from './challenge120-season-store.js?v=0d24843cdf01';
-import {createManagementStore} from './management-store.js?v=0d24843cdf01';
-import {validateBackend,contractFor} from './data-contract.js?v=0d24843cdf01';
-import {createFirestoreStore} from './firebase-store.js?v=0d24843cdf01';
+import {createSeasonStore} from './challenge120-season-store.js?v=a4b8625a2f22';
+import {createManagementStore} from './management-store.js?v=a4b8625a2f22';
+import {validateBackend,contractFor} from './data-contract.js?v=a4b8625a2f22';
+import {createFirestoreStore} from './firebase-store.js?v=a4b8625a2f22';
 const config = window.MANABI_SPARK_CONFIG;
 const error = code => Object.assign(new Error(code), {code});
 const validName = value => typeof value === 'string' && value === value.trim() && value.length >= 1 && value.length <= 12 && !/[<>\r\n]/.test(value);
