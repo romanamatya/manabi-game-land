@@ -1,0 +1,1776 @@
+{
+  "files": 141,
+  "registryAssets": 72,
+  "edges": [
+    {
+      "from": "index.html",
+      "to": "environment.js"
+    },
+    {
+      "from": "index.html",
+      "to": "environment-runtime.js"
+    },
+    {
+      "from": "index.html",
+      "to": "economy-core.js"
+    },
+    {
+      "from": "index.html",
+      "to": "storage-adapters.js"
+    },
+    {
+      "from": "index.html",
+      "to": "economy.js"
+    },
+    {
+      "from": "index.html",
+      "to": "profile-catalog.js"
+    },
+    {
+      "from": "index.html",
+      "to": "profile-model.js"
+    },
+    {
+      "from": "index.html",
+      "to": "identity-view.js"
+    },
+    {
+      "from": "index.html",
+      "to": "profile.css"
+    },
+    {
+      "from": "index.html",
+      "to": "profile-ui.js"
+    },
+    {
+      "from": "index.html",
+      "to": "leaderboard.js"
+    },
+    {
+      "from": "index.html",
+      "to": "shop.html"
+    },
+    {
+      "from": "index.html",
+      "to": "index.html"
+    },
+    {
+      "from": "index.html",
+      "to": "assets/title.png"
+    },
+    {
+      "from": "index.html",
+      "to": "japanese.html"
+    },
+    {
+      "from": "index.html",
+      "to": "assets/subjects/japanese-v1.png"
+    },
+    {
+      "from": "index.html",
+      "to": "math.html"
+    },
+    {
+      "from": "index.html",
+      "to": "assets/subjects/math-v1.png"
+    },
+    {
+      "from": "index.html",
+      "to": "social.html"
+    },
+    {
+      "from": "index.html",
+      "to": "assets/subjects/social-v1.png"
+    },
+    {
+      "from": "index.html",
+      "to": "science.html"
+    },
+    {
+      "from": "index.html",
+      "to": "assets/subjects/science-v1.png"
+    },
+    {
+      "from": "index.html",
+      "to": "language.html"
+    },
+    {
+      "from": "index.html",
+      "to": "assets/subjects/english-v2.png"
+    },
+    {
+      "from": "index.html",
+      "to": "home-data.js"
+    },
+    {
+      "from": "index.html",
+      "to": "assets/title.png"
+    },
+    {
+      "from": "index.html",
+      "to": "assets/subjects/japanese-v1.png"
+    },
+    {
+      "from": "index.html",
+      "to": "assets/subjects/math-v1.png"
+    },
+    {
+      "from": "index.html",
+      "to": "assets/subjects/social-v1.png"
+    },
+    {
+      "from": "index.html",
+      "to": "assets/subjects/science-v1.png"
+    },
+    {
+      "from": "index.html",
+      "to": "assets/subjects/english-v2.png"
+    },
+    {
+      "from": "math.html",
+      "to": "environment.js"
+    },
+    {
+      "from": "math.html",
+      "to": "environment-runtime.js"
+    },
+    {
+      "from": "math.html",
+      "to": "economy-core.js"
+    },
+    {
+      "from": "math.html",
+      "to": "storage-adapters.js"
+    },
+    {
+      "from": "math.html",
+      "to": "economy.js"
+    },
+    {
+      "from": "math.html",
+      "to": "profile-catalog.js"
+    },
+    {
+      "from": "math.html",
+      "to": "profile-model.js"
+    },
+    {
+      "from": "math.html",
+      "to": "identity-view.js"
+    },
+    {
+      "from": "math.html",
+      "to": "profile.css"
+    },
+    {
+      "from": "math.html",
+      "to": "profile-ui.js"
+    },
+    {
+      "from": "math.html",
+      "to": "index.html"
+    },
+    {
+      "from": "math.html",
+      "to": "assets/title.png"
+    },
+    {
+      "from": "math.html",
+      "to": "index.html"
+    },
+    {
+      "from": "math.html",
+      "to": "games/keisan.html"
+    },
+    {
+      "from": "math.html",
+      "to": "ranking.html"
+    },
+    {
+      "from": "math.html",
+      "to": "games/distribution.html"
+    },
+    {
+      "from": "math.html",
+      "to": "ranking.html"
+    },
+    {
+      "from": "math.html",
+      "to": "games/distribution2.html"
+    },
+    {
+      "from": "math.html",
+      "to": "ranking.html"
+    },
+    {
+      "from": "math.html",
+      "to": "games/exchangeAssociation.html"
+    },
+    {
+      "from": "math.html",
+      "to": "ranking.html"
+    },
+    {
+      "from": "math.html",
+      "to": "games/multiplicationProperties.html"
+    },
+    {
+      "from": "math.html",
+      "to": "games/shapeExpressions.html"
+    },
+    {
+      "from": "math.html",
+      "to": "assets/title.png"
+    },
+    {
+      "from": "social.html",
+      "to": "environment.js"
+    },
+    {
+      "from": "social.html",
+      "to": "environment-runtime.js"
+    },
+    {
+      "from": "social.html",
+      "to": "economy-core.js"
+    },
+    {
+      "from": "social.html",
+      "to": "storage-adapters.js"
+    },
+    {
+      "from": "social.html",
+      "to": "economy.js"
+    },
+    {
+      "from": "social.html",
+      "to": "profile-catalog.js"
+    },
+    {
+      "from": "social.html",
+      "to": "profile-model.js"
+    },
+    {
+      "from": "social.html",
+      "to": "identity-view.js"
+    },
+    {
+      "from": "social.html",
+      "to": "profile.css"
+    },
+    {
+      "from": "social.html",
+      "to": "profile-ui.js"
+    },
+    {
+      "from": "social.html",
+      "to": "index.html"
+    },
+    {
+      "from": "social.html",
+      "to": "assets/title.png"
+    },
+    {
+      "from": "social.html",
+      "to": "index.html"
+    },
+    {
+      "from": "social.html",
+      "to": "games/pref-name.html"
+    },
+    {
+      "from": "social.html",
+      "to": "ranking.html"
+    },
+    {
+      "from": "social.html",
+      "to": "games/pref-place.html"
+    },
+    {
+      "from": "social.html",
+      "to": "ranking.html"
+    },
+    {
+      "from": "social.html",
+      "to": "assets/title.png"
+    },
+    {
+      "from": "language.html",
+      "to": "environment.js"
+    },
+    {
+      "from": "language.html",
+      "to": "environment-runtime.js"
+    },
+    {
+      "from": "language.html",
+      "to": "economy-core.js"
+    },
+    {
+      "from": "language.html",
+      "to": "storage-adapters.js"
+    },
+    {
+      "from": "language.html",
+      "to": "economy.js"
+    },
+    {
+      "from": "language.html",
+      "to": "profile-catalog.js"
+    },
+    {
+      "from": "language.html",
+      "to": "profile-model.js"
+    },
+    {
+      "from": "language.html",
+      "to": "identity-view.js"
+    },
+    {
+      "from": "language.html",
+      "to": "profile.css"
+    },
+    {
+      "from": "language.html",
+      "to": "profile-ui.js"
+    },
+    {
+      "from": "language.html",
+      "to": "index.html"
+    },
+    {
+      "from": "language.html",
+      "to": "assets/title.png"
+    },
+    {
+      "from": "language.html",
+      "to": "index.html"
+    },
+    {
+      "from": "language.html",
+      "to": "games/alphabet.html"
+    },
+    {
+      "from": "language.html",
+      "to": "ranking.html"
+    },
+    {
+      "from": "language.html",
+      "to": "assets/title.png"
+    },
+    {
+      "from": "japanese.html",
+      "to": "environment.js"
+    },
+    {
+      "from": "japanese.html",
+      "to": "environment-runtime.js"
+    },
+    {
+      "from": "japanese.html",
+      "to": "economy-core.js"
+    },
+    {
+      "from": "japanese.html",
+      "to": "storage-adapters.js"
+    },
+    {
+      "from": "japanese.html",
+      "to": "economy.js"
+    },
+    {
+      "from": "japanese.html",
+      "to": "profile-catalog.js"
+    },
+    {
+      "from": "japanese.html",
+      "to": "profile-model.js"
+    },
+    {
+      "from": "japanese.html",
+      "to": "identity-view.js"
+    },
+    {
+      "from": "japanese.html",
+      "to": "profile.css"
+    },
+    {
+      "from": "japanese.html",
+      "to": "profile-ui.js"
+    },
+    {
+      "from": "japanese.html",
+      "to": "index.html"
+    },
+    {
+      "from": "japanese.html",
+      "to": "assets/title.png"
+    },
+    {
+      "from": "japanese.html",
+      "to": "index.html"
+    },
+    {
+      "from": "japanese.html",
+      "to": "games/kotowaza.html"
+    },
+    {
+      "from": "japanese.html",
+      "to": "ranking.html"
+    },
+    {
+      "from": "japanese.html",
+      "to": "assets/title.png"
+    },
+    {
+      "from": "science.html",
+      "to": "environment.js"
+    },
+    {
+      "from": "science.html",
+      "to": "environment-runtime.js"
+    },
+    {
+      "from": "science.html",
+      "to": "economy-core.js"
+    },
+    {
+      "from": "science.html",
+      "to": "storage-adapters.js"
+    },
+    {
+      "from": "science.html",
+      "to": "economy.js"
+    },
+    {
+      "from": "science.html",
+      "to": "profile-catalog.js"
+    },
+    {
+      "from": "science.html",
+      "to": "profile-model.js"
+    },
+    {
+      "from": "science.html",
+      "to": "identity-view.js"
+    },
+    {
+      "from": "science.html",
+      "to": "profile.css"
+    },
+    {
+      "from": "science.html",
+      "to": "profile-ui.js"
+    },
+    {
+      "from": "science.html",
+      "to": "index.html"
+    },
+    {
+      "from": "science.html",
+      "to": "assets/title.png"
+    },
+    {
+      "from": "science.html",
+      "to": "index.html"
+    },
+    {
+      "from": "science.html",
+      "to": "assets/subjects/science-v1.png"
+    },
+    {
+      "from": "science.html",
+      "to": "assets/title.png"
+    },
+    {
+      "from": "science.html",
+      "to": "assets/subjects/science-v1.png"
+    },
+    {
+      "from": "economy-core.js",
+      "to": "assets/avatars/icon_005.png"
+    },
+    {
+      "from": "economy-core.js",
+      "to": "assets/avatars/icon_006.png"
+    },
+    {
+      "from": "economy-core.js",
+      "to": "assets/avatars/icon_007.png"
+    },
+    {
+      "from": "economy-core.js",
+      "to": "assets/avatars/icon_008.png"
+    },
+    {
+      "from": "economy-core.js",
+      "to": "assets/avatars/icon_009.png"
+    },
+    {
+      "from": "economy-core.js",
+      "to": "assets/avatars/icon_010.png"
+    },
+    {
+      "from": "economy-core.js",
+      "to": "assets/avatars/icon_011.png"
+    },
+    {
+      "from": "economy-core.js",
+      "to": "assets/avatars/icon_012.png"
+    },
+    {
+      "from": "economy-core.js",
+      "to": "assets/avatars/icon_013.png"
+    },
+    {
+      "from": "economy-core.js",
+      "to": "assets/avatars/icon_014.png"
+    },
+    {
+      "from": "economy-core.js",
+      "to": "assets/avatars/icon_015.png"
+    },
+    {
+      "from": "economy-core.js",
+      "to": "assets/avatars/icon_016.png"
+    },
+    {
+      "from": "economy-core.js",
+      "to": "assets/avatars/icon_017.png"
+    },
+    {
+      "from": "economy-core.js",
+      "to": "assets/avatars/icon_018.png"
+    },
+    {
+      "from": "economy-core.js",
+      "to": "assets/avatars/icon_019.png"
+    },
+    {
+      "from": "economy-core.js",
+      "to": "assets/avatars/icon_021.png"
+    },
+    {
+      "from": "economy-core.js",
+      "to": "assets/avatars/icon_022.png"
+    },
+    {
+      "from": "economy-core.js",
+      "to": "assets/avatars/icon_023.png"
+    },
+    {
+      "from": "economy-core.js",
+      "to": "assets/avatars/icon_024.png"
+    },
+    {
+      "from": "economy-core.js",
+      "to": "assets/avatars/icon_025.png"
+    },
+    {
+      "from": "economy-core.js",
+      "to": "assets/avatars/icon_026.png"
+    },
+    {
+      "from": "economy-core.js",
+      "to": "assets/avatars/icon_027.png"
+    },
+    {
+      "from": "economy-core.js",
+      "to": "assets/avatars/icon_028.png"
+    },
+    {
+      "from": "economy-core.js",
+      "to": "assets/avatars/icon_029.png"
+    },
+    {
+      "from": "economy-core.js",
+      "to": "assets/avatars/icon_030.png"
+    },
+    {
+      "from": "economy-core.js",
+      "to": "assets/avatars/icon_031.png"
+    },
+    {
+      "from": "economy-core.js",
+      "to": "assets/avatars/icon_032.png"
+    },
+    {
+      "from": "economy-core.js",
+      "to": "assets/frames/frame_01.png"
+    },
+    {
+      "from": "economy-core.js",
+      "to": "assets/frames/frame_02.png"
+    },
+    {
+      "from": "economy-core.js",
+      "to": "assets/frames/frame_03.png"
+    },
+    {
+      "from": "economy-core.js",
+      "to": "assets/frames/frame_04.png"
+    },
+    {
+      "from": "economy-core.js",
+      "to": "assets/frames/frame_05.png"
+    },
+    {
+      "from": "economy-core.js",
+      "to": "assets/frames/frame_06.png"
+    },
+    {
+      "from": "economy-core.js",
+      "to": "assets/frames/frame_07.png"
+    },
+    {
+      "from": "economy-core.js",
+      "to": "assets/frames/frame_08.png"
+    },
+    {
+      "from": "economy-core.js",
+      "to": "assets/frames/frame_09.png"
+    },
+    {
+      "from": "economy-core.js",
+      "to": "assets/frames/frame_10.png"
+    },
+    {
+      "from": "economy-core.js",
+      "to": "assets/frames/frame_11.png"
+    },
+    {
+      "from": "economy-core.js",
+      "to": "assets/frames/frame_12.png"
+    },
+    {
+      "from": "economy-core.js",
+      "to": "assets/frames/frame_13.png"
+    },
+    {
+      "from": "economy-core.js",
+      "to": "assets/frames/frame_14.png"
+    },
+    {
+      "from": "economy-core.js",
+      "to": "assets/frames/frame_15.png"
+    },
+    {
+      "from": "economy-core.js",
+      "to": "assets/avatars/icon_022.png"
+    },
+    {
+      "from": "economy-core.js",
+      "to": "assets/avatars/icon_031.png"
+    },
+    {
+      "from": "economy-core.js",
+      "to": "assets/avatars/icon_010.png"
+    },
+    {
+      "from": "economy-core.js",
+      "to": "assets/avatars/icon_032.png"
+    },
+    {
+      "from": "economy-core.js",
+      "to": "assets/avatars/icon_023.png"
+    },
+    {
+      "from": "economy-core.js",
+      "to": "assets/avatars/icon_007.png"
+    },
+    {
+      "from": "economy-core.js",
+      "to": "assets/frames/frame_11.png"
+    },
+    {
+      "from": "firebase-store.js",
+      "to": "data-contract.js"
+    },
+    {
+      "from": "games/alphabet.html",
+      "to": "environment.js"
+    },
+    {
+      "from": "games/alphabet.html",
+      "to": "environment-runtime.js"
+    },
+    {
+      "from": "games/alphabet.html",
+      "to": "economy-core.js"
+    },
+    {
+      "from": "games/alphabet.html",
+      "to": "storage-adapters.js"
+    },
+    {
+      "from": "games/alphabet.html",
+      "to": "economy.js"
+    },
+    {
+      "from": "games/alphabet.html",
+      "to": "profile-catalog.js"
+    },
+    {
+      "from": "games/alphabet.html",
+      "to": "profile-model.js"
+    },
+    {
+      "from": "games/alphabet.html",
+      "to": "identity-view.js"
+    },
+    {
+      "from": "games/alphabet.html",
+      "to": "profile.css"
+    },
+    {
+      "from": "games/alphabet.html",
+      "to": "profile-ui.js"
+    },
+    {
+      "from": "games/alphabet.html",
+      "to": "alphabet-model.js"
+    },
+    {
+      "from": "games/alphabet.html",
+      "to": "alphabet-audio.js"
+    },
+    {
+      "from": "games/alphabet.html",
+      "to": "language.html"
+    },
+    {
+      "from": "games/alphabet.html",
+      "to": "index.html"
+    },
+    {
+      "from": "games/alphabet.html",
+      "to": "assets/title.png"
+    },
+    {
+      "from": "games/alphabet.html",
+      "to": "alphabet-game.js"
+    },
+    {
+      "from": "games/alphabet.html",
+      "to": "social-score-sync.js"
+    },
+    {
+      "from": "games/alphabet.html",
+      "to": "assets/fonts/didact-gothic.ttf"
+    },
+    {
+      "from": "games/alphabet.html",
+      "to": "assets/title.png"
+    },
+    {
+      "from": "games/distribution.html",
+      "to": "environment.js"
+    },
+    {
+      "from": "games/distribution.html",
+      "to": "environment-runtime.js"
+    },
+    {
+      "from": "games/distribution.html",
+      "to": "economy-core.js"
+    },
+    {
+      "from": "games/distribution.html",
+      "to": "storage-adapters.js"
+    },
+    {
+      "from": "games/distribution.html",
+      "to": "economy.js"
+    },
+    {
+      "from": "games/distribution.html",
+      "to": "profile-catalog.js"
+    },
+    {
+      "from": "games/distribution.html",
+      "to": "profile-model.js"
+    },
+    {
+      "from": "games/distribution.html",
+      "to": "identity-view.js"
+    },
+    {
+      "from": "games/distribution.html",
+      "to": "profile.css"
+    },
+    {
+      "from": "games/distribution.html",
+      "to": "profile-ui.js"
+    },
+    {
+      "from": "games/distribution.html",
+      "to": "distribution-model.js"
+    },
+    {
+      "from": "games/distribution.html",
+      "to": "kotowaza.css"
+    },
+    {
+      "from": "games/distribution.html",
+      "to": "distribution.css"
+    },
+    {
+      "from": "games/distribution.html",
+      "to": "math.html"
+    },
+    {
+      "from": "games/distribution.html",
+      "to": "index.html"
+    },
+    {
+      "from": "games/distribution.html",
+      "to": "assets/title.png"
+    },
+    {
+      "from": "games/distribution.html",
+      "to": "assets/hints/distribution-approved.png"
+    },
+    {
+      "from": "games/distribution.html",
+      "to": "ranking.html"
+    },
+    {
+      "from": "games/distribution.html",
+      "to": "distribution-game.js"
+    },
+    {
+      "from": "games/distribution.html",
+      "to": "social-score-sync.js"
+    },
+    {
+      "from": "games/distribution.html",
+      "to": "assets/title.png"
+    },
+    {
+      "from": "games/distribution.html",
+      "to": "assets/hints/distribution-approved.png"
+    },
+    {
+      "from": "games/distribution2.html",
+      "to": "environment.js"
+    },
+    {
+      "from": "games/distribution2.html",
+      "to": "environment-runtime.js"
+    },
+    {
+      "from": "games/distribution2.html",
+      "to": "economy-core.js"
+    },
+    {
+      "from": "games/distribution2.html",
+      "to": "storage-adapters.js"
+    },
+    {
+      "from": "games/distribution2.html",
+      "to": "economy.js"
+    },
+    {
+      "from": "games/distribution2.html",
+      "to": "profile-catalog.js"
+    },
+    {
+      "from": "games/distribution2.html",
+      "to": "profile-model.js"
+    },
+    {
+      "from": "games/distribution2.html",
+      "to": "identity-view.js"
+    },
+    {
+      "from": "games/distribution2.html",
+      "to": "profile.css"
+    },
+    {
+      "from": "games/distribution2.html",
+      "to": "profile-ui.js"
+    },
+    {
+      "from": "games/distribution2.html",
+      "to": "math-new-model.js"
+    },
+    {
+      "from": "games/distribution2.html",
+      "to": "kotowaza.css"
+    },
+    {
+      "from": "games/distribution2.html",
+      "to": "distribution.css"
+    },
+    {
+      "from": "games/distribution2.html",
+      "to": "math.html"
+    },
+    {
+      "from": "games/distribution2.html",
+      "to": "index.html"
+    },
+    {
+      "from": "games/distribution2.html",
+      "to": "assets/title.png"
+    },
+    {
+      "from": "games/distribution2.html",
+      "to": "ranking.html"
+    },
+    {
+      "from": "games/distribution2.html",
+      "to": "math-new-game.js"
+    },
+    {
+      "from": "games/distribution2.html",
+      "to": "assets/title.png"
+    },
+    {
+      "from": "games/exchangeAssociation.html",
+      "to": "environment.js"
+    },
+    {
+      "from": "games/exchangeAssociation.html",
+      "to": "environment-runtime.js"
+    },
+    {
+      "from": "games/exchangeAssociation.html",
+      "to": "economy-core.js"
+    },
+    {
+      "from": "games/exchangeAssociation.html",
+      "to": "storage-adapters.js"
+    },
+    {
+      "from": "games/exchangeAssociation.html",
+      "to": "economy.js"
+    },
+    {
+      "from": "games/exchangeAssociation.html",
+      "to": "profile-catalog.js"
+    },
+    {
+      "from": "games/exchangeAssociation.html",
+      "to": "profile-model.js"
+    },
+    {
+      "from": "games/exchangeAssociation.html",
+      "to": "identity-view.js"
+    },
+    {
+      "from": "games/exchangeAssociation.html",
+      "to": "profile.css"
+    },
+    {
+      "from": "games/exchangeAssociation.html",
+      "to": "profile-ui.js"
+    },
+    {
+      "from": "games/exchangeAssociation.html",
+      "to": "math-new-model.js"
+    },
+    {
+      "from": "games/exchangeAssociation.html",
+      "to": "kotowaza.css"
+    },
+    {
+      "from": "games/exchangeAssociation.html",
+      "to": "distribution.css"
+    },
+    {
+      "from": "games/exchangeAssociation.html",
+      "to": "math.html"
+    },
+    {
+      "from": "games/exchangeAssociation.html",
+      "to": "index.html"
+    },
+    {
+      "from": "games/exchangeAssociation.html",
+      "to": "assets/title.png"
+    },
+    {
+      "from": "games/exchangeAssociation.html",
+      "to": "ranking.html"
+    },
+    {
+      "from": "games/exchangeAssociation.html",
+      "to": "math-new-game.js"
+    },
+    {
+      "from": "games/exchangeAssociation.html",
+      "to": "assets/title.png"
+    },
+    {
+      "from": "games/keisan.html",
+      "to": "environment.js"
+    },
+    {
+      "from": "games/keisan.html",
+      "to": "environment-runtime.js"
+    },
+    {
+      "from": "games/keisan.html",
+      "to": "economy-core.js"
+    },
+    {
+      "from": "games/keisan.html",
+      "to": "storage-adapters.js"
+    },
+    {
+      "from": "games/keisan.html",
+      "to": "economy.js"
+    },
+    {
+      "from": "games/keisan.html",
+      "to": "profile-catalog.js"
+    },
+    {
+      "from": "games/keisan.html",
+      "to": "profile-model.js"
+    },
+    {
+      "from": "games/keisan.html",
+      "to": "identity-view.js"
+    },
+    {
+      "from": "games/keisan.html",
+      "to": "profile.css"
+    },
+    {
+      "from": "games/keisan.html",
+      "to": "profile-ui.js"
+    },
+    {
+      "from": "games/keisan.html",
+      "to": "index.html"
+    },
+    {
+      "from": "games/keisan.html",
+      "to": "assets/title.png"
+    },
+    {
+      "from": "games/keisan.html",
+      "to": "math.html"
+    },
+    {
+      "from": "games/keisan.html",
+      "to": "social-score-sync.js"
+    },
+    {
+      "from": "games/keisan.html",
+      "to": "assets/title.png"
+    },
+    {
+      "from": "games/kotowaza.html",
+      "to": "environment.js"
+    },
+    {
+      "from": "games/kotowaza.html",
+      "to": "environment-runtime.js"
+    },
+    {
+      "from": "games/kotowaza.html",
+      "to": "economy-core.js"
+    },
+    {
+      "from": "games/kotowaza.html",
+      "to": "storage-adapters.js"
+    },
+    {
+      "from": "games/kotowaza.html",
+      "to": "economy.js"
+    },
+    {
+      "from": "games/kotowaza.html",
+      "to": "profile-catalog.js"
+    },
+    {
+      "from": "games/kotowaza.html",
+      "to": "profile-model.js"
+    },
+    {
+      "from": "games/kotowaza.html",
+      "to": "identity-view.js"
+    },
+    {
+      "from": "games/kotowaza.html",
+      "to": "profile.css"
+    },
+    {
+      "from": "games/kotowaza.html",
+      "to": "profile-ui.js"
+    },
+    {
+      "from": "games/kotowaza.html",
+      "to": "kotowaza-data.js"
+    },
+    {
+      "from": "games/kotowaza.html",
+      "to": "kotowaza-model.js"
+    },
+    {
+      "from": "games/kotowaza.html",
+      "to": "kotowaza.css"
+    },
+    {
+      "from": "games/kotowaza.html",
+      "to": "japanese.html"
+    },
+    {
+      "from": "games/kotowaza.html",
+      "to": "index.html"
+    },
+    {
+      "from": "games/kotowaza.html",
+      "to": "assets/title.png"
+    },
+    {
+      "from": "games/kotowaza.html",
+      "to": "ranking.html"
+    },
+    {
+      "from": "games/kotowaza.html",
+      "to": "kotowaza-game.js"
+    },
+    {
+      "from": "games/kotowaza.html",
+      "to": "social-score-sync.js"
+    },
+    {
+      "from": "games/kotowaza.html",
+      "to": "assets/title.png"
+    },
+    {
+      "from": "games/pref-name.html",
+      "to": "environment.js"
+    },
+    {
+      "from": "games/pref-name.html",
+      "to": "environment-runtime.js"
+    },
+    {
+      "from": "games/pref-name.html",
+      "to": "economy-core.js"
+    },
+    {
+      "from": "games/pref-name.html",
+      "to": "storage-adapters.js"
+    },
+    {
+      "from": "games/pref-name.html",
+      "to": "economy.js"
+    },
+    {
+      "from": "games/pref-name.html",
+      "to": "profile-catalog.js"
+    },
+    {
+      "from": "games/pref-name.html",
+      "to": "profile-model.js"
+    },
+    {
+      "from": "games/pref-name.html",
+      "to": "identity-view.js"
+    },
+    {
+      "from": "games/pref-name.html",
+      "to": "profile.css"
+    },
+    {
+      "from": "games/pref-name.html",
+      "to": "profile-ui.js"
+    },
+    {
+      "from": "games/pref-name.html",
+      "to": "social.html"
+    },
+    {
+      "from": "games/pref-name.html",
+      "to": "index.html"
+    },
+    {
+      "from": "games/pref-name.html",
+      "to": "assets/title.png"
+    },
+    {
+      "from": "games/pref-name.html",
+      "to": "assets/map-data.js"
+    },
+    {
+      "from": "games/pref-name.html",
+      "to": "social-score-sync.js"
+    },
+    {
+      "from": "games/pref-name.html",
+      "to": "assets/title.png"
+    },
+    {
+      "from": "games/pref-place.html",
+      "to": "environment.js"
+    },
+    {
+      "from": "games/pref-place.html",
+      "to": "environment-runtime.js"
+    },
+    {
+      "from": "games/pref-place.html",
+      "to": "economy-core.js"
+    },
+    {
+      "from": "games/pref-place.html",
+      "to": "storage-adapters.js"
+    },
+    {
+      "from": "games/pref-place.html",
+      "to": "economy.js"
+    },
+    {
+      "from": "games/pref-place.html",
+      "to": "profile-catalog.js"
+    },
+    {
+      "from": "games/pref-place.html",
+      "to": "profile-model.js"
+    },
+    {
+      "from": "games/pref-place.html",
+      "to": "identity-view.js"
+    },
+    {
+      "from": "games/pref-place.html",
+      "to": "profile.css"
+    },
+    {
+      "from": "games/pref-place.html",
+      "to": "profile-ui.js"
+    },
+    {
+      "from": "games/pref-place.html",
+      "to": "social.html"
+    },
+    {
+      "from": "games/pref-place.html",
+      "to": "index.html"
+    },
+    {
+      "from": "games/pref-place.html",
+      "to": "assets/title.png"
+    },
+    {
+      "from": "games/pref-place.html",
+      "to": "assets/map-data.js"
+    },
+    {
+      "from": "games/pref-place.html",
+      "to": "social-score-sync.js"
+    },
+    {
+      "from": "games/pref-place.html",
+      "to": "assets/title.png"
+    },
+    {
+      "from": "home-data.js",
+      "to": "legacy-player-client.js"
+    },
+    {
+      "from": "identity-view.js",
+      "to": "assets/badges/title-badges-v1.png"
+    },
+    {
+      "from": "legacy-player-client.js",
+      "to": "data-contract.js"
+    },
+    {
+      "from": "legacy-player-client.js",
+      "to": "firebase-store.js"
+    },
+    {
+      "from": "profile-catalog.js",
+      "to": "assets/badges/location-badges-v1.png"
+    },
+    {
+      "from": "profile-catalog.js",
+      "to": "assets/badges/location-1-v2.png"
+    },
+    {
+      "from": "profile-catalog.js",
+      "to": "assets/badges/location-badges-v1.png"
+    },
+    {
+      "from": "profile-catalog.js",
+      "to": "assets/badges/location-5-v2.png"
+    },
+    {
+      "from": "profile-catalog.js",
+      "to": "assets/badges/location-badges-v1.png"
+    },
+    {
+      "from": "profile-catalog.js",
+      "to": "assets/badges/location-10-v2.png"
+    },
+    {
+      "from": "profile-catalog.js",
+      "to": "assets/badges/location-badges-v1.png"
+    },
+    {
+      "from": "profile-catalog.js",
+      "to": "assets/badges/location-20-v2.png"
+    },
+    {
+      "from": "profile-catalog.js",
+      "to": "assets/badges/location-badges-v1.png"
+    },
+    {
+      "from": "profile-catalog.js",
+      "to": "assets/badges/location-30-v2.png"
+    },
+    {
+      "from": "profile-catalog.js",
+      "to": "assets/badges/location-badges-v1.png"
+    },
+    {
+      "from": "profile-catalog.js",
+      "to": "assets/badges/location-47-v2.png"
+    },
+    {
+      "from": "profile-catalog.js",
+      "to": "assets/badges/distribution-5.svg"
+    },
+    {
+      "from": "profile-catalog.js",
+      "to": "assets/badges/distribution-10.svg"
+    },
+    {
+      "from": "profile-catalog.js",
+      "to": "assets/badges/distribution-15.svg"
+    },
+    {
+      "from": "profile-catalog.js",
+      "to": "assets/badges/distribution-20.svg"
+    },
+    {
+      "from": "profile-catalog.js",
+      "to": "assets/badges/distribution-25.svg"
+    },
+    {
+      "from": "profile-catalog.js",
+      "to": "assets/badges/distribution2-5.svg"
+    },
+    {
+      "from": "profile-catalog.js",
+      "to": "assets/badges/distribution2-10.svg"
+    },
+    {
+      "from": "profile-catalog.js",
+      "to": "assets/badges/distribution2-15.svg"
+    },
+    {
+      "from": "profile-catalog.js",
+      "to": "assets/badges/distribution2-20.svg"
+    },
+    {
+      "from": "profile-catalog.js",
+      "to": "assets/badges/distribution2-25.svg"
+    },
+    {
+      "from": "profile-catalog.js",
+      "to": "assets/badges/exchangeAssociation-5.svg"
+    },
+    {
+      "from": "profile-catalog.js",
+      "to": "assets/badges/exchangeAssociation-10.svg"
+    },
+    {
+      "from": "profile-catalog.js",
+      "to": "assets/badges/exchangeAssociation-15.svg"
+    },
+    {
+      "from": "profile-catalog.js",
+      "to": "assets/badges/exchangeAssociation-20.svg"
+    },
+    {
+      "from": "profile-catalog.js",
+      "to": "assets/badges/exchangeAssociation-25.svg"
+    },
+    {
+      "from": "profile-catalog.js",
+      "to": "assets/badges/kotowaza-3.svg"
+    },
+    {
+      "from": "profile-catalog.js",
+      "to": "assets/badges/kotowaza-5.svg"
+    },
+    {
+      "from": "profile-catalog.js",
+      "to": "assets/badges/kotowaza-10.svg"
+    },
+    {
+      "from": "profile-catalog.js",
+      "to": "assets/badges/kotowaza-15.svg"
+    },
+    {
+      "from": "profile-catalog.js",
+      "to": "assets/badges/kotowaza-20.svg"
+    },
+    {
+      "from": "profile.css",
+      "to": "assets/avatars/avatar-concepts.png"
+    },
+    {
+      "from": "profile.css",
+      "to": "assets/badges/title-badges-v1.png"
+    },
+    {
+      "from": "profile.css",
+      "to": "assets/avatars/avatar-concepts.png"
+    },
+    {
+      "from": "profile.css",
+      "to": "assets/badges/title-badges-v1.png"
+    },
+    {
+      "from": "profile.css",
+      "to": "assets/subjects/math-v1.png"
+    },
+    {
+      "from": "profile.css",
+      "to": "assets/subjects/social-v1.png"
+    },
+    {
+      "from": "profile.css",
+      "to": "assets/subjects/science-v1.png"
+    },
+    {
+      "from": "profile.css",
+      "to": "assets/subjects/japanese-v1.png"
+    },
+    {
+      "from": "profile.css",
+      "to": "assets/subjects/english-v2.png"
+    },
+    {
+      "from": "profile.css",
+      "to": "assets/avatars/avatar-concepts.png"
+    },
+    {
+      "from": "profile.css",
+      "to": "assets/badges/title-badges-v1.png"
+    },
+    {
+      "from": "profile.css",
+      "to": "assets/avatars/avatar-concepts.png"
+    },
+    {
+      "from": "profile.css",
+      "to": "assets/badges/title-badges-v1.png"
+    },
+    {
+      "from": "profile.css",
+      "to": "assets/subjects/math-v1.png"
+    },
+    {
+      "from": "profile.css",
+      "to": "assets/subjects/social-v1.png"
+    },
+    {
+      "from": "profile.css",
+      "to": "assets/subjects/science-v1.png"
+    },
+    {
+      "from": "profile.css",
+      "to": "assets/subjects/japanese-v1.png"
+    },
+    {
+      "from": "profile.css",
+      "to": "assets/subjects/english-v2.png"
+    },
+    {
+      "from": "ranking-page.js",
+      "to": "legacy-player-client.js"
+    },
+    {
+      "from": "ranking.html",
+      "to": "environment.js"
+    },
+    {
+      "from": "ranking.html",
+      "to": "environment-runtime.js"
+    },
+    {
+      "from": "ranking.html",
+      "to": "economy-core.js"
+    },
+    {
+      "from": "ranking.html",
+      "to": "storage-adapters.js"
+    },
+    {
+      "from": "ranking.html",
+      "to": "economy.js"
+    },
+    {
+      "from": "ranking.html",
+      "to": "profile-catalog.js"
+    },
+    {
+      "from": "ranking.html",
+      "to": "profile-model.js"
+    },
+    {
+      "from": "ranking.html",
+      "to": "identity-view.js"
+    },
+    {
+      "from": "ranking.html",
+      "to": "profile.css"
+    },
+    {
+      "from": "ranking.html",
+      "to": "profile-ui.js"
+    },
+    {
+      "from": "ranking.html",
+      "to": "leaderboard.js"
+    },
+    {
+      "from": "ranking.html",
+      "to": "index.html"
+    },
+    {
+      "from": "ranking.html",
+      "to": "assets/title.png"
+    },
+    {
+      "from": "ranking.html",
+      "to": "index.html"
+    },
+    {
+      "from": "ranking.html",
+      "to": "index.html"
+    },
+    {
+      "from": "ranking.html",
+      "to": "ranking-page.js"
+    },
+    {
+      "from": "ranking.html",
+      "to": "assets/title.png"
+    },
+    {
+      "from": "shop.html",
+      "to": "environment.js"
+    },
+    {
+      "from": "shop.html",
+      "to": "environment-runtime.js"
+    },
+    {
+      "from": "shop.html",
+      "to": "economy-core.js"
+    },
+    {
+      "from": "shop.html",
+      "to": "storage-adapters.js"
+    },
+    {
+      "from": "shop.html",
+      "to": "economy.js"
+    },
+    {
+      "from": "shop.html",
+      "to": "profile-catalog.js"
+    },
+    {
+      "from": "shop.html",
+      "to": "profile-model.js"
+    },
+    {
+      "from": "shop.html",
+      "to": "identity-view.js"
+    },
+    {
+      "from": "shop.html",
+      "to": "profile.css"
+    },
+    {
+      "from": "shop.html",
+      "to": "shop.css"
+    },
+    {
+      "from": "shop.html",
+      "to": "index.html"
+    },
+    {
+      "from": "shop.html",
+      "to": "assets/title.png"
+    },
+    {
+      "from": "shop.html",
+      "to": "index.html"
+    },
+    {
+      "from": "shop.html",
+      "to": "shop.js"
+    },
+    {
+      "from": "shop.html",
+      "to": "assets/title.png"
+    },
+    {
+      "from": "social-score-sync.js",
+      "to": "data-contract.js"
+    },
+    {
+      "from": "social-score-sync.js",
+      "to": "firebase-store.js"
+    },
+    {
+      "from": "social-score-sync.js",
+      "to": "legacy-player-client.js"
+    },
+    {
+      "from": "games/multiplicationProperties.html",
+      "to": "environment.js"
+    },
+    {
+      "from": "games/multiplicationProperties.html",
+      "to": "environment-runtime.js"
+    },
+    {
+      "from": "games/multiplicationProperties.html",
+      "to": "multiplication-properties-model.js"
+    },
+    {
+      "from": "games/multiplicationProperties.html",
+      "to": "math-concepts-model.js"
+    },
+    {
+      "from": "games/multiplicationProperties.html",
+      "to": "math-concepts-production-points.js"
+    },
+    {
+      "from": "games/multiplicationProperties.html",
+      "to": "profile-catalog.js"
+    },
+    {
+      "from": "games/multiplicationProperties.html",
+      "to": "profile-model.js"
+    },
+    {
+      "from": "games/multiplicationProperties.html",
+      "to": "identity-view.js"
+    },
+    {
+      "from": "games/multiplicationProperties.html",
+      "to": "profile.css"
+    },
+    {
+      "from": "games/multiplicationProperties.html",
+      "to": "profile-ui.js"
+    },
+    {
+      "from": "games/multiplicationProperties.html",
+      "to": "math-concepts.css"
+    },
+    {
+      "from": "games/multiplicationProperties.html",
+      "to": "multiplication-properties.css"
+    },
+    {
+      "from": "games/multiplicationProperties.html",
+      "to": "math.html"
+    },
+    {
+      "from": "games/multiplicationProperties.html",
+      "to": "index.html"
+    },
+    {
+      "from": "games/multiplicationProperties.html",
+      "to": "multiplication-properties-game.js"
+    },
+    {
+      "from": "games/shapeExpressions.html",
+      "to": "environment.js"
+    },
+    {
+      "from": "games/shapeExpressions.html",
+      "to": "environment-runtime.js"
+    },
+    {
+      "from": "games/shapeExpressions.html",
+      "to": "math-concepts-model.js"
+    },
+    {
+      "from": "games/shapeExpressions.html",
+      "to": "multiplication-properties-model.js"
+    },
+    {
+      "from": "games/shapeExpressions.html",
+      "to": "math-concepts-production-points.js"
+    },
+    {
+      "from": "games/shapeExpressions.html",
+      "to": "profile-catalog.js"
+    },
+    {
+      "from": "games/shapeExpressions.html",
+      "to": "profile-model.js"
+    },
+    {
+      "from": "games/shapeExpressions.html",
+      "to": "identity-view.js"
+    },
+    {
+      "from": "games/shapeExpressions.html",
+      "to": "profile.css"
+    },
+    {
+      "from": "games/shapeExpressions.html",
+      "to": "profile-ui.js"
+    },
+    {
+      "from": "games/shapeExpressions.html",
+      "to": "math-concepts.css"
+    },
+    {
+      "from": "games/shapeExpressions.html",
+      "to": "math.html"
+    },
+    {
+      "from": "games/shapeExpressions.html",
+      "to": "index.html"
+    },
+    {
+      "from": "games/shapeExpressions.html",
+      "to": "math-concepts-game.js"
+    }
+  ],
+  "external": [
+    "https://www.gstatic.com/firebasejs/13.1.0/firebase-"
+  ],
+  "starterIcons": [
+    {
+      "path": "assets/avatars/icon_001.png",
+      "inPatch": true,
+      "inFullSite": true
+    },
+    {
+      "path": "assets/avatars/icon_002.png",
+      "inPatch": true,
+      "inFullSite": true
+    },
+    {
+      "path": "assets/avatars/icon_003.png",
+      "inPatch": true,
+      "inFullSite": true
+    },
+    {
+      "path": "assets/avatars/icon_004.png",
+      "inPatch": true,
+      "inFullSite": true
+    }
+  ],
+  "packageChecked": true
+}

@@ -1,0 +1,49 @@
+{
+  "buildId": "corrected-401602e10d6a",
+  "packageDigest": "07967a5374f3220ac76bfa9f5f0e75c0a05ba049a85709ade7d5bbdb3187df29",
+  "files": 88,
+  "ready": true,
+  "blockers": [],
+  "baselineCommit": "5505a58d2ca17ce0cb3bc78684983613694e81cd",
+  "preservedGameIds": [
+    "multiplicationProperties",
+    "shapeExpressions"
+  ],
+  "preservedFiles": [
+    "games/multiplicationProperties.html",
+    "games/shapeExpressions.html",
+    "multiplication-properties-model.js",
+    "multiplication-properties-game.js",
+    "multiplication-properties.css",
+    "math-concepts-model.js",
+    "math-concepts-game.js",
+    "math-concepts.css",
+    "math-concepts-production-points.js"
+  ],
+  "dependencyFiles": 141,
+  "starterIcons": [
+    {
+      "path": "assets/avatars/icon_001.png",
+      "inPatch": true,
+      "inFullSite": true
+    },
+    {
+      "path": "assets/avatars/icon_002.png",
+      "inPatch": true,
+      "inFullSite": true
+    },
+    {
+      "path": "assets/avatars/icon_003.png",
+      "inPatch": true,
+      "inFullSite": true
+    },
+    {
+      "path": "assets/avatars/icon_004.png",
+      "inPatch": true,
+      "inFullSite": true
+    }
+  ],
+  "rollbackVerified": true,
+  "publicationApproved": false,
+  "firebaseContacted": false
+}

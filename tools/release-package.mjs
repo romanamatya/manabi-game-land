@@ -18,16 +18,18 @@ export function materializeProfileAssets(catalogSource,coreSource,profileSource)
  return [...new Set([...profile.icons,...profile.frames,...profile.badges].map(item=>item.image).filter(image=>typeof image==='string'))].sort();
 }
 
-export async function prepare({baseline=root,candidate=path.join(root,'.release/production'),output=path.join(root,'.release/site-package'),inventory,rules=path.join(root,'firebase/production-distribution-only.rules')}={}){
+export async function prepare({baseline=root,candidate=path.join(root,'.release/production'),output=path.join(root,'.release/site-package'),inventory,preservedGameIds=[],rules=path.join(root,'firebase/production-distribution-only.rules')}={}){
  baseline=path.resolve(baseline);candidate=path.resolve(candidate);output=path.resolve(output);
  if(!output.startsWith(path.join(root,'.release')+path.sep)||output===candidate||baseline===candidate)throw Error('unsafe-package-output');
  const m=JSON.parse(await fs.readFile(path.join(candidate,'BUILD-MANIFEST.json'))),config=m.runtimeConfig||JSON.parse(await fs.readFile(path.join(root,'environments/production.json')));
  if(m.environment!=='production'||m.projectId!=='manabi-game-land'||m.playerSyncEnabled!==false)throw Error('wrong-production-build');
  const live=inventory||JSON.parse(await fs.readFile(path.join(root,'environments/production-inventory.json')));
- for(const id of live.gameIds)if(!m.gameCatalog.some(g=>g.id===id))throw Error('existing-game-missing:'+id);
+ for(const id of preservedGameIds){if(!['multiplicationProperties','shapeExpressions'].includes(id)||!await bytes(path.join(baseline,'games',id+'.html')))throw Error('invalid-preserved-game:'+id);}
+ for(const id of live.gameIds)if(!m.gameCatalog.some(g=>g.id===id)&&!preservedGameIds.includes(id))throw Error('existing-game-missing:'+id);
  if(m.gameCatalog.some(g=>['multiplicationProperties','shapeExpressions'].includes(g.id)))throw Error('preview-only-game-in-production');
  const ruleText=await fs.readFile(rules,'utf8'),ruleFields=new Set([...ruleText.matchAll(/'([A-Za-z][A-Za-z0-9]*)'/g)].map(x=>x[1]));
  const storage=m.gameCatalog.map(g=>({...g,cloudRanking:config.rankingGameIds.includes(g.id),rulesAllowsField:ruleFields.has(g.field),saveMode:config.rankingGameIds.includes(g.id)?'legacy-players':'device-only'}));
+ for(const id of preservedGameIds)storage.push({id,cloudRanking:false,rulesAllowsField:false,saveMode:'existing-device-only-unchanged'});
  const blockers=[];for(const g of storage)if(g.cloudRanking&&!g.rulesAllowsField)blockers.push('rules-field-not-allowed:'+g.field);
  if(m.runtimeBlocked)blockers.push('production-runtime-approval-pending');
  if(!config.legacyScoreSyncEnabled)blockers.push('legacy-ranking-service-disabled');
@@ -44,7 +46,7 @@ export async function prepare({baseline=root,candidate=path.join(root,'.release/
  const missingAssets=[];const registrySources=await Promise.all(['profile-catalog.js','economy-core.js','profile-model.js'].map(p=>fs.readFile(path.join(candidate,p),'utf8')));const assets=new Set(materializeProfileAssets(...registrySources));for(const e of entries.filter(f=>f.path.endsWith('.html')||f.path.endsWith('.js'))){const text=await fs.readFile(path.join(candidate,e.path),'utf8');for(const match of text.matchAll(/(?:\.\.\/)?assets\/[A-Za-z0-9_./-]+\.(?:png|svg|jpg|mp3|woff2)/g))assets.add(match[0].replace(/^\.\.\//,''));}
  for(const asset of assets){if(!safe(asset))throw Error('unsafe-asset-path');const before=await bytes(path.join(baseline,asset));if(before)continue;const next=await bytes(path.join(candidate,asset))||await bytes(path.join(root,'preview',asset));if(!next){missingAssets.push(asset);continue;}entries.push({path:asset,beforeSHA256:null,afterSHA256:hash(next)});await fs.mkdir(path.dirname(path.join(output,'forward',asset)),{recursive:true});await fs.writeFile(path.join(output,'forward',asset),next);}
  if(missingAssets.length)blockers.push('missing-production-assets:'+missingAssets.join(','));
- const plan={version:1,buildId:m.buildId,projectId:m.projectId,sourceRoot:m.sourceRoot,liveInventory:live,storage,rulesSHA256:hash(ruleText),runtimeBlocked:m.runtimeBlocked,blockers,ready:blockers.length===0,entries,productionTouched:false,firebaseContacted:false};
+ const plan={version:1,buildId:m.buildId,projectId:m.projectId,sourceRoot:m.sourceRoot,liveInventory:live,preservedGameIds,storage,rulesSHA256:hash(ruleText),runtimeBlocked:m.runtimeBlocked,blockers,ready:blockers.length===0,entries,productionTouched:false,firebaseContacted:false};
  plan.packageDigest=hash(JSON.stringify(plan));await fs.mkdir(output,{recursive:true});await fs.writeFile(path.join(output,'RELEASE.json'),JSON.stringify(plan,null,2)+'\n');return plan;
 }
 export async function apply({packageDir,target,approval,rollback=false}){

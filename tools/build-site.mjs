@@ -40,7 +40,7 @@ for (const rel of sourceFiles) {
   sourceDigests.set(rel, crypto.createHash('sha256').update(await fs.readFile(path.join(source, rel))).digest('hex'));
 }
 const buildId = crypto.createHash('sha256')
-  .update(JSON.stringify({mode, config, source: [...sourceDigests]}))
+  .update(JSON.stringify({mode, config, source: [...sourceDigests], buildPipelineSHA256: crypto.createHash('sha256').update(await fs.readFile(fileURLToPath(import.meta.url))).digest('hex')}))
   .digest('hex').slice(0, 12);
 
 const catalogContext = {window: {}};
@@ -73,6 +73,7 @@ for (const rel of sourceFiles) {
     text = text.replace(/(<script[^>]+src="(?:\.\.\/)?economy-core\.js[^\"]*"><\/script>)/, `$1<script src="${rel.startsWith('games/') ? '../' : ''}storage-adapters.js"></script>`);
     if (mode === 'production' && rel === 'index.html') text = text.replace(/<a class="mq-admin-login"[^>]*>[\s\S]*?<\/a>/g, '');
     if (mode === 'production') {
+      text = text.replace(/<p><a href="kotowaza-review\.html">[\s\S]*?<\/a><\/p>/g, '');
       text = text.replace(/<article\b[^>]*>[\s\S]*?<\/article>/g, article => {
         const id = article.match(/games\/([^/"?]+)\.html/)?.[1];
         return id && !config.gameIds.includes(id) ? '' : article;
