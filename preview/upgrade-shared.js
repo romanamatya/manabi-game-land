@@ -2,7 +2,7 @@
 'use strict';
 const highest={distribution2:25,exchangeAssociation:25,multiplicationProperties:25,shapeExpressions:25,keisan:20,'pref-name':47,'pref-place':47,alphabet:26,kotowaza:20,distribution:25};
 const fields={keisan:'bestStreak','pref-name':'prefNameBestStreak','pref-place':'prefPlaceBestStreak',alphabet:'alphabetBestStreak',kotowaza:'kotowazaBestStreak',distribution:'distributionBestStreak'};
-const names={distribution2:'分配のきまり②',exchangeAssociation:'交換・結合のきまり',multiplicationProperties:'かけ算のせいしつ',shapeExpressions:'図形と式',keisan:'計算のきまり','pref-name':'都道府県の名前','pref-place':'都道府県の場所',alphabet:'アルファベット',kotowaza:'ことわざ・慣用句',distribution:'分配のきまり①'};
+const names={keisanSummary:'計算のきまり・総まとめ',distribution2:'分配のきまり②',exchangeAssociation:'交換・結合のきまり',multiplicationProperties:'かけ算のせいしつ',shapeExpressions:'図形と式',keisan:'計算のきまり','pref-name':'都道府県の名前','pref-place':'都道府県の場所',alphabet:'アルファベット',kotowaza:'ことわざ・慣用句',distribution:'分配のきまり①'};
 function assert(ok,message){if(!ok)throw Error(message)}
 function game(id){assert(Object.hasOwn(highest,id),'unknown-game');return id}
 function priority(s){const ids=s.o.map((_,i)=>i).filter(i=>s.l<0||(i>=s.l&&i<s.r));return ids.find(i=>s.o[i]>=2)??ids[0]??-1}
@@ -18,4 +18,5 @@ function analytics(events,players,days,now){const end=now+1,start=days?end-days*
 function questions(events,id,days,now){const cutoff=days?now-days*86400000:0,groups=new Map();for(const e of events.filter(e=>e.game===id&&e.type==='answer'&&!e.test&&e.at>=cutoff)){const key=e.problemId+':'+e.stage,a=groups.get(key)||[];a.push(e);groups.set(key,a)}return [...groups].map(([key,a])=>{const wrong={};for(const e of a.filter(e=>!(e.stageCorrect??e.correct))){const k=JSON.stringify(e.selected);wrong[k]=(wrong[k]||0)+1}const rate=pct(a.filter(e=>(e.stageCorrect??e.correct)).length,a.length),topWrong=Object.entries(wrong).sort((a,b)=>b[1]-a[1]);return {key,problemId:a[0].problemId,prompt:a[0].prompt,stage:a[0].stage,answers:a.length,rate,wrong:topWrong,review:a.length>=10&&(rate<40||(topWrong[0]?.[1]||0)/a.length>=.5),status:a.length<10?'回答数不足':rate<40?'正答率が低い':(topWrong[0]?.[1]||0)/a.length>=.5?'特定の誤答に集中':'—'}})}
 return {highest,fields,names,assert,game,priority,reduce,fresh,tick,transition,analytics,questions,growth,pct};
 });
+
 

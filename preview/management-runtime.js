@@ -1,4 +1,5 @@
-import {GAME_IDS,policyFor,normalPolicy} from './management-model.js?v=a4b8625a2f22';
+import {GAME_IDS as REGISTERED_GAME_IDS,policyFor,normalPolicy} from './management-model.js?v=summary1';
+const GAME_IDS=REGISTERED_GAME_IDS.filter(id=>id!=='keisanSummary'||globalThis.window?.MANABI_BACKEND_CONFIG?.summaryManagementEnabled===true);
 const fresh=new Set();let settings=new Map(),connected=false,loaded=false,pending;
 const current=()=>location.pathname.includes('/games/')?location.pathname.split('/').at(-1).replace('.html',''):null;
 function gate(error=false){const id=current();if(!id)return;
@@ -23,3 +24,4 @@ export async function start(){if(pending)return pending;pending=(async()=>{
  const api={policy(game){if(!connected||!loaded||settings.get(game)?.published===false)throw Error('game-not-available');return policyFor(settings.get(game));}};window.ManabiManagement=api;return api;
  }catch(e){connected=false;render();throw e;}
  })();return pending;}
+

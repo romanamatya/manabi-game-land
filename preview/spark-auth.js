@@ -1,6 +1,6 @@
 import {createSeasonStore} from './challenge120-season-store.js?v=a4b8625a2f22';
-import {createManagementStore} from './management-store.js?v=a4b8625a2f22';
-import {validateBackend,contractFor} from './data-contract.js?v=a4b8625a2f22';
+import {createManagementStore} from './management-store.js?v=summary1';
+import {validateBackend,contractFor} from './data-contract.js?v=summary1';
 import {createFirestoreStore} from './firebase-store.js?v=a4b8625a2f22';
 const config = window.MANABI_SPARK_CONFIG;
 const error = code => Object.assign(new Error(code), {code});
@@ -137,6 +137,7 @@ export function createAdminOperations(c,{auth,db},A,F) {
     }
   };
 }
+
 
 
 

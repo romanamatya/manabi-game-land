@@ -1,5 +1,6 @@
-import {GAME_IDS,checkedInput,rankingRows} from './management-model.js?v=a4b8625a2f22';
-import {contractFor} from './data-contract.js?v=a4b8625a2f22';
+import {GAME_IDS as REGISTERED_GAME_IDS,checkedInput,rankingRows} from './management-model.js?v=summary1';
+const GAME_IDS=REGISTERED_GAME_IDS.filter(id=>id!=='keisanSummary'||globalThis.window?.MANABI_BACKEND_CONFIG?.summaryManagementEnabled===true);
+import {contractFor} from './data-contract.js?v=summary1';
 export function createManagementStore(mode,F,db,{players,rankingGameIds=[]}={}){
  const c=contractFor(mode),base=c.base,ref=(collection,id)=>F.doc(db,base+'/'+collection,id),col=k=>F.collection(db,base+'/'+k);
  const plain=x=>x?.toMillis?x.toMillis():Array.isArray(x)?x.map(plain):x&&typeof x==='object'?Object.fromEntries(Object.entries(x).map(([k,v])=>[k,plain(v)])):x;
@@ -9,6 +10,7 @@ export function createManagementStore(mode,F,db,{players,rankingGameIds=[]}={}){
   const games=GAME_IDS.map(id=>({id,published:true,generation:0,rankingSupported:rankingGameIds.includes(id),...plain(settings.find(d=>d.id===id)?.data()||{})}));
   let all=[];if(rankingGameIds.length){let cursor=null;do{const page=await players(cursor);all.push(...page.rows);cursor=page.cursor;if(all.length>1000)throw Error('ranking-backup-too-large');}while(cursor);}
   const rankings=games.flatMap(g=>g.rankingSupported&&g.generation===0?rankingRows(all,g.id).map(r=>({...r,game:g.id,generation:g.generation})):[]);
+  if(!GAME_IDS.includes('keisanSummary'))games.push({id:'keisanSummary',published:false,managementSupported:false,rankingSupported:false,generation:0});
   return {rankings,games,notice:notice.exists()?plain(notice.data()):legacyNotice?.exists()?plain(legacyNotice.data()):null,managementAudit:audit,campaigns,backups};
  }
  async function mutate(user,action,input){checkedInput(action,input);if(['reset','rankingBackup'].includes(action)&&!rankingGameIds.includes(input.game))throw Error('device-only-ranking');
@@ -32,3 +34,4 @@ export function createManagementStore(mode,F,db,{players,rankingGameIds=[]}={}){
  }
  return {snapshot,mutate,plain};
 }
+

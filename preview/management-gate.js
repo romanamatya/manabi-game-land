@@ -3,6 +3,7 @@
  const game=location.pathname.includes('/games/');window.ManabiGameAllowed=!game;
  if(game)document.documentElement.style.visibility='hidden';
  for(const type of ['click','pointerdown','keydown'])document.addEventListener(type,e=>{if(game&&!window.ManabiGameAllowed&&!e.target.closest?.('#managementGate')){e.preventDefault();e.stopImmediatePropagation();}},true);
- window.ManabiManagementReady=import('./management-runtime.js?v=a4b8625a2f22').then(m=>m.start());
+ window.ManabiManagementReady=import('./management-runtime.js?v=summary1').then(m=>m.start());
  window.ManabiManagementReady.catch(()=>{});
 })();
+
