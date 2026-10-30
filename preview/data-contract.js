@@ -1,5 +1,5 @@
 // Paths are selected by a fixed build manifest, never by query parameters.
-export const GAME_FIELDS=Object.freeze({keisan:'bestStreak','pref-name':'prefNameBestStreak','pref-place':'prefPlaceBestStreak',alphabet:'alphabetBestStreak',kotowaza:'kotowazaBestStreak',distribution:'distributionBestStreak',distribution2:'distribution2BestStreak',exchangeAssociation:'exchangeAssociationBestStreak',multiplicationProperties:'multiplicationPropertiesBestStreak',shapeExpressions:'shapeExpressionsBestStreak'});
+export const GAME_FIELDS=Object.freeze({keisanSummary:'keisanSummaryBestStreak',keisan:'bestStreak','pref-name':'prefNameBestStreak','pref-place':'prefPlaceBestStreak',alphabet:'alphabetBestStreak',kotowaza:'kotowazaBestStreak',distribution:'distributionBestStreak',distribution2:'distribution2BestStreak',exchangeAssociation:'exchangeAssociationBestStreak',multiplicationProperties:'multiplicationPropertiesBestStreak',shapeExpressions:'shapeExpressionsBestStreak'});
 export const PROJECTS=Object.freeze({preview:'manabi-game-landcheck',production:'manabi-game-land'});
 export const error=code=>Object.assign(new Error(code),{code});
 export function contractFor(mode){if(!Object.hasOwn(PROJECTS,mode))throw error('invalid-environment');const base=mode==='preview'?'previewSpark/v1':'productionAdmin/v1';return Object.freeze({mode,projectId:PROJECTS[mode],base,players:mode==='preview'?base+'/players':'players',private:base+'/private',audit:base+'/audit',backups:base+'/backups',alias:'admin-'+mode+'@'+PROJECTS[mode]+'.invalid',appName:'manabi-shared-admin-'+mode+'-spark'});}
@@ -16,3 +16,4 @@ export function legacyScorePatch(remote,local,game,appearance,updatedAt){const f
 
 // Player service and admin UI have independent release switches.
 export function validatePlayerBackend(c){const route=validateBackend(c,{requireEnabled:false,mode:'production'});if(c.productionReleaseApproved!==true||c.legacyScoreSyncEnabled!==true)throw error('legacy-service-disabled');return route;}
+

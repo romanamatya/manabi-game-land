@@ -14,7 +14,7 @@ function accept(result){result.wallet=localStore.commit({...result.wallet,claime
 function localLock(fn){return navigator.locks?navigator.locks.request('manabi-'+mode+'-economy-v1',fn):Promise.reject(Error('cross-tab-lock-required'))}
 async function ready(){throw Error('cloud-economy-not-enabled')}
 function questionId(){if(typeof crypto.randomUUID==='function')return crypto.randomUUID();const bytes=new Uint8Array(16);crypto.getRandomValues(bytes);bytes[6]=(bytes[6]&15)|64;bytes[8]=(bytes[8]&63)|128;const h=Array.from(bytes,b=>b.toString(16).padStart(2,'0')).join('');return h.slice(0,8)+'-'+h.slice(8,12)+'-'+h.slice(12,16)+'-'+h.slice(16,20)+'-'+h.slice(20)}
-function begin(game,prompt){const policy=preview&&window.MANABI_BACKEND_CONFIG?.managementEnabled===true?(window.ManabiManagement?window.ManabiManagement.policy(game):window.ManabiManagementReady.then(api=>api.policy(game))):{multiplier:1,cap:50};const context={game,prompt:structuredClone(prompt),id:questionId(),answered:false,policy};context.challenge=window.ManabiChallenge120?.issue(game,context.id)||null;return context}
+function begin(game,prompt){if(game==='keisanSummary')return {game,prompt:structuredClone(prompt),id:questionId(),answered:false,policy:{...(window.ManabiSummaryPolicy||{multiplier:1,cap:50})}};const policy=preview&&window.MANABI_BACKEND_CONFIG?.managementEnabled===true?(window.ManabiManagement?window.ManabiManagement.policy(game):window.ManabiManagementReady.then(api=>api.policy(game))):{multiplier:1,cap:50};const context={game,prompt:structuredClone(prompt),id:questionId(),answered:false,policy};context.challenge=window.ManabiChallenge120?.issue(game,context.id)||null;return context}
 function queueItem(item){const pending=read(outboxKey,[]);if(pending.some(x=>x.id===item.id)||memoryOutbox.has(item.id))return;pending.push(item);try{storage.setItem(outboxKey,JSON.stringify(pending))}catch{try{const backup=JSON.parse(window.sessionStorage?.getItem(sessionOutboxKey)||'[]');if(!backup.some(x=>x.id===item.id)){backup.push(item);window.sessionStorage.setItem(sessionOutboxKey,JSON.stringify(backup))}}catch{memoryOutbox.set(item.id,item)}}}
 function queued(){const a=read(outboxKey,[]),b=(()=>{try{return JSON.parse(window.sessionStorage?.getItem(sessionOutboxKey)||'[]')}catch{return []}})();return [...a,...b,...memoryOutbox.values()]}
 function firstQueued(){return queued()[0]||null}
@@ -37,6 +37,7 @@ if(!storage.getItem('mgl_economy_legacy_backup_v1')){const keys=['mgl_points','m
 window.addEventListener('manabi-management-change',renderBalance);window.addEventListener('online',flush);window.addEventListener('storage',notify);window.addEventListener('pageshow',()=>{notify();if(!testing)flush()});setInterval(()=>{renderBalance();if(!testing&&queued().length)flush()},15000);
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>{notify();repairExistingClaims().then(flush)});else{notify();repairExistingClaims().then(flush)}
 })();
+
 
 
 

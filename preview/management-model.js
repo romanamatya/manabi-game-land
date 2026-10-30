@@ -1,5 +1,5 @@
 // Shared management contract. No credentials, answers or learning-event collection.
-export const GAME_IDS=Object.freeze(['keisan','pref-name','pref-place','alphabet','distribution','distribution2','exchangeAssociation','kotowaza','multiplicationProperties','shapeExpressions']);
+export const GAME_IDS=Object.freeze(['keisanSummary','keisan','pref-name','pref-place','alphabet','distribution','distribution2','exchangeAssociation','kotowaza','multiplicationProperties','shapeExpressions']);
 export const normalPolicy=()=>({multiplier:1,cap:50,campaignId:null});
 export function policyFor(setting,now=Date.now()){
  const c=setting?.campaign;
@@ -15,3 +15,4 @@ export function checkedInput(action,input){
  return input;
 }
 export function rankingRows(players,game){return players.filter(p=>Number.isSafeInteger(p.best?.[game])&&p.best[game]>0).map(p=>({uid:p.uid,nickname:p.nickname,best:p.best[game]})).sort((a,b)=>b.best-a.best||a.nickname.localeCompare(b.nickname,'ja'));}
+
