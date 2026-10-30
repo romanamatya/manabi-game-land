@@ -9,11 +9,12 @@ function fakeIndexedDB(){
   const rows=new Map();
   return {rows,open(){const req={};setTimeout(()=>{req.result={objectStoreNames:{contains:()=>true},createObjectStore(){},close(){},transaction(){const tx={objectStore(){return {get(key){const r={};setTimeout(()=>{r.result=rows.get(key);r.onsuccess?.()},0);return r},put(value){rows.set(value.id,value)}}}};setTimeout(()=>tx.oncomplete?.(),1);return tx}};req.onsuccess?.()},0);return req}};
 }
-function runtime(mode,{initial=[],session=[]}={}){
+function runtime(mode,opts={}){
+  const {initial=[],session=[]}=opts;
   const data=new Map(initial),sessionData=new Map(session);let quota=Infinity,lock=Promise.resolve();
   const store=map=>({getItem:k=>map.get(k)??null,setItem(k,v){v=String(v);if(v.length+[...map].reduce((n,[key,x])=>n+(key===k?0:String(x).length),0)>quota)throw Error('QuotaExceededError');map.set(k,v)},removeItem:k=>map.delete(k)});
   const storage=store(data),sessionStorage=store(sessionData),window={MANABI_ENV:{preview:mode==='preview'},manabiStorage:storage,sessionStorage,indexedDB:fakeIndexedDB(),addEventListener(){},dispatchEvent(){}};
-  const ctx={window,globalThis:window,structuredClone,Date,URL,crypto:{randomUUID},Event:class{},CustomEvent:undefined,document:{body:{dataset:{}},readyState:'complete',addEventListener(){},getElementById(){return null},createElement(){return {setAttribute(){}}}},navigator:{locks:{request:(_,fn)=>{const p=lock.then(fn);lock=p.catch(()=>{});return p}}},location:{href:'https://example.invalid/'+(mode==='preview'?'preview/':'')},setInterval(){}};
+  const ctx={window,globalThis:window,structuredClone,Date,URL,crypto:{randomUUID},Event:class{},CustomEvent:undefined,document:{body:{dataset:{}},readyState:'complete',addEventListener(){},getElementById(){return null},createElement(){return {setAttribute(){}}}},navigator:opts.noLocks?{}:{locks:{request:(_,fn)=>{const p=lock.then(fn);lock=p.catch(()=>{});return p}}},location:{href:'https://example.invalid/'+(mode==='preview'?'preview/':'')},setInterval(){}};
   vm.createContext(ctx);
   for(const file of ['economy-core.js','storage-adapters.js',mode==='preview'?'preview/economy.js':'economy.js'])vm.runInContext(fs.readFileSync(new URL(file,root),'utf8'),ctx);
   return {api:window.ManabiEconomy,data,sessionData,indexedDB:window.indexedDB,setQuota:n=>quota=n};
@@ -63,4 +64,11 @@ test('double taps and outbox replay award only once',async()=>{
   first.data.set('mgl_economy_outbox_v1',JSON.stringify([{id:q.id,game:'alphabet',prompt:'A',answer:'a'}]));
   const restored=runtime('production',{initial:[...first.data]});await pause(150);
   assert.equal(restored.api.snapshot().balances.english,score);
+});
+
+test('answers remain queued if cross-tab locks are unavailable',async()=>{
+  const first=runtime('production',{noLocks:true});await pause(10);const q=first.api.begin('alphabet','A');await first.api.answer(q,'a');
+  assert(first.data.has('mgl_economy_outbox_v1'));
+  const restored=runtime('production',{initial:[...first.data]});await pause(30);
+  assert.equal(restored.api.snapshot().balances.english,1);
 });
