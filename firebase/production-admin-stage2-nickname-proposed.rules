@@ -214,6 +214,8 @@ service cloud.firestore {
         && request.resource.data.keys().hasOnly(['uid','profileUid','createdAt'])
         && request.resource.data.uid == rankingUid
         && request.resource.data.profileUid is string
+        && request.resource.data.profileUid.size() >= 1
+        && request.resource.data.profileUid.size() <= 128
         && request.resource.data.createdAt == request.time
         && exists(linkedPlayerPath(request.resource.data.profileUid))
         && get(linkedPlayerPath(request.resource.data.profileUid)).data.rankingUid == rankingUid;
