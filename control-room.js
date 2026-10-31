@@ -1,6 +1,7 @@
 import {client,errorText} from './spark-auth.js?v=admin-stage2-player-rename-1';
 const readOnly=window.MANABI_SPARK_CONFIG?.adminReadOnly===true;
 const playerRenameEnabled=window.MANABI_SPARK_CONFIG?.adminFeatures?.playerRename===true;
+const playerSuspensionEnabled=window.MANABI_SPARK_CONFIG?.adminFeatures?.playerSuspension===true;
 const environmentLabel=window.MANABI_SPARK_CONFIG?.mode==='production'?'本番':'確認用';
 const $=id=>document.getElementById(id),S=window.ManabiUpgradeShared,core=window.ManabiEconomyCore,catalog=window.ManabiProfileCatalog;
 let api=null,data=null,events=null,active='players',period=7,query='',sort='nickname',sortDirection=1,detail=null,ticket=0,pending=null,working=false;
@@ -15,6 +16,7 @@ function field(label,type='text',value=''){const wrap=el('div'),l=el('label',lab
 function ask(title,description,fields,action,extra={}){if(working)return;pending=async()=>{const reason=$('reasonInput').value.trim();if(reason.length<2)throw Error('変更理由を入力して。');if(extra.all&&$('allPhrase').value!=='全ゲーム')throw Error('「全ゲーム」と入力して。');const values=Object.fromEntries(fields.map(f=>[f.name,f.input.type==='checkbox'?f.input.checked:f.input.value]));await action(values,reason)};$('dialogTitle').textContent=title;$('dialogFields').replaceChildren(el('p',description));for(const f of fields)$('dialogFields').append(f.wrap);if(extra.all){const p=field('一括操作の確認：「全ゲーム」と入力');p.input.id='allPhrase';$('dialogFields').append(p.wrap)}const reason=field('変更理由（必須）','textarea');reason.input.id='reasonInput';$('dialogFields').append(reason.wrap);$('dialogError').textContent='';$('execute').disabled=false;$('confirmDialog').showModal()}
 async function mutate(action,values,reason){await api.call('admin:'+action,{...values,reason,confirm:true});events=null;await refresh()}
 $('execute').onclick=async()=>{if(working||!pending)return;working=true;$('execute').disabled=true;try{await pending();$('confirmDialog').close();$('status').textContent='保存した。操作履歴に記録した。'}catch(e){$('dialogError').textContent=e.message||errorText(e);$('execute').disabled=false}finally{working=false}};$('cancel').onclick=()=>{if(!working)$('confirmDialog').close()};$('confirmDialog').addEventListener('cancel',e=>{if(working)e.preventDefault()});
+function playerStatusAction(p){const suspended=p.status==='suspended',action=suspended?'restore':'suspend';return button(suspended?'利用停止を解除':'利用停止',()=>ask(suspended?'利用停止を解除：'+(p.nickname||'名前なし'):'利用停止：'+(p.nickname||'名前なし'),'プレイヤーIDを維持し、変更前のプロフィールをバックアップして操作履歴に記録する。ポイント・称号・所持品・最高記録は変更しない。',[],(_,reason)=>mutate(action,{uid:p.uid,expectedStatus:suspended?'suspended':'active'},reason)))}
 function formField(name,label,type,value){const f=field(label,type,value);f.name=name;return f}
 function campaign(id){const end=formField('end','終了日時（空欄なら手動終了）','datetime-local'),enabled=formField('enabled','ポイント2倍を有効にする','checkbox');enabled.input.checked=true;const g=formField('game','対象ゲーム',gameSelect(id));ask('ポイント2倍キャンペーン','問題を開始した時点の倍率を、その問題の終了まで保持する。通常は1問1pt・1日50pt、2倍中は1問2pt・1日100pt。同日の獲得分は開始・終了でもリセットしない。',[g,enabled,end],async(v,reason)=>mutate('campaign',{game:v.game,enabled:v.enabled,endAt:v.end?new Date(v.end).getTime():null},reason))}
 function renderPlayers(){
@@ -24,12 +26,13 @@ function renderPlayers(){
  toolbar.append(search,select(readOnly?[['nickname','名前順'],['lastPlayedAt','最終プレイ日順']]:[['nickname','名前順'],['lastPlayedAt','最終プレイ日順'],['status','状態順']],sort,v=>{sort=v;renderPlayers()}),button('更新',refresh));n.append(toolbar);
  const rows=data.players.filter(p=>!query||String(p.nickname||'').includes(query)||p.uid.includes(query)).sort((a,b)=>String(a[sort]??'').localeCompare(String(b[sort]??''),'ja',{numeric:true})*(sort==='lastPlayedAt'?-1:1));
  if(readOnly){
-  const headers=['ニックネーム・児童ID','最終プレイ','称号','最高連続正解記録',...(playerRenameEnabled?['操作']:[])];
+  const headers=['ニックネーム・児童ID','最終プレイ','称号','最高連続正解記録',...(playerSuspensionEnabled?['利用状態']:[]),...(playerRenameEnabled||playerSuspensionEnabled?['操作']:[])];
   n.append(table(headers,rows.map(p=>{
    const identity=el('div',p.nickname||'（名前なし）');identity.append(el('small',p.uid));
    const titles=el('details');titles.append(el('summary',(p.titles||[]).length+'個'));for(const id of p.titles||[])titles.append(el('div',catalog.flatMap(g=>g.titles).find(t=>t.id===id)?.name||id));
    const row=[identity,date(p.lastPlayedAt),titles,Object.entries(p.best||{}).map(([g,v])=>(S.names[g]||g)+':'+v).join(' / ')||'—'];
-   if(playerRenameEnabled)row.push(button('名前変更',()=>ask('名前変更：'+(p.nickname||'名前なし'),'プレイヤーIDと最高記録を保持し、変更前情報とランキング表示名をバックアップ・記録する。',[formField('nickname','新しい名前','text',p.nickname)],(v,r)=>mutate('rename',{uid:p.uid,nickname:v.nickname,expectedNickname:p.nickname||''},r))));
+   if(playerSuspensionEnabled)row.push(p.status==='suspended'?'利用停止':'利用中');
+   if(playerRenameEnabled||playerSuspensionEnabled){const actions=el('div',undefined,'actions');if(playerRenameEnabled)actions.append(button('名前変更',()=>ask('名前変更：'+(p.nickname||'名前なし'),'プレイヤーIDと最高記録を保持し、変更前情報とランキング表示名をバックアップ・記録する。',[formField('nickname','新しい名前','text',p.nickname)],(v,r)=>mutate('rename',{uid:p.uid,nickname:v.nickname,expectedNickname:p.nickname||''},r))));if(playerSuspensionEnabled)actions.append(playerStatusAction(p));row.push(actions)}
    return row;
   })));
   n.append(el('p',environmentLabel+'Firebaseに保存された情報のみ表示。ポイント・所持品・購入履歴・管理情報は読み出し表示しない。','muted'));
@@ -42,6 +45,7 @@ function renderPlayers(){
   const possessions=el('details'),owned=p.owned||[],appearance=p.appearance||{};possessions.append(el('summary',p.ownershipKnown===false?'所持情報は未同期':'購入・限定 '+owned.length+'個'));for(const id of owned)possessions.append(el('div',core.catalog.find(i=>i.id===id)?.name||id));possessions.append(el('div','アイコン：'+(appearance.icon||'cat')),el('div','枠：'+(appearance.frame||'plain')),el('div','称号：'+(appearance.badge||'未設定')),el('div','教科別アイコン：'+JSON.stringify(appearance.subjectIcons||{})),el('div','教科別の枠：'+JSON.stringify(appearance.subjectFrames||{})));
   const actions=el('div',undefined,'actions');
   actions.append(button('名前変更',()=>ask('名前変更：'+p.nickname,'プレイヤーIDと記録を保持し、変更前の情報と履歴を同時に保存する。',[formField('nickname','新しい名前','text',p.nickname)],(v,r)=>mutate('rename',{uid:p.uid,nickname:v.nickname,expectedNickname:p.nickname},r))));
+  if(playerSuspensionEnabled)actions.append(playerStatusAction(p));
   return [identity,date(p.lastPlayedAt),Object.entries(p.balances||{}).map(([s,v])=>({japanese:'国',math:'算',social:'社',science:'理',english:'英'}[s])+':'+v).join(' / ')||(p.legacyPoints!==null&&p.legacyPoints!==undefined?'旧保存ポイント：'+p.legacyPoints+'（教科別内訳なし）':'—'),titles,Object.entries(p.best||{}).map(([g,v])=>(S.names[g]||g)+':'+v).join(' / ')||(p.legacyPoints!==null&&p.legacyPoints!==undefined?'旧保存ポイント：'+p.legacyPoints+'（教科別内訳なし）':'—'),possessions,p.status==='suspended'?'利用停止':'利用中',actions];
  })));
  n.append(el('p',environmentLabel+'Firebaseに保存されたプレイヤーのみ表示。端末内だけの記録は取り込まない。旧データにない教科別残高・所持情報は未確認として表示する。','muted'));
