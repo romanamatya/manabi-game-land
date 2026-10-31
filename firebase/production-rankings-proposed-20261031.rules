@@ -42,7 +42,7 @@ service cloud.firestore {
     function productionRankingNameOK(name) {
       return name is string && name.size() >= 1 && name.size() <= 12
         && !name.matches('.*[<>\\r\\n].*')
-        && !name.matches('^\\s.*') && !name.matches('.*\\s$');
+        && !name.matches('^ .*') && !name.matches('.* $');
     }
     function productionRankingShape(game, uid, data) {
       return productionRankingGame(game)
