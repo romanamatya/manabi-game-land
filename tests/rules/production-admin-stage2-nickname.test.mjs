@@ -70,8 +70,9 @@ test('player name sync does not create placeholder profiles and uses the Firesto
 
 test('only a fresh enabled admin may suspend and restore a player with atomic audit and backup',async()=>{
  const db=adminContext().firestore(),profile=F.doc(db,'players/profile-a');
- const before=(await assertSucceeds(F.getDoc(profile))).data();
+ const initial=(await assertSucceeds(F.getDoc(profile))).data();
  const run=async(status,action,id)=>{
+  const before=(await assertSucceeds(F.getDoc(profile))).data();
   const at=F.serverTimestamp(),batch=F.writeBatch(db),backupId='status-backup-'+id,auditId='status-audit-'+id;
   batch.set(F.doc(db,'productionAdmin/v1/backups/'+backupId),{actor:'admin-uid',at,uid:'profile-a',target:'players/profile-a',kind:'player-status',data:{player:before}});
   batch.set(F.doc(db,'productionAdmin/v1/audit/'+auditId),{actor:'admin-uid',at,uid:'profile-a',target:'players/profile-a',action,reason:'保護者の依頼確認済み',backupId,beforeStatus:status==='suspended'?'active':'suspended',afterStatus:status});
@@ -81,7 +82,7 @@ test('only a fresh enabled admin may suspend and restore a player with atomic au
  await run('suspended','player-suspend','1');
  let current=(await F.getDoc(profile)).data();
  assert.equal(current.status,'suspended');
- assert.equal(current.points,135);assert.equal(current.bestStreak,42);assert.deepEqual(current.appearance,before.appearance);
+ assert.equal(current.points,135);assert.equal(current.bestStreak,42);assert.deepEqual(current.appearance,initial.appearance);
  const childDb=child('profile-a').firestore();
  await assertFails(F.updateDoc(F.doc(childDb,'players/profile-a'),{points:999,bestStreak:999,updatedAt:2}));
  const rankingDb=child('rank-a').firestore(),rankRef=F.doc(rankingDb,'productionRankings/v1/games/keisan/players/rank-a');
@@ -90,7 +91,7 @@ test('only a fresh enabled admin may suspend and restore a player with atomic au
  current=(await F.getDoc(profile)).data();assert.equal(current.status,'active');
  await assertSucceeds(F.updateDoc(rankRef,{bestStreak:21,updatedAt:F.serverTimestamp()}));
  const finalProfile=(await F.getDoc(profile)).data();
- assert.equal(finalProfile.points,before.points);assert.equal(finalProfile.bestStreak,before.bestStreak);assert.deepEqual(finalProfile.appearance,before.appearance);
+ assert.equal(finalProfile.points,initial.points);assert.equal(finalProfile.bestStreak,initial.bestStreak);assert.deepEqual(finalProfile.appearance,initial.appearance);
 });
 
 test('admin cannot change player status until the separate suspension role flag is enabled',async()=>{
