@@ -1,0 +1,17 @@
+import {before,after,beforeEach,test} from 'node:test';
+import assert from 'node:assert/strict';
+import {readFile} from 'node:fs/promises';
+import {initializeTestEnvironment,assertFails,assertSucceeds} from '@firebase/rules-unit-testing';
+import * as F from 'firebase/firestore';
+const projectId='demo-manabi-production-ranking';
+const path=(db,uid='child-a',game='keisan')=>F.doc(db,'productionRankings','v1','games',game,'players',uid);
+const row=(uid='child-a',game='keisan',bestStreak=12,extra={})=>({uid,game,nickname:'そら',bestStreak,icon:'cat',frame:'plain',title:'計算名人',badge:'keisan:10',updatedAt:F.serverTimestamp(),...extra});
+let env;
+const child=uid=>env.authenticatedContext(uid,{firebase:{sign_in_provider:'anonymous'}}).firestore();
+before(async()=>{env=await initializeTestEnvironment({projectId,firestore:{host:'127.0.0.1',port:8089,rules:await readFile(new URL('../../firebase/production-rankings.rules',import.meta.url),'utf8')}});});
+beforeEach(async()=>env.clearFirestore());
+after(async()=>env?.cleanup());
+test('authenticated children can read each other’s sanitized ranking rows',async()=>{const a=child('child-a'),b=child('child-b');await assertSucceeds(F.setDoc(path(a),row()));const rows=await assertSucceeds(F.getDocs(F.collection(b,'productionRankings','v1','games','keisan','players')));assert.equal(rows.size,1);assert.deepEqual(Object.keys(rows.docs[0].data()).sort(),['uid','game','nickname','bestStreak','icon','frame','title','badge','updatedAt'].sort());});
+test('only the matching anonymous UID can create or update its row',async()=>{const a=child('child-a'),b=child('child-b');await assertSucceeds(F.setDoc(path(a),row()));await assertFails(F.updateDoc(path(b),{bestStreak:99,updatedAt:F.serverTimestamp()}));await assertFails(F.setDoc(path(b),row('child-a','keisan',50)));});
+test('prevents score reduction, extra private fields, and deletion',async()=>{const a=child('child-a');await assertSucceeds(F.setDoc(path(a),row()));await assertFails(F.updateDoc(path(a),{bestStreak:11,updatedAt:F.serverTimestamp()}));await assertFails(F.updateDoc(path(a),{points:500,updatedAt:F.serverTimestamp()}));await assertFails(F.deleteDoc(path(a)));});
+test('rejects unauthenticated reads and invalid game, score, or identity',async()=>{const a=child('child-a');await assertFails(F.setDoc(path(a,'child-a','unknown'),row('child-a','unknown',10)));await assertFails(F.setDoc(path(a),row('child-a','keisan',100001)));await assertFails(F.setDoc(path(a),row('child-a','keisan',10,{uid:'child-b'})));const guest=env.unauthenticatedContext().firestore();await assertFails(F.getDocs(F.collection(guest,'productionRankings','v1','games','keisan','players')));});

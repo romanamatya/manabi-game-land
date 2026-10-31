@@ -56,6 +56,6 @@ function celebrate(item){document.getElementById('mqCelebration')?.remove();cons
 function titleReward(items,extras){document.getElementById('mqTitleReward')?.remove();document.getElementById('mqUnlockToast')?.remove();clearTimeout(toastTimer);celebrate(items[items.length-1])}
 storage.setItem=(key,value)=>{const before=gameKeys.has(key)?model.records(storage):null,old=before?new Set(model.unlocked(before).map(i=>i.kind+':'+i.id)):null,oldBadges=before?earnedIds(before):null;nativeSet(key,value);if(old){model.syncLimited(storage);model.syncTitleFrameRewards(storage);const rows=model.records(storage),added=model.unlocked(rows).filter(i=>!old.has(i.kind+':'+i.id)),awarded=model.badges.filter(b=>!oldBadges.has(b.id)&&rows.some(r=>r.id===b.game&&r.best>=b.at));if(awarded.length)titleReward(awarded,added);else if(added.length)showUnlocked(added);profile=model.profile(storage);refreshEquipped()}};
 window.addEventListener('manabi-economy-change',()=>{model.syncLimited(storage);profile=model.profile(storage);apply();if(dialog.open&&['points','avatar'].includes(active))renderPanel()});
-window.addEventListener('pageshow',()=>{profile=model.profile(storage);apply()});apply();
+if(window.MANABI_BACKEND_CONFIG?.rankingSyncEnabled===true)import('./ranking-sync-client.js?v=prod-rank-v1').then(m=>m.startRankingSync()).catch(()=>{});window.addEventListener('pageshow',()=>{profile=model.profile(storage);apply()});apply();
 })();
 
