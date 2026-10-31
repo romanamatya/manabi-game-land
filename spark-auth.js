@@ -97,12 +97,13 @@ export function createAdminOperations(c,{auth,db},A,F) {
   }
 
   async function rename(input) {const user=await verify();if(contract.mode==='production'){const role=await F.getDocFromServer(ref('private','admin'));if(role.data()?.renameEnabled!==true)throw error('rename-not-enabled');}return store.rename(user,input);}
+  async function setPlayerStatus(input){const user=await verify();if(c.adminFeatures?.playerSuspension!==true)throw error('suspension-not-enabled');if(contract.mode==='production'){const role=await F.getDocFromServer(ref('private','admin'));if(role.data()?.suspensionEnabled!==true)throw error('suspension-not-enabled');}return store.setStatus(user,input);}
 
   async function call(action, input = {}) {
-    if(readOnly&&!['admin:snapshot','admin:players'].includes(action)&&!(c.adminFeatures?.playerRename===true&&['admin:rename','admin:history'].includes(action)))throw error('admin-read-only');
+    if(readOnly&&!['admin:snapshot','admin:players'].includes(action)&&!(c.adminFeatures?.playerRename===true&&['admin:rename','admin:history'].includes(action))&&!(c.adminFeatures?.playerSuspension===true&&['admin:suspend','admin:restore','admin:history'].includes(action)))throw error('admin-read-only');
     await verify();
     if (action === 'admin:snapshot') {
-      if(readOnly){const players=await list('players');const history=c.adminFeatures?.playerRename===true?await F.getDocsFromServer(F.query(col('audit'),F.orderBy('at','desc'),F.limit(100))):null;return {players:players.rows,playerCursor:players.cursor,audit:history?.docs.map(d=>plain({...d.data(),id:d.id}))||[]};}
+      if(readOnly){const players=await list('players');const history=(c.adminFeatures?.playerRename===true||c.adminFeatures?.playerSuspension===true)?await F.getDocsFromServer(F.query(col('audit'),F.orderBy('at','desc'),F.limit(100))):null;return {players:players.rows,playerCursor:players.cursor,audit:history?.docs.map(d=>plain({...d.data(),id:d.id}))||[]};}
       const [players, history] = await Promise.all([
         list('players'),
         F.getDocsFromServer(F.query(col('audit'), F.orderBy('at', 'desc'), F.limit(100)))
@@ -115,6 +116,7 @@ export function createAdminOperations(c,{auth,db},A,F) {
     if (action === 'admin:players') return list('players', input.cursor);
     if (input.confirm !== true) throw error('invalid-input');
     if (action === 'admin:rename') return rename(input);
+    if(action==='admin:suspend'||action==='admin:restore'){if(c.adminFeatures?.playerSuspension!==true)throw error('suspension-not-enabled');return setPlayerStatus({...input,status:action==='admin:suspend'?'suspended':'active'});}
     if(action==='admin:switchSeason'){const user=await verify();if(c.seasonManagementEnabled!==true)throw error('season-management-not-enabled');return createSeasonStore(F,db,contract.base,{enabled:true,legacyRows:async()=>{let rows=[],cursor=null;do{const p=await store.list(cursor);rows.push(...p.rows);cursor=p.cursor;if(rows.length>1000)throw error('ranking-backup-too-large');}while(cursor);return rows;}}).switchAll(user,input);}
     if(action==='admin:reset'&&c.challenge120Enabled===true)throw error('use-atomic-season-switch');
     if(['visibility','campaign','notice','reset','rankingBackup'].some(v=>action==='admin:'+v)){if(c.managementEnabled!==true)throw error('management-not-enabled');const user=await verify();return management.mutate(user,action.slice(6),input);}
