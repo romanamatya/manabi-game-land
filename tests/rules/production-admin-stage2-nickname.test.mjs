@@ -96,6 +96,7 @@ test('only a fresh enabled admin may suspend and restore a player with atomic au
  await assertFails(F.updateDoc(rankRef,{bestStreak:21,updatedAt:F.serverTimestamp()}));
  await run('active','player-restore','2');
  current=(await F.getDoc(profile)).data();assert.equal(current.status,'active');
+ await assertSucceeds(F.updateDoc(F.doc(childDb,'players/profile-a'),{updatedAt:3}));
  await assertSucceeds(F.updateDoc(rankRef,{bestStreak:21,updatedAt:F.serverTimestamp()}));
  const finalProfile=(await F.getDoc(profile)).data();
  assert.equal(finalProfile.points,initial.points);assert.equal(finalProfile.bestStreak,initial.bestStreak);assert.deepEqual(finalProfile.appearance,initial.appearance);
