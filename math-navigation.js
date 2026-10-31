@@ -1,6 +1,6 @@
 (()=>{
 const test=new URL(location.href).searchParams.has('adminTest'),testLink=href=>href+(test?(href.includes('?')?'&':'?')+'adminTest':'');if(test)for(const a of document.querySelectorAll('a[href]'))a.href=testLink(a.href);
-const units=[{id:'calculation',name:'計算のきまり',description:'順番・式の変形・数や図のまとまりを学ぼう',page:'math-calculation.html',games:['keisan','distribution','distribution2','exchangeAssociation','multiplicationProperties','shapeExpressions','keisanSummary']}];
+const units=[{id:'calculation',name:'計算のきまり',description:'順番・式の変形・数や図のまとまりを学ぼう',page:'math-calculation.html',games:['keisan','distribution','distribution2','exchangeAssociation','multiplicationProperties','shapeExpressions' ]}];
 window.ManabiMathUnits=Object.freeze(units);const root=document.getElementById('mathCards'),inUnit=document.body.dataset.unit==='calculation';
 function card(title,description,href,rank){const article=document.createElement('article');article.className='unit-card';const a=document.createElement('a');a.className='game-start';a.href=testLink(href);const h=document.createElement('h2'),p=document.createElement('p');h.textContent=title;p.textContent=description;a.append(h,p);article.append(a);if(rank){const link=document.createElement('a');link.className='rank-button';link.href=testLink(rank);link.textContent='2分間の端末内記録';article.append(link)}return article}
 if(!inUnit){for(const u of units)root.append(card(u.name,u.description,u.page));return}
