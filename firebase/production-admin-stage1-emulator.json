@@ -1,0 +1,14 @@
+{
+  "firestore": {
+    "rules": "production-admin-readonly-stage1.rules"
+  },
+  "emulators": {
+    "firestore": {
+      "port": 8180
+    },
+    "ui": {
+      "enabled": false
+    },
+    "singleProjectMode": false
+  }
+}

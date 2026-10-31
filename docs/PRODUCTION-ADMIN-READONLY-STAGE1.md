@@ -28,3 +28,7 @@ Firestore Rules cannot hide individual fields within a document. An authorized r
 ## Existing player-read rule
 
 The live `/players/{playerId}` rule currently allows reads for any Firebase-authenticated user (`request.auth != null`), which includes the game's anonymous-authenticated child clients. The admin page itself additionally requires the password provider, matching enabled role document, and a fresh session. This stage preserves the existing `/players` rule as requested; therefore the new admin namespace is restricted, but raw `/players` document reads are not admin-only at the Firestore layer. Tightening that existing rule needs a separate compatibility review of all game callers before deployment.
+
+## Emulator verification
+
+The production candidate Rules passed the Emulator suite: `npm run test:rules:admin-stage1` (7 tests). The suite verifies admin-doc access, denial for unauthenticated/anonymous/non-admin identities, denial of admin-path writes/deletes, preservation of existing `/players` behavior, denial of admin writes to child data, and shared ranking read/self-best behavior. It uses only the Firestore Emulator and fixture records.
