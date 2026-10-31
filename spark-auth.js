@@ -20,6 +20,9 @@ export function errorText(e) {
     'admin-required': '管理者として認証されていない。',
     'session-revoked': '管理セッションが終了した。少し待って、パスワードで入り直して。',
     'rename-not-enabled': '名前変更は切り替え確認待ちのため停止中。閲覧は利用できる。',
+    'suspension-not-enabled': '利用停止・復元はRulesと管理者設定の確認待ちです。',
+    'player-suspended':'現在、このアカウントは利用できません。記録・ポイント・所持品は保持されています。',
+    'player-status-conflict':'別の管理者操作で利用状態が変わりました。最新の状態を読み直してください。',
     'management-not-enabled':'管理機能の追加Rulesは確認待ち。既存のプレイヤー管理は引き続き利用できる。',
     'device-only-ranking':'このゲームは端末保存のみ。共有ランキングのリセット対象外。',
     'feature-unverified': 'この機能は基盤の確認後に接続するため、現在は利用できない。',
@@ -81,7 +84,7 @@ export function createAdminOperations(c,{auth,db},A,F) {
     const page=await store.list(cursor);
     if(!readOnly)return plain(page);
     // Keep the view model to information needed for the first read-only stage.
-    return {rows:page.rows.map(p=>({uid:p.uid,nickname:p.nickname,status:p.status,lastPlayedAt:plain(p.lastPlayedAt),best:p.best,titles:p.titles})),cursor:page.cursor};
+    return {rows:page.rows.map(p=>({uid:p.uid,nickname:p.nickname,status:p.status,accessStatus:p.accessStatus,rankingLinked:p.rankingLinked,lastPlayedAt:plain(p.lastPlayedAt),best:p.best,titles:p.titles})),cursor:page.cursor};
   };
   async function verify() {
     const user = auth.currentUser;
@@ -99,10 +102,10 @@ export function createAdminOperations(c,{auth,db},A,F) {
   async function rename(input) {const user=await verify();if(contract.mode==='production'){const role=await F.getDocFromServer(ref('private','admin'));if(role.data()?.renameEnabled!==true)throw error('rename-not-enabled');}return store.rename(user,input);}
 
   async function call(action, input = {}) {
-    if(readOnly&&!['admin:snapshot','admin:players'].includes(action)&&!(c.adminFeatures?.playerRename===true&&['admin:rename','admin:history'].includes(action)))throw error('admin-read-only');
+    if(readOnly&&!['admin:snapshot','admin:players'].includes(action)&&!(c.adminFeatures?.playerRename===true&&['admin:rename','admin:history'].includes(action))&&!(c.adminFeatures?.playerSuspension===true&&['admin:setPlayerAccess'].includes(action)))throw error('admin-read-only');
     await verify();
     if (action === 'admin:snapshot') {
-      if(readOnly){const players=await list('players');const history=c.adminFeatures?.playerRename===true?await F.getDocsFromServer(F.query(col('audit'),F.orderBy('at','desc'),F.limit(100))):null;return {players:players.rows,playerCursor:players.cursor,audit:history?.docs.map(d=>plain({...d.data(),id:d.id}))||[]};}
+      if(readOnly){const players=await list('players');const history=c.adminFeatures?.playerRename===true||c.adminFeatures?.playerSuspension===true?await F.getDocsFromServer(F.query(col('audit'),F.orderBy('at','desc'),F.limit(100))):null;return {players:players.rows,playerCursor:players.cursor,audit:history?.docs.map(d=>plain({...d.data(),id:d.id}))||[]};}
       const [players, history] = await Promise.all([
         list('players'),
         F.getDocsFromServer(F.query(col('audit'), F.orderBy('at', 'desc'), F.limit(100)))
@@ -115,6 +118,7 @@ export function createAdminOperations(c,{auth,db},A,F) {
     if (action === 'admin:players') return list('players', input.cursor);
     if (input.confirm !== true) throw error('invalid-input');
     if (action === 'admin:rename') return rename(input);
+    if(action==='admin:setPlayerAccess'){if(c.adminFeatures?.playerSuspension!==true)throw error('suspension-not-enabled');const role=await F.getDocFromServer(ref('private','admin'));if(role.data()?.suspensionEnabled!==true)throw error('suspension-not-enabled');return store.setPlayerAccess(await verify(),input);}
     if(action==='admin:switchSeason'){const user=await verify();if(c.seasonManagementEnabled!==true)throw error('season-management-not-enabled');return createSeasonStore(F,db,contract.base,{enabled:true,legacyRows:async()=>{let rows=[],cursor=null;do{const p=await store.list(cursor);rows.push(...p.rows);cursor=p.cursor;if(rows.length>1000)throw error('ranking-backup-too-large');}while(cursor);return rows;}}).switchAll(user,input);}
     if(action==='admin:reset'&&c.challenge120Enabled===true)throw error('use-atomic-season-switch');
     if(['visibility','campaign','notice','reset','rankingBackup'].some(v=>action==='admin:'+v)){if(c.managementEnabled!==true)throw error('management-not-enabled');const user=await verify();return management.mutate(user,action.slice(6),input);}

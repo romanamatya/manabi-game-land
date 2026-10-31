@@ -54,6 +54,14 @@ export async function createProductionRankingClient(c,[App,A,F]){
    tx.set(target,next);return next;
   });
  }
+ async function getExistingPlayerLink(){
+  if(!profileUid)throw err('player-name-sync-disabled');
+  const [profileSnap,linkSnap]=await Promise.all([F.getDocFromServer(playerRef()),F.getDocFromServer(linkRef())]);
+  if(!profileSnap.exists()||!linkSnap.exists())throw err('player-ranking-link-required');
+  const profile=profileSnap.data(),link=linkSnap.data();
+  if(link.uid!==uid||link.profileUid!==profileUid||profile.rankingUid!==uid||!validNickname(profile.nickname))throw err('player-ranking-link-conflict');
+  return profile.nickname;
+ }
  async function ensurePlayerLink(localNickname){
   if(!profileUid)throw err('player-name-sync-disabled');
   const link=linkRef(),linkSnap=await F.getDocFromServer(link);
@@ -84,7 +92,7 @@ export async function createProductionRankingClient(c,[App,A,F]){
  }
  async function rankings(game){return queryGame(game,100);}
  async function champions(){return Promise.all([...allowed].map(async game=>({game,row:(await queryGame(game,1))[0]||null})));}
- return {uid,profileUid,publishRanking,rankings,champions,ensurePlayerLink,watchPlayerName};
+ return {uid,profileUid,publishRanking,rankings,champions,ensurePlayerLink,getExistingPlayerLink,watchPlayerName};
 }
 let pending;
 export function client(){
