@@ -28,7 +28,7 @@ service cloud.firestore {
     }
     function validPlayerNickname(name) {
       return name is string && name.size() >= 1 && name.size() <= 12
-        && !name.matches('.*[<>\\\\r\\\\n].*')
+        && !name.matches('.*[<>\\r\\n].*')
         && !name.matches('^ .*') && !name.matches('.* $');
     }
     function validRankingUid(value) {
