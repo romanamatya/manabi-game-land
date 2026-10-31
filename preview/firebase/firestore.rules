@@ -278,6 +278,39 @@ service cloud.firestore {
       allow update, delete: if false;
     }
 
+
+    // Sanitized, per-game public leaderboard projection. Player profiles stay private.
+    function rankingGame(game) {
+      return game in ['keisan','pref-name','pref-place','alphabet','distribution','distribution2','exchangeAssociation','kotowaza','multiplicationProperties','shapeExpressions','keisanSummary'];
+    }
+    function rankingShape(game, uid, data) {
+      return rankingGame(game) && data.keys().hasOnly(['uid','game','nickname','bestStreak','icon','frame','title','badge','updatedAt'])
+        && data.uid == uid && data.game == game && nameOK(data.nickname)
+        && data.bestStreak is int && data.bestStreak > 0 && data.bestStreak <= 100000
+        && data.icon is string && data.icon.size() <= 64
+        && data.frame is string && data.frame.size() <= 64
+        && (data.title == null || data.title is string && data.title.size() <= 80)
+        && (data.badge == null || data.badge is string && data.badge.size() <= 80)
+        && data.updatedAt == request.time;
+    }
+    match /previewSpark/v1/rankings/{game}/players/{uid} {
+      // Only the sanitized projection is visible to authenticated users.
+      allow get, list: if request.auth != null && rankingGame(game);
+      // A player can create/update only their Auth-UID document. Best can never decrease.
+      allow create: if request.auth != null
+        && request.auth.token.firebase.sign_in_provider == 'anonymous'
+        && request.auth.uid == uid
+        && rankingShape(game, uid, request.resource.data);
+      allow update: if request.auth != null
+        && request.auth.token.firebase.sign_in_provider == 'anonymous'
+        && request.auth.uid == uid
+        && rankingShape(game, uid, request.resource.data)
+        && request.resource.data.game == resource.data.game
+        && request.resource.data.uid == resource.data.uid
+        && request.resource.data.bestStreak >= resource.data.bestStreak;
+      allow delete: if false;
+    }
+
     match /previewSpark/v1/settings/notice { allow get: if admin(); allow list, write: if false; }
 
     match /{document=**} { allow read, write: if false; }
