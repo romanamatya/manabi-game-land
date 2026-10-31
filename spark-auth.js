@@ -34,7 +34,11 @@ export function errorText(e) {
 }
 
 export function validateConfig(c) {
- const contract=validateBackend(c);
+ // Read-only admin access is a separate, production-only gate. It must never
+ // enable player sync, legacy writes, or management mutations.
+ const readOnlyAdmin=c?.adminReadOnly===true;
+ const contract=validateBackend(c,{requireEnabled:!readOnlyAdmin,mode:readOnlyAdmin?'production':undefined});
+ if(readOnlyAdmin&&(c.enabled!==false||c.productionReleaseApproved!==true))throw error('backend-not-configured');
  if(typeof location!=='undefined'&&location.pathname.split('/').includes('preview')!==(contract.mode==='preview'))throw error('environment-project-mismatch');
  return contract;
 }
@@ -62,13 +66,20 @@ export async function createAdminClient(c, [appSdk, A, F]) {
 }
 // Domain operations are separately testable without enabling the production entry point.
 export function createAdminOperations(c,{auth,db},A,F) {
-  const contract=validateBackend(c,{requireEnabled:false}),alias=contract.alias;
+  const readOnly=c.adminReadOnly===true;
+  const contract=validateBackend(c,{requireEnabled:false,mode:readOnly?'production':undefined}),alias=contract.alias;
   const store=createFirestoreStore(contract.mode,F,db,{catalog:window.ManabiProfileCatalog||[]});
   const management=createManagementStore(contract.mode,F,db,{players:cursor=>store.list(cursor),rankingGameIds:c.managedRankingGameIds||[]});
   const ref=(kind,id)=>F.doc(db,kind==='players'?contract.players:contract.base+'/'+kind,id);
   const col=kind=>F.collection(db,kind==='players'?contract.players:contract.base+'/'+kind);
   const plain=value=>value?.toMillis?value.toMillis():Array.isArray(value)?value.map(plain):value&&typeof value==='object'?Object.fromEntries(Object.entries(value).map(([k,v])=>[k,plain(v)])):value;
-  const list=async(kind,cursor)=>{if(kind!=='players')throw error('invalid-input');return plain(await store.list(cursor));};
+  const list=async(kind,cursor)=>{
+    if(kind!=='players')throw error('invalid-input');
+    const page=await store.list(cursor);
+    if(!readOnly)return plain(page);
+    // Keep the view model to information needed for the first read-only stage.
+    return {rows:page.rows.map(p=>({uid:p.uid,nickname:p.nickname,status:p.status,lastPlayedAt:plain(p.lastPlayedAt),best:p.best,titles:p.titles})),cursor:page.cursor};
+  };
   async function verify() {
     const user = auth.currentUser;
     if (!user) throw error('admin-required');
@@ -85,8 +96,10 @@ export function createAdminOperations(c,{auth,db},A,F) {
   async function rename(input) {const user=await verify();if(contract.mode==='production'){const role=await F.getDocFromServer(ref('private','admin'));if(role.data()?.renameEnabled!==true)throw error('rename-not-enabled');}return store.rename(user,input);}
 
   async function call(action, input = {}) {
+    if(readOnly&&!['admin:snapshot','admin:players'].includes(action))throw error('admin-read-only');
     await verify();
     if (action === 'admin:snapshot') {
+      if(readOnly){const players=await list('players');return {players:players.rows,playerCursor:players.cursor};}
       const [players, history] = await Promise.all([
         list('players'),
         F.getDocsFromServer(F.query(col('audit'), F.orderBy('at', 'desc'), F.limit(100)))
@@ -110,12 +123,14 @@ export function createAdminOperations(c,{auth,db},A,F) {
     await F.setDoc(ref('private', 'revocation'), {after: F.serverTimestamp(), actor: user.uid});
   }
   async function logout() {
+    if(readOnly){await A.signOut(auth);return;}
     let failure;
     try {await revoke();} catch {failure = error('logout-revocation-failed');}
     finally {await A.signOut(auth);}
     if (failure) throw failure;
   }
   async function changePassword(oldPassword, newPassword) {
+    if(readOnly)throw error('admin-read-only');
     if (typeof newPassword !== 'string' || newPassword.length < 12) throw error('auth/weak-password');
     const user = await verify();
     await A.reauthenticateWithCredential(user, A.EmailAuthProvider.credential(alias, oldPassword));
@@ -137,6 +152,7 @@ export function createAdminOperations(c,{auth,db},A,F) {
     }
   };
 }
+
 
 
 
