@@ -25,9 +25,12 @@ export async function createProductionRankingClient(c,[App,A,F]){
   return {uid,game:input.game,nickname,bestStreak:input.bestStreak,icon,frame,title,badge};
  };
  async function publishRanking(input){
-  const value=clean(input),target=ref(value.game);
+  const submitted=clean(input),target=ref(submitted.game),profile=F.doc(db,'players',uid);
   return F.runTransaction(db,async tx=>{
-   const snap=await tx.get(target),old=snap.exists()?snap.data():null;
+   const [snap,profileSnap]=await Promise.all([tx.get(target),tx.get(profile)]);
+   const old=snap.exists()?snap.data():null;
+   const canonical=profileSnap.exists()?profileSnap.data()?.nickname:submitted.nickname;
+   const value=clean({...input,nickname:canonical});
    const bestStreak=Math.max(value.bestStreak,Number.isSafeInteger(old?.bestStreak)?old.bestStreak:0);const title=old&&value.bestStreak<old.bestStreak?old.title:value.title;const next={...value,title,bestStreak,updatedAt:F.serverTimestamp()};
    if(old&&next.bestStreak===old.bestStreak&&old.nickname===next.nickname&&old.icon===next.icon&&old.frame===next.frame&&old.title===next.title&&old.badge===next.badge)return old;
    tx.set(target,next);return next;
