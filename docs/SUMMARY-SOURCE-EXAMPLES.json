@@ -1,0 +1,223 @@
+{
+  "counts": {
+    "distribution": 64,
+    "factor": 196,
+    "exchange": 34,
+    "multiply": 270,
+    "shape": 336
+  },
+  "examples": {
+    "order": {
+      "id": "order-{\"n\":[5,11,3,2],\"o\":[2,0,1],\"l\":-1,\"r\":-1}",
+      "stages": [
+        {
+          "question": "5×11＋3－2",
+          "correctOperation": 1
+        },
+        {
+          "question": "55＋3－2",
+          "correctOperation": 1
+        },
+        {
+          "question": "58－2",
+          "correctOperation": 1
+        }
+      ]
+    },
+    "distribution": {
+      "id": "99x8",
+      "stages": [
+        {
+          "question": "99×8 / 100を使った正しい式はどれ？",
+          "input": "source-choice",
+          "choices": [
+            {
+              "value": 2,
+              "text": "(100＋2)×8"
+            },
+            {
+              "value": 1,
+              "text": "(100＋1)×8"
+            },
+            {
+              "value": -1,
+              "text": "(100－1)×8"
+            },
+            {
+              "value": -2,
+              "text": "(100－2)×8"
+            }
+          ],
+          "correct": {
+            "value": -1,
+            "text": "(100－1)×8"
+          }
+        },
+        {
+          "question": "(100－1)×8 / 正しい計算のしかたと答えはどれ？",
+          "input": "source-choice",
+          "choices": [
+            {
+              "value": "once",
+              "key": "once",
+              "text": "100×8－1＝800－1＝799",
+              "result": 799
+            },
+            {
+              "value": "factor",
+              "key": "factor",
+              "text": "100×8－1×9＝800－9＝791",
+              "result": 791
+            },
+            {
+              "value": "distributed",
+              "key": "distributed",
+              "text": "100×8－1×8＝800－8＝792",
+              "result": 792
+            },
+            {
+              "value": "sign",
+              "key": "sign",
+              "text": "100×8＋1×8＝800＋8＝808",
+              "result": 808
+            }
+          ],
+          "correct": {
+            "value": "distributed",
+            "key": "distributed",
+            "text": "100×8－1×8＝800－8＝792",
+            "result": 792
+          }
+        }
+      ]
+    },
+    "factor": {
+      "id": "42-8-+-3-left",
+      "stages": [
+        {
+          "question": "3×42＋3×8 / 式をまとめよう",
+          "input": "tokens",
+          "correct": "3×(42+8)"
+        }
+      ]
+    },
+    "exchange": {
+      "id": "125x8-1",
+      "stages": [
+        {
+          "question": "125 × 7 × 8 / 計算しやすい式を選ぼう",
+          "input": "source-choice",
+          "choices": [
+            {
+              "value": 2,
+              "text": "125 × (7 × 8)"
+            },
+            {
+              "value": 1,
+              "text": "(125 × 8) × 7"
+            },
+            {
+              "value": 0,
+              "text": "(125 × 7) × 8"
+            }
+          ],
+          "correct": {
+            "value": 1,
+            "text": "(125 × 8) × 7"
+          }
+        }
+      ]
+    },
+    "multiply": {
+      "id": "mp2-5-2-1-10-1",
+      "stages": [
+        {
+          "question": "もとの式 → 新しい式 / 新しい積は、もとの積の何倍？",
+          "input": "source-choice",
+          "choices": [
+            {
+              "value": 100,
+              "text": "100倍"
+            },
+            {
+              "value": 10,
+              "text": "10倍"
+            },
+            {
+              "value": 1,
+              "text": "1倍"
+            }
+          ],
+          "correct": {
+            "value": 10,
+            "text": "10倍"
+          },
+          "diagram": {
+            "original": "5×2＝10",
+            "new": "5×20＝□"
+          }
+        }
+      ]
+    },
+    "shape": {
+      "id": "s-2-6-lr-3-h-h",
+      "stages": [
+        {
+          "question": "青の式 ＋ 赤の式 の順で選ぼう。 / 図の囲み方に合う式はどれ？",
+          "input": "source-choice",
+          "choices": [
+            {
+              "value": "2×3＋2×3",
+              "text": "2×3＋2×3"
+            },
+            {
+              "value": "3×2＋2×3",
+              "text": "3×2＋2×3"
+            },
+            {
+              "value": "2×3＋3×2",
+              "text": "2×3＋3×2"
+            },
+            {
+              "value": "3×2＋3×2",
+              "text": "3×2＋3×2"
+            }
+          ],
+          "correct": {
+            "value": "3×2＋3×2",
+            "text": "3×2＋3×2"
+          },
+          "diagram": {
+            "rows": 2,
+            "cols": 6,
+            "pairs": [
+              [
+                3,
+                2
+              ],
+              [
+                3,
+                2
+              ]
+            ]
+          }
+        }
+      ]
+    },
+    "word": {
+      "id": "word-100-15-4-4",
+      "stages": [
+        {
+          "question": "400円持っています。1こ15円のおかしを4こ買いました。残りのお金を表す式はどれ？",
+          "input": "choice",
+          "choices": [
+            "400－15×4",
+            "(400－15)×4",
+            "400×4－15"
+          ],
+          "correct": "400－15×4"
+        }
+      ]
+    }
+  }
+}
