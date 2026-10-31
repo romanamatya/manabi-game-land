@@ -2,6 +2,8 @@ import {after, before, beforeEach, test} from 'node:test';
 import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
 import {initializeTestEnvironment, assertFails, assertSucceeds} from '@firebase/rules-unit-testing';
+import {initializeApp, deleteApp} from 'firebase/app';
+import * as A from 'firebase/auth';
 import * as F from 'firebase/firestore';
 
 const projectId = 'demo-manabi-prod-admin-stage1';
@@ -115,4 +117,52 @@ test('rankings reject non-owner writes and invalid schema without changing exist
   await assertFails(F.setDoc(rankingDoc(other, 'not-a-game'), rankingRow('other-child', 'not-a-game', 99)));
   await assertFails(F.updateDoc(ref, {points: 999, updatedAt: F.serverTimestamp()}));
   assert.equal((await assertSucceeds(F.getDoc(ref))).data().bestStreak, 8);
+});
+
+test('client session revocation rejects timestamps at or after auth_time and accepts an earlier timestamp', async () => {
+  const app = initializeApp({apiKey: 'demo-only-key', projectId}, 'admin-session-time-test');
+  const auth = A.getAuth(app);
+  const firestore = F.getFirestore(app);
+  A.connectAuthEmulator(auth, 'http://127.0.0.1:9199', {disableWarnings: true});
+  F.connectFirestoreEmulator(firestore, '127.0.0.1', 8180);
+  await A.setPersistence(auth, A.inMemoryPersistence);
+  const password = 'Emulator-only-password-5719';
+  try {
+    const account = await A.createUserWithEmailAndPassword(auth, 'admin-production@manabi-game-land.invalid', password);
+    const uid = account.user.uid;
+    const token = await A.getIdTokenResult(account.user);
+    const authTimeMs = Number(token.claims.auth_time) * 1000;
+    await env.withSecurityRulesDisabled(async context => {
+      const db = context.firestore();
+      await F.setDoc(F.doc(db, adminPath), {uid, enabled: true, renameEnabled: false});
+      await F.setDoc(F.doc(db, revocationPath), {after: F.Timestamp.fromMillis(authTimeMs + 60_000)});
+      await F.setDoc(F.doc(db, 'players', uid), {nickname: '管理者テスト', bestStreak: 1});
+    });
+    globalThis.window = {
+      MANABI_SPARK_CONFIG: {
+        mode: 'production', enabled: false, adminReadOnly: true,
+        environment: 'productionAdmin/v1', expectedProjectId: 'manabi-game-land',
+        firebase: {apiKey: 'demo-only-key', authDomain: 'manabi-game-land.firebaseapp.com',
+          projectId: 'manabi-game-land', appId: 'emulator-test-app'},
+        productionReleaseApproved: true, playerSyncEnabled: false,
+        legacyScoreSyncEnabled: false, rankingSyncEnabled: true, challenge120Enabled: true
+      },
+      ManabiProfileCatalog: []
+    };
+    const {createAdminOperations} = await import('../../spark-auth.js');
+    const api = createAdminOperations(window.MANABI_SPARK_CONFIG, {auth, db: firestore}, A, F);
+    await assert.rejects(api.verify(), error => error.code === 'session-revoked');
+    await env.withSecurityRulesDisabled(context => F.setDoc(
+      F.doc(context.firestore(), revocationPath), {after: F.Timestamp.fromMillis(authTimeMs)}
+    ));
+    await assert.rejects(api.verify(), error => error.code === 'session-revoked');
+    await env.withSecurityRulesDisabled(context => F.setDoc(
+      F.doc(context.firestore(), revocationPath), {after: F.Timestamp.fromMillis(authTimeMs - 1000)}
+    ));
+    await assert.doesNotReject(api.verify());
+  } finally {
+    await A.signOut(auth);
+    await F.terminate(firestore);
+    await deleteApp(app);
+  }
 });

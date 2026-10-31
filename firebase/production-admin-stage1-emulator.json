@@ -3,6 +3,9 @@
     "rules": "production-admin-readonly-stage1.rules"
   },
   "emulators": {
+    "auth": {
+      "port": 9199
+    },
     "firestore": {
       "port": 8180
     },
