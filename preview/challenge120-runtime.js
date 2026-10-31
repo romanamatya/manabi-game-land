@@ -25,7 +25,7 @@ function tick(){if(working)return;if(read().phase!=='running'){paint();return;}s
 window.ManabiChallenge120={
  issue(id,questionId){if(id!==game)return null;const s=current();return C.issue(s,questionId);},
  async record(token,correct){let result;serial=serial.then(async()=>{result=await transaction(s=>C.answer(s,token,correct,Math.max(Date.now(),s.lastWall)));paint(result.state);});await serial;return result?.accepted===true;},
- accepts(token){const s=current();return token?.mode==='practice'?['training','waiting'].includes(s.phase)&&!s.attemptId:token?.mode==='challenge'&&s.phase==='running'&&token.attemptId===s.attemptId&&Date.now()<s.deadline;},
+ accepts(token){const s=current();return token?.mode==='practice'?s.phase==='training'&&!s.attemptId:token?.mode==='challenge'&&s.phase==='running'&&token.attemptId===s.attemptId&&Date.now()<s.deadline;},
  state:()=>current()
 };
 for(const type of ['click','pointerdown','keydown'])document.addEventListener(type,e=>{if(e.target.closest?.('#challenge120Gate,#challenge120Status,header,a,dialog'))return;const s=current();if(!['training','running'].includes(s.phase)){e.preventDefault();e.stopImmediatePropagation();paint(s);}},true);

@@ -1,0 +1,6 @@
+import {test} from 'node:test';
+import assert from 'node:assert/strict';
+import C from '../../challenge120-core.js';
+for(const [game,need] of Object.entries(C.highest))test(game+' starts at its earned threshold and keeps real highest',()=>{let s=C.unlock(C.fresh(game),true);s=C.start(s,1000,'attempt','season');assert.equal(s.streak,need);assert.equal(s.attemptBest,need);let tok=C.issue(s,'q1');let result=C.answer(s,tok,true,2000);assert.equal(result.state.streak,need+1);assert.equal(result.state.attemptBest,need+1);});
+test('wrong answer ends challenge and records threshold without allowing practice again',()=>{let s=C.start(C.unlock(C.fresh('keisan'),true),1000,'attempt','season');let r=C.answer(s,C.issue(s,'q1'),false,2000);assert.equal(r.state.phase,'ended');assert.equal(r.state.endReason,'wrong-answer');assert.equal(r.state.bests.season,20);assert.equal(C.answer(r.state,{...C.issue(r.state,'q2'),mode:'practice'},true,3000).accepted,false);});
+test('retry starts threshold and never lowers previous best',()=>{let s=C.start(C.unlock(C.fresh('distribution'),true),0,'a','season');for(let i=0;i<8;i++)s=C.answer(s,C.issue(s,'q'+i),true,i+1).state;s=C.settle(s,120001);assert.equal(s.bests.season,33);s=C.start(s,130000,'b','season');assert.equal(s.streak,25);s=C.settle(s,250001);assert.equal(s.bests.season,33);});
