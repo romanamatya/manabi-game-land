@@ -27,7 +27,7 @@ export async function createProductionRankingClient(c,[App,A,F]){
  const ref=game=>{if(!allowed.has(game))throw err('invalid-ranking-game');return F.doc(db,'productionRankings','v1','games',game,'players',uid)};
  const playerRef=()=>{if(!profileUid)throw err('player-name-sync-disabled');return F.doc(profileDb,'players',profileUid)};
  const linkRef=()=>F.doc(db,'productionRankings','v1','identityLinks',uid);
- const validNickname=value=>typeof value==='string'&&value===value.trim()&&value.length>=1&&value.length<=12&&!/[<>\\r\\n]/.test(value);
+ const validNickname=value=>typeof value==='string'&&value===value.trim()&&value.length>=1&&value.length<=12&&!/[<>\r\n]/.test(value);
  const clean=input=>{
   if(!input||Object.keys(input).some(k=>!['game','bestStreak','nickname','icon','frame','title','badge'].includes(k))||!allowed.has(input.game)||!Number.isSafeInteger(input.bestStreak)||input.bestStreak<1||input.bestStreak>100000)throw err('invalid-ranking');
   const nickname=typeof input.nickname==='string'?input.nickname.trim():'';
