@@ -324,7 +324,7 @@ service cloud.firestore {
     match /productionAdmin/v1/backups/{backupId} {
       allow get, list: if productionAdminSessionFresh();
       allow create: if request.resource.data.keys().hasOnly(['actor','at','uid','target','kind','data'])
-        && productionAdminRenameEnabled()
+        && (productionAdminRenameEnabled() || productionAdminSuspensionEnabled())
         && request.resource.data.actor == request.auth.uid
         && request.resource.data.at == request.time
         && request.resource.data.uid is string
