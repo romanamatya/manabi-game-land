@@ -1,7 +1,7 @@
 import {client} from './ranking-sync-api.js?v=prod-admin-stage2-rename-1';
 const storage=window.manabiStorage,config=window.MANABI_BACKEND_CONFIG;
 const games=['keisan','pref-name','pref-place','alphabet','distribution','distribution2','exchangeAssociation','kotowaza','multiplicationProperties','shapeExpressions','keisanSummary'];
-const baseline=new Map(),published=new Map();let started=false,work=Promise.resolve();
+const baseline=new Map(),published=new Map();let started=false,work=Promise.resolve(),startupPromise=null,profileUnsubscribe=null;
 const PENDING='mgl_production_rank_pending_v1';
 function profileRow(game){return window.ManabiProfile?.records(storage).find(x=>x.id===game)||null}
 function localBest(game){
@@ -35,7 +35,8 @@ async function flush(forceProfile=false){
  writePending([...pendingRows]);
 }
 export function startRankingSync(){
- if(started||window.MANABI_ENV?.preview!==false||config?.rankingSyncEnabled!==true||new URL(location.href).searchParams.has('adminTest'))return;
+ if(window.MANABI_ENV?.preview!==false||config?.rankingSyncEnabled!==true||new URL(location.href).searchParams.has('adminTest'))return Promise.resolve();
+ if(started)return startupPromise||Promise.resolve();
  started=true;
  for(const game of games)baseline.set(game,localBest(game));
  const request=()=>enqueue(flush);
@@ -44,5 +45,22 @@ export function startRankingSync(){
  window.addEventListener('manabi-profile-change',()=>enqueue(()=>flush(true)));
  window.addEventListener('manabi-economy-change',request);
  window.addEventListener('online',request);window.addEventListener('pageshow',request);
+ startupPromise=(async()=>{
+  const api=await client();
+  if(config.playerNameSyncEnabled===true){
+   const nickname=await api.ensurePlayerLink((storage.getItem('mgl_nickname')||'').trim());
+   const applyName=value=>{
+    if(typeof value!=='string'||!value.trim()||value.length>12||/[<>\\r\\n]/.test(value)||storage.getItem('mgl_nickname')===value)return;
+    storage.setItem('mgl_nickname',value);
+    const label=document.getElementById('playerName');if(label)label.textContent=value;
+    window.dispatchEvent(new Event('manabi-nickname-sync'));
+    window.dispatchEvent(new Event('manabi-profile-change'));
+   };
+   applyName(nickname);
+   profileUnsubscribe?.();profileUnsubscribe=api.watchPlayerName(applyName);
+   await enqueue(()=>flush(true));
+  }
+ })().catch(error=>{startupPromise=null;throw error;});
+ return startupPromise;
 }
 export {client,localBest,projection};
