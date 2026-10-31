@@ -127,3 +127,9 @@ test('admin access changes require the enabled production administrator setting'
  batch.update(profileRef,{accessStatus:'suspended',lastAccessAudit:auditId,lastAccessBackup:backupId,accessUpdatedAt:at});await assertFails(batch.commit());
 });
 
+
+test('same UID legacy ranking obeys the authoritative profile status',async()=>{
+ const uid='legacy-suspended',nickname='みずき';await env.withSecurityRulesDisabled(async c=>F.setDoc(F.doc(c.firestore(),'players/'+uid),{nickname,accessStatus:'suspended',points:7}));
+ const db=child(uid).firestore();await assertFails(F.setDoc(F.doc(db,'productionRankings/v1/games/keisan/players/'+uid),{...row(uid,'keisan',4,nickname),updatedAt:F.serverTimestamp()}));
+});
+
