@@ -1,4 +1,4 @@
-import {client} from './ranking-sync-api.js?v=prod-admin-stage2-rename-1';
+import {client} from './ranking-sync-api.js?v=prod-admin-stage2-suspension-1';
 const storage=window.manabiStorage,config=window.MANABI_BACKEND_CONFIG;
 const games=['keisan','pref-name','pref-place','alphabet','distribution','distribution2','exchangeAssociation','kotowaza','multiplicationProperties','shapeExpressions','keisanSummary'];
 const baseline=new Map(),published=new Map();let started=false,work=Promise.resolve(),startupPromise=null,profileUnsubscribe=null,identityReady=config?.playerNameSyncEnabled!==true;
