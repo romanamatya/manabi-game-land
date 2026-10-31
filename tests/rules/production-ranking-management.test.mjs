@@ -12,7 +12,7 @@ const controlPath=game=>`productionRankings/v1/gameControl/${game}`;
 const backupPath=id=>`productionAdmin/v1/rankingBackups/${id}`;
 const backupEntryPath=(id,uid)=>`${backupPath(id)}/entries/${uid}`;
 const auditPath=id=>`productionAdmin/v1/rankingAudit/${id}`;
-const lockPath=(game,uid)=>`productionAdmin/v1/rankingLocks/${game}_${uid}`;
+const lockPath=(game,uid,generation=0)=>`productionAdmin/v1/rankingLocks/${game}_${generation}_${uid}`;
 const row=(uid='child-a',game='keisan',bestStreak=12,extra={})=>({uid,game,nickname:'そら',bestStreak,icon:'cat',frame:'plain',title:'計算名人',badge:'keisan:10',updatedAt:F.serverTimestamp(),...extra});
 let env;
 const child=(uid='child-a')=>env.authenticatedContext(uid,{firebase:{sign_in_provider:'anonymous'}}).firestore();
@@ -37,7 +37,7 @@ async function adminManage({game='keisan',uid='child-a',id='0_child-a',action='a
  await F.runTransaction(db,async tx=>{
   tx.set(F.doc(db,backupPath(backupId)),{actor:adminId,at,kind:'entry',status:'complete',game,uid,generation:before.generation,row:before,reason:'確認済みの管理操作'});
   tx.set(F.doc(db,auditPath(auditId)),{actor:adminId,at,action,game,uid,reason:'確認済みの管理操作',backupId,beforeBest,afterBest,beforeVisibility,afterVisibility});
-  tx.set(F.doc(db,lockPath(game,uid)),{actor:adminId,at,game,uid,protected:true,action,reason:'確認済みの管理操作',auditId});
+  tx.set(F.doc(db,lockPath(game,uid,before.generation)),{actor:adminId,at,game,uid,generation:before.generation,protected:true,action,reason:'確認済みの管理操作',auditId});
  });
  await F.updateDoc(target,{bestStreak:afterBest,visibility:afterVisibility,updatedAt:at,lastManagementAudit:auditId,lastManagementBackup:backupId});
 }
@@ -75,7 +75,7 @@ test('children cannot change generation, exclusion state, audit, backup, lock, o
  await assertFails(F.setDoc(F.doc(db,controlPath('keisan')),{generation:4,phase:'ready',writeLocked:false,schemaVersion:2,updatedAt:F.serverTimestamp()}));
  await assertFails(F.setDoc(F.doc(db,auditPath('forged')),{actor:'child-a',at:F.serverTimestamp(),action:'exclude',game:'keisan',uid:'child-b',reason:'bad',backupId:'x',beforeBest:12,afterBest:12,beforeVisibility:'active',afterVisibility:'excluded'}));
  await assertFails(F.setDoc(F.doc(db,backupPath('forged')),{actor:'child-a',at:F.serverTimestamp(),kind:'reset',status:'complete',game:'keisan',generation:0,rowCount:0,reason:'bad'}));
- await assertFails(F.setDoc(F.doc(db,lockPath('keisan','child-a')),{actor:'child-a',at:F.serverTimestamp(),game:'keisan',uid:'child-a',protected:true,reason:'bad',action:'exclude',auditId:'bad'}));
+ await assertFails(F.setDoc(F.doc(db,lockPath('keisan','child-a')),{actor:'child-a',at:F.serverTimestamp(),game:'keisan',uid:'child-a',generation:0,protected:true,reason:'bad',action:'exclude',auditId:'bad'}));
 });
 
 test('admin correction is audited, backed up, and cannot be overwritten by a stale player client',async()=>{
@@ -113,6 +113,7 @@ test('a ranking migration copies legacy rows without altering or exposing their 
 test('reset locks writes until backup completes, advances one game generation, and preserves old rows',async()=>{
  const a=admin(),ordinary=child(),old=F.doc(a,rowPath('keisan','0_child-a'));await readyGeneration(a);
  await env.withSecurityRulesDisabled(c=>F.setDoc(F.doc(c.firestore(),rowPath('keisan','0_child-a')),{...row('child-a','keisan',20,{generation:0,visibility:'active'}),updatedAt:F.Timestamp.now()}));
+ await assertSucceeds(adminManage({action:'exclude',beforeBest:20,afterBest:20,beforeVisibility:'active',afterVisibility:'excluded'}));
  const before=(await F.getDoc(old)).data(),backupId='reset-1',at=F.serverTimestamp();
  await assertSucceeds(F.runTransaction(a,async tx=>{tx.set(F.doc(a,controlPath('keisan')),{generation:0,phase:'resetting',writeLocked:true,schemaVersion:2,backupId,updatedAt:at});tx.set(F.doc(a,backupPath(backupId)),{actor:adminId,at,kind:'reset',game:'keisan',generation:0,status:'copying',rowCount:1,reason:'学期切り替え'});}));
  await assertFails(writeRow(F.doc(ordinary,rowPath('keisan','0_child-a')),row('child-a','keisan',21,{generation:0,visibility:'active'})));

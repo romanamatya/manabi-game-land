@@ -168,8 +168,8 @@ service cloud.firestore {
     function rankingControlPath(game) {
       return /databases/$(database)/documents/productionRankings/v1/gameControl/$(game);
     }
-    function rankingLockPath(game, uid) {
-      return /databases/$(database)/documents/productionAdmin/v1/rankingLocks/$(game + '_' + uid);
+    function rankingLockPath(game, generation, uid) {
+      return /databases/$(database)/documents/productionAdmin/v1/rankingLocks/$(game + '_' + string(generation) + '_' + uid);
     }
     function rankingManagementAuditPath(id) {
       return /databases/$(database)/documents/productionAdmin/v1/rankingAudit/$(id);
@@ -186,7 +186,7 @@ service cloud.firestore {
     }
     function rankingControlAllowsChildWrite(game, rowId, uid, data) {
       let path = rankingControlPath(game);
-      return !exists(rankingLockPath(game, uid)) && (
+      return !exists(rankingLockPath(game, data.get('generation', 0), uid)) && (
         (!exists(path) && rowId == uid) || (exists(path) && get(path).data.phase == 'ready'
           && get(path).data.writeLocked == false
           && data.visibility == 'active'
@@ -226,7 +226,7 @@ service cloud.firestore {
       let backupId = request.resource.data.lastManagementBackup;
       let auditPath = rankingManagementAuditPath(auditId);
       let backupPath = rankingManagementBackupPath(backupId);
-      let lockPath = rankingLockPath(game, uid);
+      let lockPath = rankingLockPath(game, request.resource.data.generation, uid);
       return exists(auditPath) && exists(backupPath) && exists(lockPath)
         && get(auditPath).data.actor == request.auth.uid
         && get(auditPath).data.game == game
@@ -444,11 +444,13 @@ service cloud.firestore {
     match /productionAdmin/v1/rankingLocks/{lockId} {
       allow get, list: if productionAdminRankingEnabled();
       allow create, update: if productionAdminRankingEnabled()
-        && request.resource.data.keys().hasOnly(['actor','at','game','uid','protected','action','reason','auditId'])
+        && request.resource.data.keys().hasOnly(['actor','at','game','uid','generation','protected','action','reason','auditId'])
         && request.resource.data.actor == request.auth.uid
         && request.resource.data.at == request.time
         && validRankingGame(request.resource.data.game)
-        && lockId == request.resource.data.game + '_' + request.resource.data.uid
+        && request.resource.data.keys().hasAll(['generation'])
+        && request.resource.data.generation is int && request.resource.data.generation >= 0
+        && lockId == request.resource.data.game + '_' + string(request.resource.data.generation) + '_' + request.resource.data.uid
         && request.resource.data.protected == true
         && request.resource.data.reason is string && request.resource.data.reason.size() >= 2 && request.resource.data.reason.size() <= 300
         && request.resource.data.auditId is string;
