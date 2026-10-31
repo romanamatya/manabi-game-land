@@ -62,7 +62,11 @@ service cloud.firestore {
     }
     function rankingNameCanonical(rankingUid, data) {
       let linkPath = identityLinkPath(rankingUid);
-      return !exists(linkPath) || linkedRankingNameMatches(rankingUid, data);
+      let sameUidProfile = linkedPlayerPath(rankingUid);
+      return (exists(linkPath) && linkedRankingNameMatches(rankingUid, data))
+        || (!exists(linkPath) && exists(sameUidProfile)
+          && get(sameUidProfile).data.get('accessStatus', 'active') == 'active'
+          && data.nickname == get(sameUidProfile).data.nickname);
     }
     function adminAuditPath(auditId) {
       return /databases/$(database)/documents/productionAdmin/v1/audit/$(auditId);
@@ -385,3 +389,4 @@ service cloud.firestore {
     }
   }
 }
+
