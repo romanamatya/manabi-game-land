@@ -1,11 +1,11 @@
 import {client,errorText} from './spark-auth.js?v=admin-readonly-stage1';
-const readOnly=window.MANABI_SPARK_CONFIG?.adminReadOnly===true;
+const readOnly=window.MANABI_SPARK_CONFIG?.adminReadOnly===true;\nconst playerRenameEnabled=window.MANABI_SPARK_CONFIG?.adminFeatures?.playerRename===true;
 const environmentLabel=window.MANABI_SPARK_CONFIG?.mode==='production'?'本番':'確認用';
 const $=id=>document.getElementById(id),S=window.ManabiUpgradeShared,core=window.ManabiEconomyCore,catalog=window.ManabiProfileCatalog;
 let api=null,data=null,events=null,active='players',period=7,query='',sort='nickname',sortDirection=1,detail=null,ticket=0,pending=null,working=false;
 const el=(tag,text,cls)=>{const n=document.createElement(tag);if(text!==undefined)n.textContent=String(text);if(cls)n.className=cls;return n},button=(text,run)=>{const b=el('button',text);b.type='button';b.onclick=run;return b},date=n=>n?new Date(n).toLocaleString('ja-JP',{timeZone:'Asia/Tokyo'}):'—',pct=n=>n===null||n===undefined?'—':n.toFixed(1)+'％',change=n=>n===null||n===undefined?'比較対象なし':(n>=0?'＋':'')+n.toFixed(1)+'ポイント';
 function lock(){ticket++;data=null;events=null;$('adminPassword').value='';pending=null;$('workspace').hidden=true;$('login').hidden=false;$('logout').hidden=true;$('account').textContent='';$('changePassword').hidden=true;$('content').replaceChildren();if($('confirmDialog').open)$('confirmDialog').close();if(!changingPassword&&$('passwordDialog').open){$('passwordDialog').close();$('passwordChangeForm').reset()}}
-async function refresh(){const revision=ticket;try{const result=await api.call('admin:snapshot');if(revision!==ticket)return;data=result;$('workspace').hidden=false;$('login').hidden=true;$('logout').hidden=false;$('account').textContent=environmentLabel+'・管理者';$('changePassword').hidden=true;$('status').textContent=readOnly?'読み取り専用。本番Firebaseのプレイヤー情報を表示中。変更は行えない。':environmentLabel+'データを表示中。すべての変更を履歴に記録する。';render()}catch(e){lock();$('status').textContent=errorText(e)}}
+async function refresh(){const revision=ticket;try{const result=await api.call('admin:snapshot');if(revision!==ticket)return;data=result;$('workspace').hidden=false;$('login').hidden=true;$('logout').hidden=false;$('account').textContent=environmentLabel+'・管理者';$('changePassword').hidden=true;$('status').textContent=readOnly?(playerRenameEnabled?'本番Firebaseのプレイヤー情報を表示中。名前変更は個別の権限設定が有効な場合のみ実行できる。':'読み取り専用。本番Firebaseのプレイヤー情報を表示中。変更は行えない。'):environmentLabel+'データを表示中。すべての変更を履歴に記録する。';render()}catch(e){lock();$('status').textContent=errorText(e)}}
 function table(headers,rows){const wrap=el('div',undefined,'table-wrap'),t=el('table'),head=el('thead'),tr=el('tr');for(const h of headers)tr.append(el('th',h));head.append(tr);t.append(head);const body=el('tbody');for(const row of rows){const r=el('tr');for(const value of row){const td=el('td');if(value instanceof Node)td.append(value);else td.textContent=value??'—';r.append(td)}body.append(r)}t.append(body);wrap.append(t);if(!rows.length)wrap.append(el('p','該当する記録はない。','empty'));return wrap}
 function select(values,value,run){const s=el('select');for(const [v,label]of values){const o=el('option',label);o.value=v;o.selected=String(value)===v;s.append(o)}if(run)s.onchange=()=>run(s.value);return s}
 function gameSelect(value,all=false,run){return select([...(all?[['all','全ゲーム']]:[]),...Object.entries(S.names)],value,run)}
@@ -23,10 +23,13 @@ function renderPlayers(){
  toolbar.append(search,select(readOnly?[['nickname','名前順'],['lastPlayedAt','最終プレイ日順']]:[['nickname','名前順'],['lastPlayedAt','最終プレイ日順'],['status','状態順']],sort,v=>{sort=v;renderPlayers()}),button('更新',refresh));n.append(toolbar);
  const rows=data.players.filter(p=>!query||String(p.nickname||'').includes(query)||p.uid.includes(query)).sort((a,b)=>String(a[sort]??'').localeCompare(String(b[sort]??''),'ja',{numeric:true})*(sort==='lastPlayedAt'?-1:1));
  if(readOnly){
-  n.append(table(['ニックネーム・児童ID','最終プレイ','称号','最高連続正解記録'],rows.map(p=>{
+  const headers=['ニックネーム・児童ID','最終プレイ','称号','最高連続正解記録',...(playerRenameEnabled?['操作']:[])];
+  n.append(table(headers,rows.map(p=>{
    const identity=el('div',p.nickname||'（名前なし）');identity.append(el('small',p.uid));
    const titles=el('details');titles.append(el('summary',(p.titles||[]).length+'個'));for(const id of p.titles||[])titles.append(el('div',catalog.flatMap(g=>g.titles).find(t=>t.id===id)?.name||id));
-   return [identity,date(p.lastPlayedAt),titles,Object.entries(p.best||{}).map(([g,v])=>(S.names[g]||g)+':'+v).join(' / ')||'—'];
+   const row=[identity,date(p.lastPlayedAt),titles,Object.entries(p.best||{}).map(([g,v])=>(S.names[g]||g)+':'+v).join(' / ')||'—'];
+   if(playerRenameEnabled)row.push(button('名前変更',()=>ask('名前変更：'+(p.nickname||'名前なし'),'プレイヤーIDと最高記録を保持し、変更前情報とランキング表示名をバックアップ・記録する。',[formField('nickname','新しい名前','text',p.nickname)],(v,r)=>mutate('rename',{uid:p.uid,nickname:v.nickname,expectedNickname:p.nickname||''},r))));
+   return row;
   })));
   n.append(el('p',environmentLabel+'Firebaseに保存された情報のみ表示。ポイント・所持品・購入履歴・管理情報は読み出し表示しない。','muted'));
   if(data.playerCursor)n.append(button('次の100人を読み込む',async()=>{try{const result=await api.call('admin:players',{cursor:data.playerCursor});const seen=new Set(data.players.map(p=>p.uid));data.players.push(...result.rows.filter(p=>!seen.has(p.uid)));data.playerCursor=result.cursor;renderPlayers()}catch(e){$('status').textContent=errorText(e)}}));
