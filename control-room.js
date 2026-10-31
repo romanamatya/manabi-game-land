@@ -1,4 +1,4 @@
-import {client,errorText} from './spark-auth.js?v=admin-readonly-stage1';
+import {client,errorText} from './spark-auth.js?v=admin-stage2-player-rename-1';
 const readOnly=window.MANABI_SPARK_CONFIG?.adminReadOnly===true;\nconst playerRenameEnabled=window.MANABI_SPARK_CONFIG?.adminFeatures?.playerRename===true;
 const environmentLabel=window.MANABI_SPARK_CONFIG?.mode==='production'?'本番':'確認用';
 const $=id=>document.getElementById(id),S=window.ManabiUpgradeShared,core=window.ManabiEconomyCore,catalog=window.ManabiProfileCatalog;
