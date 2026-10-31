@@ -6,6 +6,8 @@ on:
       - 'firebase/**'
       - 'tests/rules/**'
       - 'package.json'
+      - 'environment.js'
+      - 'environments/**'
       - '.github/workflows/firestore-rules.yml'
   workflow_dispatch:
 
