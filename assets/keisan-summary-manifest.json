@@ -1,0 +1,187 @@
+{
+  "game": "計算のきまり・総まとめ",
+  "theme": "ハロウィン",
+  "approval": "user-approved second asset sheet; last 3 updated crops approved 2026-10-30",
+  "badge_unlocks": [
+    {
+      "streak": 5,
+      "title": "計算の見習い",
+      "file": "assets/title_05.png",
+      "candidate_id": "keisan-summary-title-05"
+    },
+    {
+      "streak": 10,
+      "title": "計算のひらめき者",
+      "file": "assets/title_10.png",
+      "candidate_id": "keisan-summary-title-10"
+    },
+    {
+      "streak": 15,
+      "title": "計算の使い手",
+      "file": "assets/title_15.png",
+      "candidate_id": "keisan-summary-title-15"
+    },
+    {
+      "streak": 20,
+      "title": "計算の達人",
+      "file": "assets/title_20.png",
+      "candidate_id": "keisan-summary-title-20"
+    },
+    {
+      "streak": 30,
+      "title": "計算のきまりマスター",
+      "file": "assets/title_30.png",
+      "candidate_id": "keisan-summary-title-30"
+    }
+  ],
+  "highest_title_streak": 30,
+  "highest_title": "計算のきまりマスター",
+  "two_minute_challenge_unlock_streak": 30,
+  "limited_icon": {
+    "name": "かぼちゃゴースト",
+    "file": "assets/limited_icon_pumpkin_ghost.png",
+    "unlock_streak": 30,
+    "not_for_sale": true,
+    "candidate_id": "keisan-summary-halloween-icon"
+  },
+  "limited_frame": {
+    "name": "ハロウィンナイトフレーム",
+    "file": "assets/limited_frame_halloween_night.png",
+    "unlock_streak": 30,
+    "not_for_sale": true,
+    "center_transparent": true,
+    "candidate_id": "keisan-summary-halloween-frame"
+  },
+  "same_asset_as_approved": true,
+  "game_source_changes": false,
+  "potential_title_collision": [
+    {
+      "new_game_title": "計算の達人",
+      "existing_game": "計算のきまり",
+      "existing_title": "計算の達人",
+      "action": "Keep approved artwork and title unchanged in files; review collision in development command before integration."
+    }
+  ],
+  "files": [
+    {
+      "file": "title_05.png",
+      "name": "計算の見習い",
+      "streak": 5,
+      "width": 347,
+      "height": 324,
+      "mode": "RGBA",
+      "alpha_min": 0,
+      "alpha_max": 255,
+      "bbox": [
+        13,
+        16,
+        339,
+        323
+      ],
+      "sha256": "965ec5b82af387a70e02ccafaa4bee757a37b456b14fd745e3cf626716ab319d"
+    },
+    {
+      "file": "title_10.png",
+      "name": "計算のひらめき者",
+      "streak": 10,
+      "width": 343,
+      "height": 324,
+      "mode": "RGBA",
+      "alpha_min": 0,
+      "alpha_max": 255,
+      "bbox": [
+        9,
+        13,
+        340,
+        323
+      ],
+      "sha256": "fff15f03654fbcb0e8aec6673170724f5563b37b27e58df4fa2a278737608bba"
+    },
+    {
+      "file": "title_15.png",
+      "name": "計算の使い手",
+      "streak": 15,
+      "width": 340,
+      "height": 324,
+      "mode": "RGBA",
+      "alpha_min": 0,
+      "alpha_max": 255,
+      "bbox": [
+        14,
+        10,
+        336,
+        322
+      ],
+      "sha256": "4448f2603cbc99a237c404b99aa3288addb5c1b8e1d71637704ae6ed7de01028"
+    },
+    {
+      "file": "title_20.png",
+      "name": "計算の達人",
+      "streak": 20,
+      "width": 350,
+      "height": 324,
+      "mode": "RGBA",
+      "alpha_min": 0,
+      "alpha_max": 255,
+      "bbox": [
+        14,
+        11,
+        341,
+        324
+      ],
+      "sha256": "87af86fa4ee6253f8127c181d8506fa3f83e1d3c124ab3fc5dbe25ecd5fe24d2"
+    },
+    {
+      "file": "title_30.png",
+      "name": "計算のきまりマスター",
+      "streak": 30,
+      "width": 425,
+      "height": 425,
+      "mode": "RGBA",
+      "alpha_min": 0,
+      "alpha_max": 255,
+      "bbox": [
+        37,
+        47,
+        388,
+        377
+      ],
+      "sha256": "28dfb0e8213a9c265bb0f94b4f3d7f432a62e9a1dc64366b19625b2d62cf4462"
+    },
+    {
+      "file": "limited_icon_pumpkin_ghost.png",
+      "name": "かぼちゃゴースト",
+      "streak": 30,
+      "width": 424,
+      "height": 424,
+      "mode": "RGBA",
+      "alpha_min": 0,
+      "alpha_max": 255,
+      "bbox": [
+        37,
+        40,
+        387,
+        384
+      ],
+      "sha256": "ec44c974182f3ed5d8170fdac2bf6eb45b9ad6820742baa06fcd302bbf68f511"
+    },
+    {
+      "file": "limited_frame_halloween_night.png",
+      "name": "ハロウィンナイトフレーム",
+      "streak": 30,
+      "width": 449,
+      "height": 449,
+      "mode": "RGBA",
+      "alpha_min": 0,
+      "alpha_max": 255,
+      "bbox": [
+        37,
+        53,
+        412,
+        396
+      ],
+      "sha256": "ef847eb42429cd83794130c279419ba22acff72ec6ee208a42be5f4d6be65eaf",
+      "center_alpha": 0
+    }
+  ]
+}
