@@ -26,6 +26,11 @@ service cloud.firestore {
       return productionAdminSessionFresh()
         && get(adminPath).data.renameEnabled == true;
     }
+    function productionAdminSuspensionEnabled() {
+      let adminPath = /databases/$(database)/documents/productionAdmin/v1/private/admin;
+      return productionAdminSessionFresh()
+        && get(adminPath).data.suspensionEnabled == true;
+    }
     function validPlayerNickname(name) {
       return name is string && name.size() >= 1 && name.size() <= 12
         && !name.matches('.*[<>\\r\\n].*')
@@ -44,6 +49,15 @@ service cloud.firestore {
     function linkedPlayerPath(profileUid) {
       return /databases/$(database)/documents/players/$(profileUid);
     }
+    function linkedPlayerIsActive(rankingUid) {
+      let linkPath = identityLinkPath(rankingUid);
+      let link = get(linkPath).data;
+      let playerPath = linkedPlayerPath(link.profileUid);
+      return !exists(linkPath)
+        || (link.uid == rankingUid && exists(playerPath)
+          && get(playerPath).data.rankingUid == rankingUid
+          && get(playerPath).data.get('status', 'active') == 'active');
+    }
     function linkedRankingNameMatches(rankingUid, data) {
       let linkPath = identityLinkPath(rankingUid);
       let linkData = get(linkPath).data;
@@ -56,7 +70,8 @@ service cloud.firestore {
     }
     function rankingNameCanonical(rankingUid, data) {
       let linkPath = identityLinkPath(rankingUid);
-      return !exists(linkPath) || linkedRankingNameMatches(rankingUid, data);
+      return !exists(linkPath)
+        || (linkedRankingNameMatches(rankingUid, data) && linkedPlayerIsActive(rankingUid));
     }
     function adminAuditPath(auditId) {
       return /databases/$(database)/documents/productionAdmin/v1/audit/$(auditId);
@@ -81,6 +96,42 @@ service cloud.firestore {
         && backupData.uid == playerId
         && backupData.kind == 'rename'
         && backupData.data.player == resource.data;
+    }
+    function adminStatusRefsValid(playerId) {
+      let auditPath = adminAuditPath(request.resource.data.lastAudit);
+      let backupPath = adminBackupPath(request.resource.data.lastBackup);
+      let auditData = getAfter(auditPath).data;
+      let backupData = getAfter(backupPath).data;
+      let beforeStatus = resource.data.get('status', 'active');
+      return existsAfter(auditPath) && existsAfter(backupPath)
+        && auditData.actor == request.auth.uid
+        && auditData.uid == playerId
+        && auditData.action == (request.resource.data.status == 'suspended' ? 'player-suspend' : 'player-restore')
+        && auditData.beforeStatus == beforeStatus
+        && auditData.afterStatus == request.resource.data.status
+        && auditData.backupId == request.resource.data.lastBackup
+        && backupData.actor == request.auth.uid
+        && backupData.uid == playerId
+        && backupData.kind == 'player-status'
+        && backupData.data.player == resource.data;
+    }
+    function adminChangePlayerStatus(playerId) {
+      let beforeStatus = resource.data.get('status', 'active');
+      let afterStatus = request.resource.data.status;
+      return request.auth != null
+        && playerId != request.auth.uid
+        && productionAdminSuspensionEnabled()
+        && beforeStatus in ['active', 'suspended']
+        && afterStatus in ['active', 'suspended']
+        && beforeStatus != afterStatus
+        && request.resource.data.diff(resource.data).affectedKeys()
+          .hasAll(['status','lastAudit','lastBackup','adminUpdatedAt'])
+        && request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['status','lastAudit','lastBackup','adminUpdatedAt'])
+        && request.resource.data.lastAudit is string
+        && request.resource.data.lastBackup is string
+        && request.resource.data.adminUpdatedAt == request.time
+        && adminStatusRefsValid(playerId);
     }
     function adminRenamePlayer(playerId) {
       return request.auth != null
@@ -183,7 +234,8 @@ service cloud.firestore {
         || (request.auth != null
           && request.auth.uid == playerId
           && validSelfPlayerLink())
-        || adminRenamePlayer(playerId);
+        || adminRenamePlayer(playerId)
+        || adminChangePlayerStatus(playerId);
       allow delete: if false;
     }
 
@@ -237,25 +289,33 @@ service cloud.firestore {
     match /productionAdmin/v1/audit/{auditId} {
       allow get, list: if productionAdminSessionFresh();
       allow create: if request.resource.data.keys().hasOnly([
-          'actor','at','uid','target','action','reason','backupId','beforeName','afterName'
+          'actor','at','uid','target','action','reason','backupId','beforeName','afterName','beforeStatus','afterStatus'
         ])
-        && productionAdminRenameEnabled()
+        && (productionAdminRenameEnabled() || productionAdminSuspensionEnabled())
         && request.resource.data.actor == request.auth.uid
         && request.resource.data.at == request.time
         && request.resource.data.uid is string
         && request.resource.data.target == 'players/' + request.resource.data.uid
-        && request.resource.data.action == 'rename'
         && request.resource.data.reason is string
         && request.resource.data.reason.size() >= 2
         && request.resource.data.reason.size() <= 300
         && request.resource.data.backupId is string
-        && request.resource.data.beforeName is string
-        && request.resource.data.beforeName.size() <= 12
-        && request.resource.data.afterName is string
-        && validPlayerNickname(request.resource.data.afterName)
         && existsAfter(linkedPlayerPath(request.resource.data.uid))
         && getAfter(linkedPlayerPath(request.resource.data.uid)).data.lastAudit == auditId
-        && getAfter(linkedPlayerPath(request.resource.data.uid)).data.lastBackup == request.resource.data.backupId;
+        && getAfter(linkedPlayerPath(request.resource.data.uid)).data.lastBackup == request.resource.data.backupId
+        && ((request.resource.data.action == 'rename'
+            && productionAdminRenameEnabled()
+            && request.resource.data.beforeName is string
+            && request.resource.data.beforeName.size() <= 12
+            && request.resource.data.afterName is string
+            && validPlayerNickname(request.resource.data.afterName))
+          || (request.resource.data.action in ['player-suspend','player-restore']
+            && productionAdminSuspensionEnabled()
+            && request.resource.data.beforeStatus in ['active','suspended']
+            && request.resource.data.afterStatus in ['active','suspended']
+            && request.resource.data.beforeStatus != request.resource.data.afterStatus
+            && ((request.resource.data.action == 'player-suspend' && request.resource.data.afterStatus == 'suspended')
+              || (request.resource.data.action == 'player-restore' && request.resource.data.afterStatus == 'active'))));
       allow update, delete: if false;
     }
 
@@ -267,14 +327,19 @@ service cloud.firestore {
         && request.resource.data.at == request.time
         && request.resource.data.uid is string
         && request.resource.data.target == 'players/' + request.resource.data.uid
-        && request.resource.data.kind == 'rename'
         && request.resource.data.data is map
-        && request.resource.data.data.keys().hasOnly(['player','links','rankings'])
-        && request.resource.data.data.player is map
-        && request.resource.data.data.links is list
-        && request.resource.data.data.links.size() <= 10
-        && request.resource.data.data.rankings is list
-        && request.resource.data.data.rankings.size() <= 110
+        && ((request.resource.data.kind == 'rename'
+            && productionAdminRenameEnabled()
+            && request.resource.data.data.keys().hasOnly(['player','links','rankings'])
+            && request.resource.data.data.player is map
+            && request.resource.data.data.links is list
+            && request.resource.data.data.links.size() <= 10
+            && request.resource.data.data.rankings is list
+            && request.resource.data.data.rankings.size() <= 110)
+          || (request.resource.data.kind == 'player-status'
+            && productionAdminSuspensionEnabled()
+            && request.resource.data.data.keys().hasOnly(['player'])
+            && request.resource.data.data.player == get(linkedPlayerPath(request.resource.data.uid)).data))
         && existsAfter(linkedPlayerPath(request.resource.data.uid))
         && getAfter(linkedPlayerPath(request.resource.data.uid)).data.lastBackup == backupId
         && getAfter(linkedPlayerPath(request.resource.data.uid)).data.lastAudit is string;
