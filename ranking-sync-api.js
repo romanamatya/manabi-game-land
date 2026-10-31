@@ -55,9 +55,10 @@ export async function createProductionRankingClient(c,[App,A,F]){
   });
  }
  async function ensurePlayerLink(localNickname){
-  if(!profileUid||!validNickname(localNickname))throw err('player-name-sync-disabled');
+  if(!profileUid)throw err('player-name-sync-disabled');
   const profile=playerRef(),profileSnap=await F.getDocFromServer(profile);
   if(!profileSnap.exists()){
+   if(!validNickname(localNickname))throw err('nickname-required');
    await F.setDoc(profile,{nickname:localNickname,rankingUid:uid,updatedAt:F.serverTimestamp()});
   }else{
    const data=profileSnap.data();
