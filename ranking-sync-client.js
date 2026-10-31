@@ -50,7 +50,7 @@ export function startRankingSync(){
   if(config.playerNameSyncEnabled===true){
    const nickname=await api.ensurePlayerLink((storage.getItem('mgl_nickname')||'').trim());
    const applyName=value=>{
-    if(typeof value!=='string'||!value.trim()||value.length>12||/[<>\\r\\n]/.test(value)||storage.getItem('mgl_nickname')===value)return;
+    if(typeof value!=='string'||!value.trim()||value.length>12||/[<>\r\n]/.test(value)||storage.getItem('mgl_nickname')===value)return;
     storage.setItem('mgl_nickname',value);
     const label=document.getElementById('playerName');if(label)label.textContent=value;
     window.dispatchEvent(new Event('manabi-nickname-sync'));
@@ -60,7 +60,7 @@ export function startRankingSync(){
    profileUnsubscribe?.();profileUnsubscribe=api.watchPlayerName(applyName);
    await enqueue(()=>flush(true));
   }
- })().catch(error=>{startupPromise=null;throw error;});
+ })().catch(error=>{startupPromise=null;started=false;throw error;});
  return startupPromise;
 }
 export {client,localBest,projection};
