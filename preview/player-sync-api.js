@@ -47,6 +47,28 @@ export async function createPlayerClient(config,[App,A,F],{testScope=false}={}){
   });
   return {...await pull(meta.deviceId),appearanceConflict:conflict};
  }
+ async function publishRanking(input){
+  const games=['keisan','pref-name','pref-place','alphabet','distribution','distribution2','exchangeAssociation','kotowaza','multiplicationProperties','shapeExpressions','keisanSummary'];
+  if(!input||!games.includes(input.game)||!Number.isSafeInteger(input.bestStreak)||input.bestStreak<1||input.bestStreak>100000)throw error('invalid-ranking');
+  const nickname=typeof input.nickname==='string'?input.nickname.trim():'';
+  const icon=typeof input.icon==='string'?input.icon:'cat',frame=typeof input.frame==='string'?input.frame:'plain';
+  const title=typeof input.title==='string'?input.title.slice(0,80):null,badge=typeof input.badge==='string'?input.badge.slice(0,80):null;
+  if(nickname.length<1||nickname.length>12||/[<>\\r\\n]/.test(nickname)||icon.length>64||frame.length>64)throw error('invalid-ranking');
+  const ref=F.doc(db,base,'rankings',input.game,'players',uid);
+  return F.runTransaction(db,async tx=>{
+   const snap=await tx.get(ref),old=snap.exists()?snap.data():null;
+   const next={uid,game:input.game,nickname,bestStreak:Math.max(old?.bestStreak||0,input.bestStreak),icon,frame,title,badge,updatedAt:F.serverTimestamp()};
+   if(old&&next.bestStreak===old.bestStreak&&old.nickname===nickname&&old.icon===icon&&old.frame===frame&&old.title===title&&old.badge===badge)return old;
+   tx.set(ref,next);return next;
+  });
+ }
+ async function rankings(game){
+  const games=['keisan','pref-name','pref-place','alphabet','distribution','distribution2','exchangeAssociation','kotowaza','multiplicationProperties','shapeExpressions','keisanSummary'];
+  if(!games.includes(game))throw error('invalid-ranking-game');
+  const q=F.query(F.collection(db,base,'rankings',game,'players'),F.orderBy('bestStreak','desc'),F.limit(100));
+  const snap=await F.getDocsFromServer(q);
+  return snap.docs.map(d=>({id:d.id,row:d.data()})).filter(x=>x.row.uid===x.id&&x.row.game===game).map(x=>x.row);
+ }
  async function buy(productId,subject,core){
   const item=core.catalog.find(x=>x.id===productId);
   if(!item||!['icon','frame'].includes(item.kind)||!Number.isSafeInteger(item.price)||!SUBJECTS.includes(subject)||!Object.values(core.games).includes(subject))throw error('not-for-sale');
@@ -62,7 +84,7 @@ export async function createPlayerClient(config,[App,A,F],{testScope=false}={}){
   });
   return readPair();
  }
- return {uid,auth,db,push,pull,buy,watch:callback=>F.onSnapshot(playerRef,{includeMetadataChanges:false},s=>{if(!s.metadata.fromCache)callback(null)},e=>callback(e))};
+ return {uid,auth,db,push,pull,buy,publishRanking,rankings,watch:callback=>F.onSnapshot(playerRef,{includeMetadataChanges:false},s=>{if(!s.metadata.fromCache)callback(null)},e=>callback(e))};
 }
 export async function browserClient(config){const sdks=await Promise.all(['app','auth','firestore'].map(n=>import('https://www.gstatic.com/firebasejs/13.1.0/firebase-'+n+'.js')));return createPlayerClient(config,sdks);}
 
