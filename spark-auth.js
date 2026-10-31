@@ -27,6 +27,9 @@ export function errorText(e) {
     'auth/requires-recent-login': '現在のパスワードで入り直してから操作して。',
     'invalid-input': '名前は1〜12文字、変更理由は2〜300文字で入力して。',
     'player-not-found': '対象のプレイヤーが見つからない。更新して確認して。',
+    'player-ranking-link-review': '連携されたランキングが多いか、対応関係に不整合がある。データを変更せず管理者に確認を依頼して。',
+    'player-ranking-link-conflict': 'この端末のランキング連携を確認できない。記録は変更していない。',
+    'nickname-required': '先にニックネームを登録してから、同期をやり直して。',
     'name-conflict': '別の端末で名前が変更された。更新してからやり直して。',
     'logout-revocation-failed': 'この端末からはログアウトした。他端末の無効化は通信できず未完了。',
     'password-change-incomplete': '全端末のセッションを無効化したが、パスワード変更は完了しなかった。元のパスワードで入り直して確認して。'
