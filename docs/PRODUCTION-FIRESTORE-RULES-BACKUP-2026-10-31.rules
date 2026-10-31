@@ -1,12 +1,10 @@
 rules_version = '2';
 
-
 service cloud.firestore {
   match /databases/{database}/documents {
     match /players/{playerId} {
       // Existing production player rules are preserved.
       allow read: if request.auth != null;
-
 
       function validDistribution() {
         return request.resource.data.distributionBestStreak is int
@@ -37,7 +35,6 @@ service cloud.firestore {
       allow delete: if false;
     }
 
-
     function productionRankingGame(game) {
       return game in ['keisan','pref-name','pref-place','alphabet','distribution','distribution2',
         'exchangeAssociation','kotowaza','multiplicationProperties','shapeExpressions','keisanSummary'];
@@ -59,7 +56,6 @@ service cloud.firestore {
         && (data.badge == null || data.badge is string && data.badge.matches('^[A-Za-z0-9:_-]{1,64}$'))
         && data.updatedAt == request.time;
     }
-
 
     // Sanitized ranking projection only. No points, items, purchases, history, or admin fields.
     match /productionRankings/v1/games/{game}/players/{uid} {

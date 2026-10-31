@@ -14,7 +14,7 @@ This rollout targets only Firebase project `manabi-game-land`. It keeps global b
 ## Current production state
 
 - The revocation document is still absent. Creating `productionAdmin/v1/private/revocation` with an `after` Firestore Timestamp failed in the Firebase Console with a generic “document creation failed” error. No document was written.
-- Live Firestore Rules are unchanged. The candidate Rules block has not been published.
+- The reviewed admin Rules addition is published to production. It only permits direct identity reads by the matching password-authenticated admin and denies list and all writes/deletes under the admin namespace.
 - Production `adminReadOnly` remains false, so the management UI remains gated off.
 - No player, ranking, points, possessions, achievement, or challenge data was changed. No preview project was accessed.
 
@@ -28,7 +28,7 @@ This rollout targets only Firebase project `manabi-game-land`. It keeps global b
 ## Remaining activation steps
 
 1. Create only `productionAdmin/v1/private/revocation` with `{ after: <Firestore Timestamp> }` through an account authorized to write Firestore data. Use a timestamp before the next admin password sign-in.
-2. Publish the admin identity Rules addition from `firebase/production-admin-readonly-stage1.rules`, preserving the existing player and ranking Rules.
+2. Rules addition is live. The exact prior Rules version remains backed up at `docs/PRODUCTION-FIRESTORE-RULES-BACKUP-2026-10-31.rules`.
 3. Set only `adminReadOnly: true` in production config. Keep global backend, player sync, legacy sync, rankings, and challenge flags unchanged.
 4. Merge PR #20 and publish GitHub Pages after steps 1–3 succeed.
 5. Sign in with the existing password account and verify the read-only player view and logout.

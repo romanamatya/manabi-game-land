@@ -13,8 +13,8 @@ Project scope: `manabi-game-land` only.
 ## Not yet applied in production
 
 - The Console rejected creation of `productionAdmin/v1/private/revocation` with a generic document-creation error. It remains absent.
-- Candidate admin Rules have not been published. Live Rules remain unchanged.
+- The reviewed admin Rules addition has been published. The existing `/players` and `/productionRankings` behavior was preserved; the new admin namespace allows only matching password-authenticated identity reads and denies listing and client writes/deletes.
 - `adminReadOnly` remains false. The production management UI is not enabled.
 - No child profile, ranking, points, possession, achievement, or challenge record was changed.
 
-The exact Rules read from the production Console are backed up in `PRODUCTION-FIRESTORE-RULES-BACKUP-2026-10-31.rules`. Before enabling the feature, create the revocation document with an authorized Firestore data writer, publish only the reviewed admin Rules addition, then change only `adminReadOnly` to true and merge/publish PR #20.
+The exact Rules read from the production Console are backed up in `PRODUCTION-FIRESTORE-RULES-BACKUP-2026-10-31.rules`. Before enabling the feature, create the revocation document with an authorized Firestore data writer, then change only `adminReadOnly` to true and publish the site.
