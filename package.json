@@ -8,7 +8,8 @@
     "test:rules:admin-stage1": "firebase emulators:exec --project demo-manabi-admin-stage1 --only auth,firestore --config firebase/production-admin-stage1-emulator.json \"node --test tests/rules/production-admin-readonly-stage1.test.mjs\"",
     "build:preview": "node tools/build-site.mjs preview",
     "prepare:production": "node tools/build-site.mjs production",
-    "build:both": "npm run build:preview && npm run prepare:production"
+    "build:both": "npm run build:preview && npm run prepare:production",
+    "test:rules:admin-stage2": "firebase emulators:exec --project demo-manabi-admin-stage2 --only auth,firestore --config firebase/production-admin-stage2-nickname-emulator.json \"node --test tests/rules/production-admin-stage2-nickname.test.mjs\""
   },
   "devDependencies": {
     "firebase": "11.10.0",
