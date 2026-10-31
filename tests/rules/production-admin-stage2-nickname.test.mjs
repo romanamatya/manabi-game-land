@@ -11,7 +11,7 @@ const child=(uid)=>env.authenticatedContext(uid,{firebase:{sign_in_provider:'ano
 const row=(uid='rank-a',game='keisan',bestStreak=20,nickname='そら')=>({uid,game,nickname,bestStreak,icon:'cat',frame:'plain',title:'計算名人',badge:'keisan:10',updatedAt:F.Timestamp.fromMillis(1)});
 let env;
 before(async()=>{env=await initializeTestEnvironment({projectId,firestore:{host:'127.0.0.1',port:8180,rules:await readFile(rulesUrl,'utf8')}});});
-beforeEach(async()=>{await env.clearFirestore();await env.withSecurityRulesDisabled(async c=>{const db=c.firestore();await F.setDoc(F.doc(db,'productionAdmin/v1/private/admin'),{uid:'admin-uid',enabled:true,renameEnabled:true});await F.setDoc(F.doc(db,'productionAdmin/v1/private/revocation'),{after:F.Timestamp.fromMillis(100000)});await F.setDoc(F.doc(db,'players/profile-a'),{nickname:'そら',points:135,bestStreak:42,appearance:{icon:'cat',frame:'plain'},rankingUid:'rank-a'});await F.setDoc(F.doc(db,'productionRankings/v1/identityLinks/rank-a'),{uid:'rank-a',profileUid:'profile-a',createdAt:F.Timestamp.fromMillis(1)});await F.setDoc(F.doc(db,'productionRankings/v1/games/keisan/players/rank-a'),row());});});
+beforeEach(async()=>{await env.clearFirestore();await env.withSecurityRulesDisabled(async c=>{const db=c.firestore();await F.setDoc(F.doc(db,'productionAdmin/v1/private/admin'),{uid:'admin-uid',enabled:true,renameEnabled:true,suspensionEnabled:true});await F.setDoc(F.doc(db,'productionAdmin/v1/private/revocation'),{after:F.Timestamp.fromMillis(100000)});await F.setDoc(F.doc(db,'players/profile-a'),{nickname:'そら',points:135,bestStreak:42,appearance:{icon:'cat',frame:'plain'},rankingUid:'rank-a'});await F.setDoc(F.doc(db,'productionRankings/v1/identityLinks/rank-a'),{uid:'rank-a',profileUid:'profile-a',createdAt:F.Timestamp.fromMillis(1)});await F.setDoc(F.doc(db,'productionRankings/v1/games/keisan/players/rank-a'),row());});});
 after(async()=>env?.cleanup());
 
 test('children cannot change their nickname or another child profile; own score state remains writable',async()=>{const a=child('profile-a').firestore(),b=child('profile-b').firestore();await assertFails(F.updateDoc(F.doc(a,'players/profile-a'),{nickname:'勝手変更'}));await assertFails(F.updateDoc(F.doc(b,'players/profile-a'),{nickname:'なりすまし'}));await assertSucceeds(F.updateDoc(F.doc(a,'players/profile-a'),{points:140,bestStreak:43,updatedAt:2}));const after=(await assertSucceeds(F.getDoc(F.doc(a,'players/profile-a')))).data();assert.equal(after.nickname,'そら');assert.equal(after.points,140);assert.equal(after.bestStreak,43);});
@@ -67,3 +67,38 @@ test('player name sync does not create placeholder profiles and uses the Firesto
  }finally{await A.signOut(profileAuth);await A.signOut(rankingAuth);await FS.terminate(profileDb);await FS.terminate(rankingDb);await Promise.all(apps.map(deleteApp));}
 });
 
+
+test('only a fresh enabled admin may suspend and restore a player with atomic audit and backup',async()=>{
+ const db=adminContext().firestore(),profile=F.doc(db,'players/profile-a');
+ const before=(await assertSucceeds(F.getDoc(profile))).data();
+ const run=async(status,action,id)=>{
+  const at=F.serverTimestamp(),batch=F.writeBatch(db),backupId='status-backup-'+id,auditId='status-audit-'+id;
+  batch.set(F.doc(db,'productionAdmin/v1/backups/'+backupId),{actor:'admin-uid',at,uid:'profile-a',target:'players/profile-a',kind:'player-status',data:{player:before}});
+  batch.set(F.doc(db,'productionAdmin/v1/audit/'+auditId),{actor:'admin-uid',at,uid:'profile-a',target:'players/profile-a',action,reason:'保護者の依頼確認済み',backupId,beforeStatus:status==='suspended'?'active':'suspended',afterStatus:status});
+  batch.update(profile,{status,lastAudit:auditId,lastBackup:backupId,adminUpdatedAt:at});
+  await assertSucceeds(batch.commit());
+ };
+ await run('suspended','player-suspend','1');
+ let current=(await F.getDoc(profile)).data();
+ assert.equal(current.status,'suspended');
+ assert.equal(current.points,135);assert.equal(current.bestStreak,42);assert.deepEqual(current.appearance,before.appearance);
+ const childDb=child('profile-a').firestore();
+ await assertFails(F.updateDoc(F.doc(childDb,'players/profile-a'),{points:999,bestStreak:999,updatedAt:2}));
+ const rankingDb=child('rank-a').firestore(),rankRef=F.doc(rankingDb,'productionRankings/v1/games/keisan/players/rank-a');
+ await assertFails(F.updateDoc(rankRef,{bestStreak:21,updatedAt:F.serverTimestamp()}));
+ await run('active','player-restore','2');
+ current=(await F.getDoc(profile)).data();assert.equal(current.status,'active');
+ await assertSucceeds(F.updateDoc(rankRef,{bestStreak:21,updatedAt:F.serverTimestamp()}));
+ const finalProfile=(await F.getDoc(profile)).data();
+ assert.equal(finalProfile.points,before.points);assert.equal(finalProfile.bestStreak,before.bestStreak);assert.deepEqual(finalProfile.appearance,before.appearance);
+});
+
+test('admin cannot change player status until the separate suspension role flag is enabled',async()=>{
+ const db=adminContext().firestore();
+ await env.withSecurityRulesDisabled(async c=>F.updateDoc(F.doc(c.firestore(),'productionAdmin/v1/private/admin'),{suspensionEnabled:false}));
+ const before=(await assertSucceeds(F.getDoc(F.doc(db,'players/profile-a')))).data(),at=F.serverTimestamp(),batch=F.writeBatch(db);
+ batch.set(F.doc(db,'productionAdmin/v1/backups/disabled-status'),{actor:'admin-uid',at,uid:'profile-a',target:'players/profile-a',kind:'player-status',data:{player:before}});
+ batch.set(F.doc(db,'productionAdmin/v1/audit/disabled-status'),{actor:'admin-uid',at,uid:'profile-a',target:'players/profile-a',action:'player-suspend',reason:'権限フラグ未設定',backupId:'disabled-status',beforeStatus:'active',afterStatus:'suspended'});
+ batch.update(F.doc(db,'players/profile-a'),{status:'suspended',lastAudit:'disabled-status',lastBackup:'disabled-status',adminUpdatedAt:at});
+ await assertFails(batch.commit());
+});
