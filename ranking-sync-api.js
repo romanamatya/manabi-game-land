@@ -15,7 +15,19 @@ export async function createProductionRankingClient(c,[App,A,F]){
  if(!auth.currentUser)await A.signInAnonymously(auth);
  if(!auth.currentUser?.isAnonymous)throw err('anonymous-player-required');
  const uid=auth.currentUser.uid,allowed=new Set((c.rankingGameIds||GAME_IDS).filter(x=>GAME_IDS.includes(x)));
+ let profileUid=null,profileDb=null;
+ if(c.playerNameSyncEnabled===true){
+  const profileApp=App.getApps().find(x=>x.name==='[DEFAULT]')||App.initializeApp(c.firebase);
+  if(profileApp.options.projectId!=='manabi-game-land')throw err('production-project-rejected');
+  const profileAuth=A.getAuth(profileApp);await A.setPersistence(profileAuth,A.browserLocalPersistence);await profileAuth.authStateReady();
+  if(!profileAuth.currentUser)await A.signInAnonymously(profileAuth);
+  if(!profileAuth.currentUser?.isAnonymous)throw err('anonymous-player-required');
+  profileUid=profileAuth.currentUser.uid;profileDb=F.getFirestore(profileApp);
+ }
  const ref=game=>{if(!allowed.has(game))throw err('invalid-ranking-game');return F.doc(db,'productionRankings','v1','games',game,'players',uid)};
+ const playerRef=()=>{if(!profileUid)throw err('player-name-sync-disabled');return F.doc(profileDb,'players',profileUid)};
+ const linkRef=()=>F.doc(db,'productionRankings','v1','identityLinks',uid);
+ const validNickname=value=>typeof value==='string'&&value===value.trim()&&value.length>=1&&value.length<=12&&!/[<>\\r\\n]/.test(value);
  const clean=input=>{
   if(!input||Object.keys(input).some(k=>!['game','bestStreak','nickname','icon','frame','title','badge'].includes(k))||!allowed.has(input.game)||!Number.isSafeInteger(input.bestStreak)||input.bestStreak<1||input.bestStreak>100000)throw err('invalid-ranking');
   const nickname=typeof input.nickname==='string'?input.nickname.trim():'';
@@ -25,16 +37,47 @@ export async function createProductionRankingClient(c,[App,A,F]){
   return {uid,game:input.game,nickname,bestStreak:input.bestStreak,icon,frame,title,badge};
  };
  async function publishRanking(input){
-  const submitted=clean(input),target=ref(submitted.game),profile=F.doc(db,'players',uid);
+  const submitted=clean(input),target=ref(submitted.game);
   return F.runTransaction(db,async tx=>{
-   const [snap,profileSnap]=await Promise.all([tx.get(target),tx.get(profile)]);
-   const old=snap.exists()?snap.data():null;
-   const canonical=profileSnap.exists()?profileSnap.data()?.nickname:submitted.nickname;
+   const reads=[tx.get(target)];
+   if(profileUid)reads.push(tx.get(F.doc(db,'players',profileUid)),tx.get(linkRef()));
+   const result=await Promise.all(reads),snap=result[0],old=snap.exists()?snap.data():null;
+   let canonical=submitted.nickname;
+   if(profileUid){
+    const profileSnap=result[1],linkSnap=result[2];
+    if(!profileSnap.exists()||!linkSnap.exists()||linkSnap.data().profileUid!==profileUid||profileSnap.data().rankingUid!==uid)throw err('player-ranking-link-required');
+    canonical=profileSnap.data().nickname;
+   }
    const value=clean({...input,nickname:canonical});
    const bestStreak=Math.max(value.bestStreak,Number.isSafeInteger(old?.bestStreak)?old.bestStreak:0);const title=old&&value.bestStreak<old.bestStreak?old.title:value.title;const next={...value,title,bestStreak,updatedAt:F.serverTimestamp()};
    if(old&&next.bestStreak===old.bestStreak&&old.nickname===next.nickname&&old.icon===next.icon&&old.frame===next.frame&&old.title===next.title&&old.badge===next.badge)return old;
    tx.set(target,next);return next;
   });
+ }
+ async function ensurePlayerLink(localNickname){
+  if(!profileUid||!validNickname(localNickname))throw err('player-name-sync-disabled');
+  const profile=playerRef(),profileSnap=await F.getDocFromServer(profile);
+  if(!profileSnap.exists()){
+   await F.setDoc(profile,{nickname:localNickname,rankingUid:uid,updatedAt:F.serverTimestamp()});
+  }else{
+   const data=profileSnap.data();
+   if(data.rankingUid&&data.rankingUid!==uid)throw err('player-ranking-link-conflict');
+   if(!data.rankingUid)await F.updateDoc(profile,{rankingUid:uid,updatedAt:F.serverTimestamp()});
+  }
+  const link=linkRef(),linkSnap=await F.getDocFromServer(link);
+  if(linkSnap.exists()){
+   if(linkSnap.data().profileUid!==profileUid)throw err('player-ranking-link-conflict');
+  }else{
+   try{await F.setDoc(link,{uid,profileUid,createdAt:F.serverTimestamp()});}
+   catch(e){const current=await F.getDocFromServer(link);if(!current.exists()||current.data().profileUid!==profileUid)throw e;}
+  }
+  const finalProfile=await F.getDocFromServer(profile);
+  if(!finalProfile.exists()||finalProfile.data().rankingUid!==uid||!validNickname(finalProfile.data().nickname))throw err('player-ranking-link-conflict');
+  return finalProfile.data().nickname;
+ }
+ function watchPlayerName(callback){
+  if(!profileUid||typeof callback!=='function')throw err('player-name-sync-disabled');
+  return F.onSnapshot(playerRef(),snapshot=>{if(!snapshot.metadata.fromCache&&snapshot.exists()&&validNickname(snapshot.data().nickname)&&snapshot.data().rankingUid===uid)callback(snapshot.data().nickname);},()=>{});
  }
  async function queryGame(game,count){
   if(!allowed.has(game))throw err('invalid-ranking-game');
@@ -45,7 +88,7 @@ export async function createProductionRankingClient(c,[App,A,F]){
  }
  async function rankings(game){return queryGame(game,100);}
  async function champions(){return Promise.all([...allowed].map(async game=>({game,row:(await queryGame(game,1))[0]||null})));}
- return {uid,publishRanking,rankings,champions};
+ return {uid,profileUid,publishRanking,rankings,champions,ensurePlayerLink,watchPlayerName};
 }
 let pending;
 export function client(){
