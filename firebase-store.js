@@ -8,7 +8,7 @@ export function createFirestoreStore(mode,F,db,{catalog=[],rankingGameIds=[]}={}
  async function rename(user,input){
   const nickname=typeof input.nickname==='string'?input.nickname.trim():'',reason=typeof input.reason==='string'?input.reason.trim():'';
   if(!input.uid||input.uid===user.uid||nickname.length<1||nickname.length>12||/[<>\r\n]/.test(nickname)||reason.length<2||reason.length>300||typeof input.expectedNickname!=='string')throw error('invalid-input');
-  const target=ref(input.uid),a=audit(),b=backup(),rankRefs=[...new Set(rankingGameIds)].map(game=>({game,ref:F.doc(db,'productionRankings','v1','games',game,'players',input.uid)}));
+  const target=ref(input.uid),a=audit(),b=backup(),rankRefs=mode==='production'?[...new Set(rankingGameIds)].map(game=>({game,ref:F.doc(db,'productionRankings','v1','games',game,'players',input.uid)})):[];
   return transact(async tx=>{
    const reads=await Promise.all([tx.get(target),...rankRefs.map(x=>tx.get(x.ref))]),old=reads[0];
    if(!old.exists())throw error('player-not-found');
