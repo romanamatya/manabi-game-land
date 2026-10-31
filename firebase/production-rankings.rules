@@ -1,0 +1,77 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /players/{playerId} {
+      // Existing production player rules are preserved.
+      allow read: if request.auth != null;
+
+      function validDistribution() {
+        return request.resource.data.distributionBestStreak is int
+          && request.resource.data.distributionBestStreak >= 0;
+      }
+      allow create: if (!request.resource.data.keys().hasAny(['distributionBestStreak']) || validDistribution())
+        && request.auth != null
+        && request.auth.uid == playerId
+        && request.resource.data.keys().hasOnly([
+          'nickname','points','bestStreak','prefNameBestStreak','prefPlaceBestStreak',
+          'alphabetBestStreak','distributionBestStreak','appearance','updatedAt'
+        ])
+        && request.resource.data.nickname is string
+        && request.resource.data.nickname.size() > 0
+        && request.resource.data.nickname.size() <= 12;
+      allow update: if (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['distributionBestStreak'])
+          || (request.resource.data.keys().hasAny(['distributionBestStreak']) && validDistribution()
+            && request.resource.data.distributionBestStreak >= resource.data.get('distributionBestStreak', 0)))
+        && request.auth != null
+        && request.auth.uid == playerId
+        && request.resource.data.keys().hasOnly([
+          'nickname','points','bestStreak','prefNameBestStreak','prefPlaceBestStreak',
+          'alphabetBestStreak','distributionBestStreak','appearance','updatedAt'
+        ])
+        && request.resource.data.nickname is string
+        && request.resource.data.nickname.size() > 0
+        && request.resource.data.nickname.size() <= 12;
+      allow delete: if false;
+    }
+
+    function productionRankingGame(game) {
+      return game in ['keisan','pref-name','pref-place','alphabet','distribution','distribution2',
+        'exchangeAssociation','kotowaza','multiplicationProperties','shapeExpressions','keisanSummary'];
+    }
+    function productionRankingNameOK(name) {
+      return name is string && name.size() >= 1 && name.size() <= 12
+        && !name.matches('.*[<>\\r\\n].*')
+        && !name.matches('^\\s.*') && !name.matches('.*\\s$');
+    }
+    function productionRankingShape(game, uid, data) {
+      return productionRankingGame(game)
+        && data.keys().hasOnly(['uid','game','nickname','bestStreak','icon','frame','title','badge','updatedAt'])
+        && data.uid == uid && data.game == game
+        && productionRankingNameOK(data.nickname)
+        && data.bestStreak is int && data.bestStreak > 0 && data.bestStreak <= 100000
+        && data.icon is string && data.icon.matches('^[A-Za-z0-9:_-]{1,64}$')
+        && data.frame is string && data.frame.matches('^[A-Za-z0-9:_-]{1,64}$')
+        && (data.title == null || data.title is string && data.title.size() <= 80)
+        && (data.badge == null || data.badge is string && data.badge.matches('^[A-Za-z0-9:_-]{1,64}$'))
+        && data.updatedAt == request.time;
+    }
+
+    // Sanitized ranking projection only. No points, items, purchases, history, or admin fields.
+    match /productionRankings/v1/games/{game}/players/{uid} {
+      allow get, list: if request.auth != null && productionRankingGame(game);
+      allow create: if request.auth != null
+        && request.auth.token.firebase.sign_in_provider == 'anonymous'
+        && request.auth.uid == uid
+        && productionRankingShape(game, uid, request.resource.data);
+      allow update: if request.auth != null
+        && request.auth.token.firebase.sign_in_provider == 'anonymous'
+        && request.auth.uid == uid
+        && productionRankingShape(game, uid, request.resource.data)
+        && request.resource.data.game == resource.data.game
+        && request.resource.data.uid == resource.data.uid
+        && request.resource.data.bestStreak >= resource.data.bestStreak;
+      allow delete: if false;
+    }
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "firestore": {
+    "rules": "production-rankings.rules"
+  },
+  "emulators": {
+    "firestore": {
+      "port": 8089
+    }
+  }
+}
