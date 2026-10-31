@@ -209,6 +209,7 @@ service cloud.firestore {
         ])
         && validPlayerNickname(request.resource.data.nickname)
         && request.resource.data.nickname == resource.data.nickname
+        && resource.data.get('status', 'active') == 'active'
         && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['lastAudit','lastBackup','adminUpdatedAt'])
         && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['rankingUid'])
         && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['distributionBestStreak'])
@@ -224,6 +225,7 @@ service cloud.firestore {
           && !resource.data.keys().hasAny(['rankingUid'])
           && validRankingUid(request.resource.data.rankingUid)
           && request.resource.data.updatedAt == request.time
+          && resource.data.get('status', 'active') == 'active'
           && request.resource.data.diff(resource.data).affectedKeys().hasAll(['rankingUid','updatedAt'])
           && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['rankingUid','updatedAt'])
           && request.resource.data.nickname == resource.data.nickname;
