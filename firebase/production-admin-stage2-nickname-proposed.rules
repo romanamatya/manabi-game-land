@@ -154,10 +154,12 @@ service cloud.firestore {
       function validSelfPlayerUpdate() {
         return request.resource.data.keys().hasOnly([
           'nickname','points','bestStreak','prefNameBestStreak','prefPlaceBestStreak',
-          'alphabetBestStreak','distributionBestStreak','appearance','updatedAt','rankingUid'
+          'alphabetBestStreak','distributionBestStreak','appearance','updatedAt','rankingUid',
+          'lastAudit','lastBackup','adminUpdatedAt'
         ])
         && validPlayerNickname(request.resource.data.nickname)
         && request.resource.data.nickname == resource.data.nickname
+        && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['lastAudit','lastBackup','adminUpdatedAt'])
         && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['rankingUid'])
           || (!resource.data.keys().hasAny(['rankingUid']) && validRankingUid(request.resource.data.rankingUid)))
         && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['distributionBestStreak'])
