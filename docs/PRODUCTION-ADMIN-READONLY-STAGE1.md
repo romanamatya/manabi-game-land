@@ -24,3 +24,7 @@ This proposal targets only Firebase project `manabi-game-land`. It does not enab
 ## Security limitations
 
 Firestore Rules cannot hide individual fields within a document. An authorized read of a `/players/{uid}` document returns all fields in that document to the admin client even though the stage-1 UI projection discards private fields immediately. If field-level minimization is required, a separately designed server-side projection would be necessary and is outside this read-only client-only stage.
+
+## Existing player-read rule
+
+The live `/players/{playerId}` rule currently allows reads for any Firebase-authenticated user (`request.auth != null`), which includes the game's anonymous-authenticated child clients. The admin page itself additionally requires the password provider, matching enabled role document, and a fresh session. This stage preserves the existing `/players` rule as requested; therefore the new admin namespace is restricted, but raw `/players` document reads are not admin-only at the Firestore layer. Tightening that existing rule needs a separate compatibility review of all game callers before deployment.
