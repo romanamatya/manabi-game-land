@@ -74,6 +74,7 @@ function renderRankings(){
   n.append(el('p','リセット処理が途中です。バックアップ作成を再開するまで、このゲームへの投稿・閲覧は一時停止しています。','review'),button('バックアップを完了してリセットを再開',()=>ask('ランキングリセットを再開',selected.game+' の変更前記録を同じバックアップへ追記し、準備済みの世代切替を完了します。記録は削除しません。',[],(_,reason)=>rankingOperation('resumeReset',{game:selected.game,confirm:true},reason),{phrase:selected.game})));
  }else{
   n.append(el('p','現在のランキング世代：'+selected.generation+'。表示中 '+selected.rows.filter(r=>r.visibility!=='excluded').length+' 人／除外 '+selected.rows.filter(r=>r.visibility==='excluded').length+' 人。修正済み・除外復元済みの児童記録は保護され、古い端末から上書きされません。'));
+  n.append(el('p','管理者が修正・除外・復元した記録は、このゲーム世代の間は児童端末から更新できません。ゲームを新しい世代へリセットすると、その世代で再投稿できるようになります。','review'));
   const rows=selected.rows.map((r,i)=>{
    const identity=window.ManabiIdentity?.identity({nickname:r.nickname,appearance:{icon:r.icon,frame:r.frame,badge:r.badge}},{size:42,badgeSize:28,game:selected.game})||el('span',r.nickname);
    const title=el('span',r.title||'—');
@@ -114,4 +115,5 @@ try{api=await client();api.watch(async user=>{lock();revocationUnsubscribe?.();i
 
 if(window.MANABI_SPARK_CONFIG?.enabled!==true&&window.MANABI_SPARK_CONFIG?.adminReadOnly!==true){$('backendSetup').hidden=false;$('adminPassword').disabled=true;$('passwordSubmit').disabled=true;$('status').textContent='本番の認証・権限を確認後に利用開始。';}
 if(readOnly){for(const b of document.querySelectorAll('[data-tab]'))b.hidden=!(b.dataset.tab==='players'||((playerRenameEnabled||playerSuspensionEnabled||window.MANABI_SPARK_CONFIG?.adminFeatures?.rankingManagement===true)&&b.dataset.tab==='history')||(window.MANABI_SPARK_CONFIG?.adminFeatures?.rankingManagement===true&&b.dataset.tab==='rankings'));$('changePassword').hidden=true;$('logout').title='この端末からログアウト';}
+
 
