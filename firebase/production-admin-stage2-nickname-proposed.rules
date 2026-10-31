@@ -168,7 +168,9 @@ service cloud.firestore {
         && request.auth.uid == playerId
         && validSelfPlayerCreate();
       function validSelfPlayerLink() {
-        return !resource.data.keys().hasAny(['rankingUid'])
+        return request.auth != null
+          && request.auth.token.firebase.sign_in_provider == 'anonymous'
+          && !resource.data.keys().hasAny(['rankingUid'])
           && validRankingUid(request.resource.data.rankingUid)
           && request.resource.data.updatedAt == request.time
           && request.resource.data.diff(resource.data).affectedKeys().hasAll(['rankingUid','updatedAt'])
