@@ -1,7 +1,7 @@
 import {createSeasonStore} from './challenge120-season-store.js?v=adminprod-20261030';
 import {createManagementStore} from './management-store.js?v=adminprod-20261030';
 import {validateBackend,contractFor} from './data-contract.js?v=adminprod-20261030';
-import {createFirestoreStore} from './firebase-store.js?v=adminprod-20261030';
+import {createFirestoreStore} from './firebase-store.js?v=admin-stage2-player-rename-1';
 const config = window.MANABI_SPARK_CONFIG;
 const error = code => Object.assign(new Error(code), {code});
 const validName = value => typeof value === 'string' && value === value.trim() && value.length >= 1 && value.length <= 12 && !/[<>\r\n]/.test(value);
@@ -27,6 +27,9 @@ export function errorText(e) {
     'auth/requires-recent-login': '現在のパスワードで入り直してから操作して。',
     'invalid-input': '名前は1〜12文字、変更理由は2〜300文字で入力して。',
     'player-not-found': '対象のプレイヤーが見つからない。更新して確認して。',
+    'player-ranking-link-review': '連携されたランキングが多いか、対応関係に不整合がある。データを変更せず管理者に確認を依頼して。',
+    'player-ranking-link-conflict': 'この端末のランキング連携を確認できない。記録は変更していない。',
+    'nickname-required': '先にニックネームを登録してから、同期をやり直して。',
     'name-conflict': '別の端末で名前が変更された。更新してからやり直して。',
     'logout-revocation-failed': 'この端末からはログアウトした。他端末の無効化は通信できず未完了。',
     'password-change-incomplete': '全端末のセッションを無効化したが、パスワード変更は完了しなかった。元のパスワードで入り直して確認して。'
@@ -68,7 +71,7 @@ export async function createAdminClient(c, [appSdk, A, F]) {
 export function createAdminOperations(c,{auth,db},A,F) {
   const readOnly=c.adminReadOnly===true;
   const contract=validateBackend(c,{requireEnabled:false,mode:readOnly?'production':undefined}),alias=contract.alias;
-  const store=createFirestoreStore(contract.mode,F,db,{catalog:window.ManabiProfileCatalog||[]});
+  const store=createFirestoreStore(contract.mode,F,db,{catalog:window.ManabiProfileCatalog||[],rankingGameIds:c.rankingGameIds||[]});
   const management=createManagementStore(contract.mode,F,db,{players:cursor=>store.list(cursor),rankingGameIds:c.managedRankingGameIds||[]});
   const ref=(kind,id)=>F.doc(db,kind==='players'?contract.players:contract.base+'/'+kind,id);
   const col=kind=>F.collection(db,kind==='players'?contract.players:contract.base+'/'+kind);
@@ -96,10 +99,10 @@ export function createAdminOperations(c,{auth,db},A,F) {
   async function rename(input) {const user=await verify();if(contract.mode==='production'){const role=await F.getDocFromServer(ref('private','admin'));if(role.data()?.renameEnabled!==true)throw error('rename-not-enabled');}return store.rename(user,input);}
 
   async function call(action, input = {}) {
-    if(readOnly&&!['admin:snapshot','admin:players'].includes(action))throw error('admin-read-only');
+    if(readOnly&&!['admin:snapshot','admin:players'].includes(action)&&!(c.adminFeatures?.playerRename===true&&['admin:rename','admin:history'].includes(action)))throw error('admin-read-only');
     await verify();
     if (action === 'admin:snapshot') {
-      if(readOnly){const players=await list('players');return {players:players.rows,playerCursor:players.cursor};}
+      if(readOnly){const players=await list('players');const history=c.adminFeatures?.playerRename===true?await F.getDocsFromServer(F.query(col('audit'),F.orderBy('at','desc'),F.limit(100))):null;return {players:players.rows,playerCursor:players.cursor,audit:history?.docs.map(d=>plain({...d.data(),id:d.id}))||[]};}
       const [players, history] = await Promise.all([
         list('players'),
         F.getDocsFromServer(F.query(col('audit'), F.orderBy('at', 'desc'), F.limit(100)))

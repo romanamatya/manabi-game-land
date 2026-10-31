@@ -1,0 +1,284 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function productionPasswordAdmin() {
+      return request.auth != null
+        && request.auth.token.firebase.sign_in_provider == 'password';
+    }
+    function productionAdminRoleMatches() {
+      let adminPath = /databases/$(database)/documents/productionAdmin/v1/private/admin;
+      return productionPasswordAdmin()
+        && exists(adminPath)
+        && get(adminPath).data.uid == request.auth.uid
+        && get(adminPath).data.enabled == true;
+    }
+    function productionAdminSessionFresh() {
+      let revokePath = /databases/$(database)/documents/productionAdmin/v1/private/revocation;
+      return productionAdminRoleMatches()
+        && exists(revokePath)
+        && get(revokePath).data.after is timestamp
+        && request.auth.token.auth_time is int
+        && get(revokePath).data.after.toMillis() < request.auth.token.auth_time * 1000;
+    }
+    function productionAdminRenameEnabled() {
+      let adminPath = /databases/$(database)/documents/productionAdmin/v1/private/admin;
+      return productionAdminSessionFresh()
+        && get(adminPath).data.renameEnabled == true;
+    }
+    function validPlayerNickname(name) {
+      return name is string && name.size() >= 1 && name.size() <= 12
+        && !name.matches('.*[<>\\r\\n].*')
+        && !name.matches('^ .*') && !name.matches('.* $');
+    }
+    function validRankingUid(value) {
+      return value is string && value.matches('^[A-Za-z0-9_-]{1,128}$');
+    }
+    function validRankingGame(game) {
+      return game in ['keisan','pref-name','pref-place','alphabet','distribution','distribution2',
+        'exchangeAssociation','kotowaza','multiplicationProperties','shapeExpressions','keisanSummary'];
+    }
+    function identityLinkPath(rankingUid) {
+      return /databases/$(database)/documents/productionRankings/v1/identityLinks/$(rankingUid);
+    }
+    function linkedPlayerPath(profileUid) {
+      return /databases/$(database)/documents/players/$(profileUid);
+    }
+    function linkedRankingNameMatches(rankingUid, data) {
+      let linkPath = identityLinkPath(rankingUid);
+      let linkData = get(linkPath).data;
+      let profilePath = linkedPlayerPath(linkData.profileUid);
+      return linkData.uid == rankingUid
+        && linkData.profileUid is string
+        && exists(profilePath)
+        && get(profilePath).data.rankingUid == rankingUid
+        && data.nickname == get(profilePath).data.nickname;
+    }
+    function rankingNameCanonical(rankingUid, data) {
+      let linkPath = identityLinkPath(rankingUid);
+      return !exists(linkPath) || linkedRankingNameMatches(rankingUid, data);
+    }
+    function adminAuditPath(auditId) {
+      return /databases/$(database)/documents/productionAdmin/v1/audit/$(auditId);
+    }
+    function adminBackupPath(backupId) {
+      return /databases/$(database)/documents/productionAdmin/v1/backups/$(backupId);
+    }
+    function adminRenameRefsValid(playerId) {
+      let auditPath = adminAuditPath(request.resource.data.lastAudit);
+      let backupPath = adminBackupPath(request.resource.data.lastBackup);
+      let auditData = getAfter(auditPath).data;
+      let backupData = getAfter(backupPath).data;
+      return existsAfter(auditPath)
+        && existsAfter(backupPath)
+        && auditData.actor == request.auth.uid
+        && auditData.uid == playerId
+        && auditData.action == 'rename'
+        && auditData.backupId == request.resource.data.lastBackup
+        && auditData.beforeName == resource.data.get('nickname', '')
+        && auditData.afterName == request.resource.data.nickname
+        && backupData.actor == request.auth.uid
+        && backupData.uid == playerId
+        && backupData.kind == 'rename'
+        && backupData.data.player == resource.data;
+    }
+    function adminRenamePlayer(playerId) {
+      return request.auth != null
+        && playerId != request.auth.uid
+        && productionAdminRenameEnabled()
+        && request.resource.data.diff(resource.data).affectedKeys()
+          .hasAll(['nickname','lastAudit','lastBackup','adminUpdatedAt'])
+        && request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['nickname','lastAudit','lastBackup','adminUpdatedAt'])
+        && validPlayerNickname(request.resource.data.nickname)
+        && request.resource.data.lastAudit is string
+        && request.resource.data.lastBackup is string
+        && request.resource.data.adminUpdatedAt == request.time
+        && adminRenameRefsValid(playerId);
+    }
+    function adminRenameRanking(game, rankingUid) {
+      let linkPath = identityLinkPath(rankingUid);
+      return validRankingGame(game)
+        && productionAdminRenameEnabled()
+        && exists(linkPath)
+        && adminRenameLinkedRanking(game, rankingUid, linkPath);
+    }
+    function adminRenameLinkedRanking(game, rankingUid, linkPath) {
+      let linkData = get(linkPath).data;
+      let playerPath = linkedPlayerPath(linkData.profileUid);
+      let playerAfter = getAfter(playerPath).data;
+      let auditPath = adminAuditPath(playerAfter.lastAudit);
+      let backupPath = adminBackupPath(playerAfter.lastBackup);
+      return linkData.uid == rankingUid
+        && exists(playerPath)
+        && playerAfter.rankingUid == rankingUid
+        && request.resource.data.nickname == playerAfter.nickname
+        && request.resource.data.updatedAt == request.time
+        && request.resource.data.diff(resource.data).affectedKeys().hasAll(['nickname','updatedAt'])
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['nickname','updatedAt'])
+        && existsAfter(auditPath) && existsAfter(backupPath)
+        && getAfter(auditPath).data.action == 'rename'
+        && getAfter(auditPath).data.uid == linkData.profileUid
+        && getAfter(backupPath).data.uid == linkData.profileUid;
+    }
+    function validRankingShape(game, uid, data) {
+      return validRankingGame(game)
+        && data.keys().hasOnly(['uid','game','nickname','bestStreak','icon','frame','title','badge','updatedAt'])
+        && data.uid == uid && data.game == game
+        && validPlayerNickname(data.nickname)
+        && data.bestStreak is int && data.bestStreak > 0 && data.bestStreak <= 100000
+        && data.icon is string && data.icon.matches('^[A-Za-z0-9:_-]{1,64}$')
+        && data.frame is string && data.frame.matches('^[A-Za-z0-9:_-]{1,64}$')
+        && (data.title == null || data.title is string && data.title.size() <= 80)
+        && (data.badge == null || data.badge is string && data.badge.matches('^[A-Za-z0-9:_-]{1,64}$'))
+        && data.updatedAt == request.time;
+    }
+
+    match /players/{playerId} {
+      // Preserve the existing authenticated read access; this PR does not broaden it.
+      allow read: if request.auth != null;
+
+      function validDistribution() {
+        return request.resource.data.distributionBestStreak is int
+          && request.resource.data.distributionBestStreak >= 0;
+      }
+      function validSelfPlayerCreate() {
+        return request.resource.data.keys().hasOnly([
+          'nickname','points','bestStreak','prefNameBestStreak','prefPlaceBestStreak',
+          'alphabetBestStreak','distributionBestStreak','appearance','updatedAt'
+        ])
+        && validPlayerNickname(request.resource.data.nickname)
+        && (!request.resource.data.keys().hasAny(['distributionBestStreak']) || validDistribution());
+      }
+      function validSelfPlayerUpdate() {
+        return request.resource.data.keys().hasOnly([
+          'nickname','points','bestStreak','prefNameBestStreak','prefPlaceBestStreak',
+          'alphabetBestStreak','distributionBestStreak','appearance','updatedAt','rankingUid',
+          'lastAudit','lastBackup','adminUpdatedAt'
+        ])
+        && validPlayerNickname(request.resource.data.nickname)
+        && request.resource.data.nickname == resource.data.nickname
+        && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['lastAudit','lastBackup','adminUpdatedAt'])
+        && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['rankingUid'])
+        && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['distributionBestStreak'])
+          || (request.resource.data.keys().hasAny(['distributionBestStreak']) && validDistribution()
+            && request.resource.data.distributionBestStreak >= resource.data.get('distributionBestStreak', 0)));
+      }
+      allow create: if request.auth != null
+        && request.auth.uid == playerId
+        && validSelfPlayerCreate();
+      function validSelfPlayerLink() {
+        return request.auth != null
+          && request.auth.token.firebase.sign_in_provider == 'anonymous'
+          && !resource.data.keys().hasAny(['rankingUid'])
+          && validRankingUid(request.resource.data.rankingUid)
+          && request.resource.data.updatedAt == request.time
+          && request.resource.data.diff(resource.data).affectedKeys().hasAll(['rankingUid','updatedAt'])
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['rankingUid','updatedAt'])
+          && request.resource.data.nickname == resource.data.nickname;
+      }
+      allow update: if (request.auth != null
+          && request.auth.uid == playerId
+          && validSelfPlayerUpdate())
+        || (request.auth != null
+          && request.auth.uid == playerId
+          && validSelfPlayerLink())
+        || adminRenamePlayer(playerId);
+      allow delete: if false;
+    }
+
+    match /productionRankings/v1/games/{game}/players/{uid} {
+      allow get, list: if request.auth != null && validRankingGame(game);
+      allow create: if request.auth != null
+        && request.auth.token.firebase.sign_in_provider == 'anonymous'
+        && request.auth.uid == uid
+        && validRankingShape(game, uid, request.resource.data)
+        && rankingNameCanonical(uid, request.resource.data);
+      allow update: if (request.auth != null
+          && request.auth.token.firebase.sign_in_provider == 'anonymous'
+          && request.auth.uid == uid
+          && validRankingShape(game, uid, request.resource.data)
+          && request.resource.data.game == resource.data.game
+          && request.resource.data.uid == resource.data.uid
+          && request.resource.data.bestStreak >= resource.data.bestStreak
+          && rankingNameCanonical(uid, request.resource.data))
+        || adminRenameRanking(game, uid);
+      allow delete: if false;
+    }
+
+    match /productionRankings/v1/identityLinks/{rankingUid} {
+      allow get: if request.auth != null
+        && (request.auth.uid == rankingUid || productionAdminSessionFresh());
+      allow list: if productionAdminSessionFresh();
+      allow create: if request.auth != null
+        && request.auth.token.firebase.sign_in_provider == 'anonymous'
+        && request.auth.uid == rankingUid
+        && request.resource.data.keys().hasOnly(['uid','profileUid','createdAt'])
+        && request.resource.data.uid == rankingUid
+        && request.resource.data.profileUid is string
+        && request.resource.data.profileUid.size() >= 1
+        && request.resource.data.profileUid.size() <= 128
+        && request.resource.data.createdAt == request.time
+        && exists(linkedPlayerPath(request.resource.data.profileUid))
+        && get(linkedPlayerPath(request.resource.data.profileUid)).data.rankingUid == rankingUid;
+      allow update, delete: if false;
+    }
+
+    match /productionAdmin/v1/private/{documentId} {
+      allow get: if productionPasswordAdmin() && (
+        (documentId == 'admin'
+          && resource.data.uid == request.auth.uid
+          && resource.data.enabled == true)
+        || (documentId == 'revocation' && productionAdminRoleMatches())
+      );
+      allow list, create, update, delete: if false;
+    }
+
+    match /productionAdmin/v1/audit/{auditId} {
+      allow get, list: if productionAdminSessionFresh();
+      allow create: if request.resource.data.keys().hasOnly([
+          'actor','at','uid','target','action','reason','backupId','beforeName','afterName'
+        ])
+        && productionAdminRenameEnabled()
+        && request.resource.data.actor == request.auth.uid
+        && request.resource.data.at == request.time
+        && request.resource.data.uid is string
+        && request.resource.data.target == 'players/' + request.resource.data.uid
+        && request.resource.data.action == 'rename'
+        && request.resource.data.reason is string
+        && request.resource.data.reason.size() >= 2
+        && request.resource.data.reason.size() <= 300
+        && request.resource.data.backupId is string
+        && request.resource.data.beforeName is string
+        && request.resource.data.beforeName.size() <= 12
+        && request.resource.data.afterName is string
+        && validPlayerNickname(request.resource.data.afterName)
+        && existsAfter(linkedPlayerPath(request.resource.data.uid))
+        && getAfter(linkedPlayerPath(request.resource.data.uid)).data.lastAudit == auditId
+        && getAfter(linkedPlayerPath(request.resource.data.uid)).data.lastBackup == request.resource.data.backupId;
+      allow update, delete: if false;
+    }
+
+    match /productionAdmin/v1/backups/{backupId} {
+      allow get, list: if productionAdminSessionFresh();
+      allow create: if request.resource.data.keys().hasOnly(['actor','at','uid','target','kind','data'])
+        && productionAdminRenameEnabled()
+        && request.resource.data.actor == request.auth.uid
+        && request.resource.data.at == request.time
+        && request.resource.data.uid is string
+        && request.resource.data.target == 'players/' + request.resource.data.uid
+        && request.resource.data.kind == 'rename'
+        && request.resource.data.data is map
+        && request.resource.data.data.keys().hasOnly(['player','links','rankings'])
+        && request.resource.data.data.player is map
+        && request.resource.data.data.links is list
+        && request.resource.data.data.links.size() <= 10
+        && request.resource.data.data.rankings is list
+        && request.resource.data.data.rankings.size() <= 110
+        && existsAfter(linkedPlayerPath(request.resource.data.uid))
+        && getAfter(linkedPlayerPath(request.resource.data.uid)).data.lastBackup == backupId
+        && getAfter(linkedPlayerPath(request.resource.data.uid)).data.lastAudit is string;
+      allow update, delete: if false;
+    }
+  }
+}
