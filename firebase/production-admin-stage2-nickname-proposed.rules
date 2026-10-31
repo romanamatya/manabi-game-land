@@ -388,7 +388,6 @@ service cloud.firestore {
         && getAfter(playerPath).data.lastAccessBackup == backupId
         && getAfter(playerPath).data.lastAccessAudit is string;
     }
-    }
   }
 }
 
