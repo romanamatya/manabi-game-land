@@ -145,10 +145,9 @@ service cloud.firestore {
       function validSelfPlayerCreate() {
         return request.resource.data.keys().hasOnly([
           'nickname','points','bestStreak','prefNameBestStreak','prefPlaceBestStreak',
-          'alphabetBestStreak','distributionBestStreak','appearance','updatedAt','rankingUid'
+          'alphabetBestStreak','distributionBestStreak','appearance','updatedAt'
         ])
         && validPlayerNickname(request.resource.data.nickname)
-        && (!request.resource.data.keys().hasAny(['rankingUid']) || validRankingUid(request.resource.data.rankingUid))
         && (!request.resource.data.keys().hasAny(['distributionBestStreak']) || validDistribution());
       }
       function validSelfPlayerUpdate() {
@@ -160,8 +159,7 @@ service cloud.firestore {
         && validPlayerNickname(request.resource.data.nickname)
         && request.resource.data.nickname == resource.data.nickname
         && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['lastAudit','lastBackup','adminUpdatedAt'])
-        && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['rankingUid'])
-          || (!resource.data.keys().hasAny(['rankingUid']) && validRankingUid(request.resource.data.rankingUid)))
+        && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['rankingUid'])
         && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['distributionBestStreak'])
           || (request.resource.data.keys().hasAny(['distributionBestStreak']) && validDistribution()
             && request.resource.data.distributionBestStreak >= resource.data.get('distributionBestStreak', 0)));
@@ -169,9 +167,20 @@ service cloud.firestore {
       allow create: if request.auth != null
         && request.auth.uid == playerId
         && validSelfPlayerCreate();
+      function validSelfPlayerLink() {
+        return !resource.data.keys().hasAny(['rankingUid'])
+          && validRankingUid(request.resource.data.rankingUid)
+          && request.resource.data.updatedAt == request.time
+          && request.resource.data.diff(resource.data).affectedKeys().hasAll(['rankingUid','updatedAt'])
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['rankingUid','updatedAt'])
+          && request.resource.data.nickname == resource.data.nickname;
+      }
       allow update: if (request.auth != null
           && request.auth.uid == playerId
           && validSelfPlayerUpdate())
+        || (request.auth != null
+          && request.auth.uid == playerId
+          && validSelfPlayerLink())
         || adminRenamePlayer(playerId);
       allow delete: if false;
     }
