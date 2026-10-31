@@ -55,6 +55,13 @@ test('player name sync does not create placeholder profiles and uses the Firesto
   await api.publishRanking({game:'keisan',bestStreak:6,nickname:'古い端末名',icon:'cat',frame:'plain',title:null,badge:null});
   let rank=await assertSucceeds(FS.getDoc(FS.doc(rankingDb,'productionRankings/v1/games/keisan/players',rankingAuth.currentUser.uid)));
   assert.equal(rank.data().nickname,'管理前');
+  assert.equal((await api.playerAccess()).status,'active');
+  const accessSeen=new Promise(resolve=>{const stop=api.watchPlayerAccess(value=>{if(value.status==='suspended'){stop();resolve(value.status);}});setTimeout(()=>{stop();resolve(null);},2500);});
+  await env.withSecurityRulesDisabled(async c=>FS.updateDoc(FS.doc(c.firestore(),'players',profileAuth.currentUser.uid),{status:'suspended'}));
+  assert.equal(await accessSeen,'suspended');
+  await assert.rejects(api.publishRanking({game:'keisan',bestStreak:7,nickname:'管理前',icon:'cat',frame:'plain',title:null,badge:null}),e=>e.code==='player-suspended');
+  await env.withSecurityRulesDisabled(async c=>FS.updateDoc(FS.doc(c.firestore(),'players',profileAuth.currentUser.uid),{status:'active'}));
+  assert.equal((await api.playerAccess()).status,'active');
   const seen=new Promise(resolve=>{const stop=api.watchPlayerName(name=>{if(name==='管理後'){stop();resolve(name);}});setTimeout(()=>{stop();resolve(null);},2500);});
   await env.withSecurityRulesDisabled(async c=>FS.updateDoc(FS.doc(c.firestore(),'players',profileAuth.currentUser.uid),{nickname:'管理後'}));
   assert.equal(await seen,'管理後');
