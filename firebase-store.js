@@ -34,5 +34,25 @@ export function createFirestoreStore(mode,F,db,{catalog=[],rankingGameIds=[]}={}
  }
  async function saveLegacy(uid,local,game,appearance){if(mode!=='production')throw error('legacy-adapter-environment-mismatch');let result;await transact(async tx=>{const s=await tx.get(ref(uid)),remote=s.exists()?s.data():null;const patch=legacyScorePatch(remote,local,game,appearance,Date.now());result={nickname:patch.nickname,best:patch[Object.keys(patch).find(k=>k.endsWith('BestStreak')||k==='bestStreak')]};tx.set(ref(uid),patch,{merge:true});});return result;}
  async function saveProfile(uid,localName,appearance){let name;await transact(async tx=>{const s=await tx.get(ref(uid));name=canonicalNickname(s.exists()?s.data():null,localName);if(!name)throw error('nickname-required');tx.set(ref(uid),{nickname:name,appearance,updatedAt:Date.now()},{merge:true});});return name;}
- return {contract:c,ref,list,rename,saveLegacy,saveProfile};
+ async function setStatus(user,input){
+  const uid=typeof input.uid==='string'?input.uid:'';
+  const status=input.status==='suspended'?'suspended':input.status==='active'?'active':'';
+  const reason=typeof input.reason==='string'?input.reason.trim():'';
+  if(!uid||uid===user.uid||!status||reason.length<2||reason.length>300||!['active','suspended'].includes(input.expectedStatus))throw error('invalid-input');
+  const target=ref(uid),a=audit(),b=backup();
+  return transact(async tx=>{
+   const snap=await tx.get(target);
+   if(!snap.exists())throw error('player-not-found');
+   const data=snap.data(),current=data.status||'active';
+   if(current!==input.expectedStatus)throw error('status-conflict');
+   if(current===status)return {ok:true,unchanged:true};
+   const at=F.serverTimestamp(),action=status==='suspended'?'player-suspend':'player-restore';
+   const beforeStatus=current;
+   tx.set(b,{actor:user.uid,at,uid,target:'players/'+uid,kind:'player-status',data:{player:data}});
+   tx.set(a,{actor:user.uid,at,uid,target:'players/'+uid,action,reason,backupId:b.id,beforeStatus,afterStatus:status});
+   tx.update(target,{status,lastAudit:a.id,lastBackup:b.id,adminUpdatedAt:at});
+   return {ok:true,auditId:a.id,backupId:b.id,status};
+  });
+ }
+ return {contract:c,ref,list,rename,setStatus,saveLegacy,saveProfile};
 }
