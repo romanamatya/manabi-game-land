@@ -96,10 +96,10 @@ export function createAdminOperations(c,{auth,db},A,F) {
   async function rename(input) {const user=await verify();if(contract.mode==='production'){const role=await F.getDocFromServer(ref('private','admin'));if(role.data()?.renameEnabled!==true)throw error('rename-not-enabled');}return store.rename(user,input);}
 
   async function call(action, input = {}) {
-    if(readOnly&&!['admin:snapshot','admin:players'].includes(action)&&!(action==='admin:rename'&&c.adminFeatures?.playerRename===true))throw error('admin-read-only');
+    if(readOnly&&!['admin:snapshot','admin:players'].includes(action)&&!(c.adminFeatures?.playerRename===true&&['admin:rename','admin:history'].includes(action)))throw error('admin-read-only');
     await verify();
     if (action === 'admin:snapshot') {
-      if(readOnly){const players=await list('players');return {players:players.rows,playerCursor:players.cursor};}
+      if(readOnly){const players=await list('players');const history=c.adminFeatures?.playerRename===true?await F.getDocsFromServer(F.query(col('audit'),F.orderBy('at','desc'),F.limit(100))):null;return {players:players.rows,playerCursor:players.cursor,audit:history?.docs.map(d=>plain({...d.data(),id:d.id}))||[]};}
       const [players, history] = await Promise.all([
         list('players'),
         F.getDocsFromServer(F.query(col('audit'), F.orderBy('at', 'desc'), F.limit(100)))
