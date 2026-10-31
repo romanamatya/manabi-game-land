@@ -1,0 +1,15 @@
+{
+  "rulesCompile": "passed in Firestore Emulator",
+  "authEmulator": true,
+  "firestoreEmulator": true,
+  "testFiles": [
+    "tests/admin-stage1/admin-readonly-stage1.test.mjs",
+    "tests/admin-stage1/stage1-password-auth.test.mjs",
+    "tests/admin-stage1/admin-readonly-client.test.mjs"
+  ],
+  "tests": 15,
+  "passed": 15,
+  "failed": 0,
+  "productionWrites": 0,
+  "productionLoginTested": false
+}

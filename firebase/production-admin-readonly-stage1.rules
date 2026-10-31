@@ -1,0 +1,93 @@
+rules_version = '2';
+// PROTOTYPE. Not deployed. Stage 1 is read-only for management data.
+// Assumptions: private/admin = {uid:string, enabled:bool, renameEnabled:false};
+// private/revocation = {after:timestamp, actor:string}; both are Console-only.
+// players keeps the currently deployed flat legacy schema and permissions.
+// Named management collections may be read by the password owner, never written.
+// Existing authenticated /players ranking reads are an explicit compatibility
+// exception, not a guarantee that all student data is private.
+
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Stage 1 prototype: password owner may read management snapshots only.
+    // No admin write permissions, no new player fields, no ranking reset.
+    function adminIdentity() {
+      let role = get(/databases/$(database)/documents/productionAdmin/v1/private/admin).data;
+      return request.auth != null
+        && request.auth.token.firebase.sign_in_provider == 'password'
+        && role.enabled == true && role.uid == request.auth.uid;
+    }
+    function verifiedAdmin() {
+      return adminIdentity() && request.auth.token.auth_time * 1000 >
+        get(/databases/$(database)/documents/productionAdmin/v1/private/revocation).data.after.toMillis();
+    }
+    match /productionAdmin/v1/private/{id} {
+      allow get: if id in ['admin', 'revocation'] && adminIdentity();
+      allow list, create, update, delete: if false;
+    }
+    match /productionAdmin/v1/{collection}/{id} {
+      allow read: if collection in ['audit', 'backups', 'gameSettings', 'notices',
+        'settings', 'managementAudit', 'managementBackups', 'campaignHistory', 'rankingBackups']
+        && verifiedAdmin();
+      allow create, update, delete: if false;
+    }
+
+    match /players/{playerId} {
+      // ランキングはログインした人が見られる
+      allow read: if request.auth != null;
+
+
+      // Distribution-only proposal. No administrator paths or permissions added.
+      function validDistribution() {
+        return request.resource.data.distributionBestStreak is int
+          && request.resource.data.distributionBestStreak >= 0;
+      }
+      // 自分のデータだけ登録できる
+      allow create: if (!request.resource.data.keys().hasAny(['distributionBestStreak']) || validDistribution())
+        && request.auth != null
+        && request.auth.uid == playerId
+        && request.resource.data.keys().hasOnly([
+          'nickname',
+          'points',
+          'bestStreak',
+          'prefNameBestStreak',
+          'prefPlaceBestStreak',
+          'alphabetBestStreak',
+          'distributionBestStreak',
+          'appearance',
+          'updatedAt'
+        ])
+        && request.resource.data.nickname is string
+        && request.resource.data.nickname.size() > 0
+        && request.resource.data.nickname.size() <= 12;
+
+
+      // 自分のデータだけ更新できる
+      allow update: if (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['distributionBestStreak'])
+          || (request.resource.data.keys().hasAny(['distributionBestStreak']) && validDistribution()
+            && request.resource.data.distributionBestStreak >= resource.data.get('distributionBestStreak', 0)))
+        && request.auth != null
+        && request.auth.uid == playerId
+        && request.resource.data.keys().hasOnly([
+          'nickname',
+          'points',
+          'bestStreak',
+          'prefNameBestStreak',
+          'prefPlaceBestStreak',
+          'alphabetBestStreak',
+          'distributionBestStreak',
+          'appearance',
+          'updatedAt'
+        ])
+        && request.resource.data.nickname is string
+        && request.resource.data.nickname.size() > 0
+        && request.resource.data.nickname.size() <= 12;
+
+
+      // 削除は禁止
+      allow delete: if false;
+    }
+  }
+}

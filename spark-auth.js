@@ -22,6 +22,7 @@ export function errorText(e) {
     'rename-not-enabled': '名前変更は切り替え確認待ちのため停止中。閲覧は利用できる。',
     'management-not-enabled':'管理機能の追加Rulesは確認待ち。既存のプレイヤー管理は引き続き利用できる。',
     'device-only-ranking':'このゲームは端末保存のみ。共有ランキングのリセット対象外。',
+    'admin-read-only': '現在は読み取り確認のみ。変更機能は安全確認・承認待ち。',
     'feature-unverified': 'この機能は基盤の確認後に接続するため、現在は利用できない。',
     'auth/weak-password': '新しいパスワードは12文字以上にして。',
     'auth/requires-recent-login': '現在のパスワードで入り直してから操作して。',
@@ -85,6 +86,7 @@ export function createAdminOperations(c,{auth,db},A,F) {
   async function rename(input) {const user=await verify();if(contract.mode==='production'){const role=await F.getDocFromServer(ref('private','admin'));if(role.data()?.renameEnabled!==true)throw error('rename-not-enabled');}return store.rename(user,input);}
 
   async function call(action, input = {}) {
+    if(c.adminReadOnly===true&&!['admin:snapshot','admin:players'].includes(action))throw error('admin-read-only');
     await verify();
     if (action === 'admin:snapshot') {
       const [players, history] = await Promise.all([
@@ -110,12 +112,14 @@ export function createAdminOperations(c,{auth,db},A,F) {
     await F.setDoc(ref('private', 'revocation'), {after: F.serverTimestamp(), actor: user.uid});
   }
   async function logout() {
+    if(c.adminReadOnly===true){await A.signOut(auth);return;}
     let failure;
     try {await revoke();} catch {failure = error('logout-revocation-failed');}
     finally {await A.signOut(auth);}
     if (failure) throw failure;
   }
   async function changePassword(oldPassword, newPassword) {
+    if(c.adminReadOnly===true)throw error('admin-read-only');
     if (typeof newPassword !== 'string' || newPassword.length < 12) throw error('auth/weak-password');
     const user = await verify();
     await A.reauthenticateWithCredential(user, A.EmailAuthProvider.credential(alias, oldPassword));
