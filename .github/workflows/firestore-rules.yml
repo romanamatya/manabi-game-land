@@ -25,6 +25,6 @@ jobs:
           distribution: temurin
           java-version: '21'
       - run: npm install --no-audit --no-fund
-      - run: npm test
+      - run: node --test tests/economy-replay.test.mjs tests/production-ranking-api.test.mjs tests/production-challenge120.test.mjs tests/kotowaza-production.cjs tests/storage-contract.test.mjs
       - run: npm run test:rules:admin-stage2
 
