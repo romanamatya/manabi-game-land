@@ -66,6 +66,8 @@ service cloud.firestore {
       return (exists(linkPath) && linkedRankingNameMatches(rankingUid, data))
         || (!exists(linkPath) && exists(sameUidProfile)
           && get(sameUidProfile).data.get('accessStatus', 'active') == 'active'
+          && (!get(sameUidProfile).data.keys().hasAny(['rankingUid'])
+            || get(sameUidProfile).data.rankingUid == rankingUid)
           && data.nickname == get(sameUidProfile).data.nickname);
     }
     function adminAuditPath(auditId) {
