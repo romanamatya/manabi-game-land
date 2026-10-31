@@ -24,32 +24,38 @@ export async function createProductionRankingClient(c,[App,A,F]){
   if(!profileAuth.currentUser?.isAnonymous)throw err('anonymous-player-required');
   profileUid=profileAuth.currentUser.uid;profileDb=F.getFirestore(profileApp);
  }
- const ref=game=>{if(!allowed.has(game))throw err('invalid-ranking-game');return F.doc(db,'productionRankings','v1','games',game,'players',uid)};
+ const ref=(game,generation=null)=>{if(!allowed.has(game))throw err('invalid-ranking-game');return F.doc(db,'productionRankings','v1','games',game,'players',generation===null?uid:String(generation)+'_'+uid)};
+ const controlRef=game=>F.doc(db,'productionRankings','v1','gameControl',game);
+ async function readControl(game){try{return await F.getDocFromServer(controlRef(game));}catch(error){if(error?.code==='permission-denied')return null;throw error;}}
  const playerRef=()=>{if(!profileUid)throw err('player-name-sync-disabled');return F.doc(profileDb,'players',profileUid)};
  const linkRef=()=>F.doc(db,'productionRankings','v1','identityLinks',uid);
  const validNickname=value=>typeof value==='string'&&value===value.trim()&&value.length>=1&&value.length<=12&&!/[<>\r\n]/.test(value);
- const clean=input=>{
+ const clean=(input,managed=null)=>{
   if(!input||Object.keys(input).some(k=>!['game','bestStreak','nickname','icon','frame','title','badge'].includes(k))||!allowed.has(input.game)||!Number.isSafeInteger(input.bestStreak)||input.bestStreak<1||input.bestStreak>100000)throw err('invalid-ranking');
   const nickname=typeof input.nickname==='string'?input.nickname.trim():'';
   const icon=typeof input.icon==='string'?input.icon:'cat',frame=typeof input.frame==='string'?input.frame:'plain';
   const title=validLabel(input.title)?input.title:null,badge=validLabel(input.badge)?input.badge:null;
   if(nickname.length<1||nickname.length>12||(/[<>]/.test(nickname)||nickname.includes(String.fromCharCode(10))||nickname.includes(String.fromCharCode(13)))||icon.length>64||frame.length>64||!/^[A-Za-z0-9:_-]{1,64}$/.test(icon)||!/^[A-Za-z0-9:_-]{1,64}$/.test(frame)||(badge!==null&&!/^[A-Za-z0-9:_-]{1,64}$/.test(badge)))throw err('invalid-ranking');
-  return {uid,game:input.game,nickname,bestStreak:input.bestStreak,icon,frame,title,badge};
+  return {uid,game:input.game,nickname,bestStreak:input.bestStreak,icon,frame,title,badge,...(managed?{generation:managed.generation,visibility:'active',...(managed.lastManagementAudit?{lastManagementAudit:managed.lastManagementAudit,lastManagementBackup:managed.lastManagementBackup}:{})}:{})};
  };
- async function publishRanking(input){
-  const submitted=clean(input),target=ref(submitted.game);
+ async function publishRanking(input,{freshRecord=false}={}){
+  const submitted=clean(input);
+  // Legacy clients may not be allowed to read a missing control document.
+  // A stale fallback is still safe: Rules reject writes if migration/reset has begun.
+  const controlSnap=await readControl(submitted.game);
   return F.runTransaction(db,async tx=>{
-   const reads=[tx.get(target)];
-   if(profileUid)reads.push(tx.get(F.doc(db,'players',profileUid)),tx.get(linkRef()));
+   let managed=null,target;
+   if(controlSnap?.exists()){
+    const control=controlSnap.data();if(control.phase!=='ready'||control.writeLocked)throw err('ranking-maintenance-active');
+    managed={generation:control.generation};target=ref(submitted.game,control.generation);
+   }else target=ref(submitted.game);
+   const reads=[tx.get(target)];if(profileUid)reads.push(tx.get(F.doc(db,'players',profileUid)),tx.get(linkRef()));
    const result=await Promise.all(reads),snap=result[0],old=snap.exists()?snap.data():null;
    let canonical=submitted.nickname;
-   if(profileUid){
-    const profileSnap=result[1],linkSnap=result[2];
-    if(!profileSnap.exists()||!linkSnap.exists()||linkSnap.data().profileUid!==profileUid||profileSnap.data().rankingUid!==uid)throw err('player-ranking-link-required');
-    canonical=profileSnap.data().nickname;
-   }
-   const value=clean({...input,nickname:canonical});
-   const bestStreak=Math.max(value.bestStreak,Number.isSafeInteger(old?.bestStreak)?old.bestStreak:0);const title=old&&value.bestStreak<old.bestStreak?old.title:value.title;const next={...value,title,bestStreak,updatedAt:F.serverTimestamp()};
+   if(profileUid){const profileSnap=result[1],linkSnap=result[2];if(!profileSnap.exists()||!linkSnap.exists()||linkSnap.data().profileUid!==profileUid||profileSnap.data().rankingUid!==uid)throw err('player-ranking-link-required');canonical=profileSnap.data().nickname;}
+   if(managed&&!old&&!freshRecord)throw err('ranking-new-record-required');
+   const value=clean({...input,nickname:canonical},managed?{...managed,lastManagementAudit:old?.lastManagementAudit,lastManagementBackup:old?.lastManagementBackup}:null);
+   const bestStreak=Math.max(value.bestStreak,Number.isSafeInteger(old?.bestStreak)?old.bestStreak:0),title=old&&value.bestStreak<old.bestStreak?old.title:value.title,next={...value,title,bestStreak,updatedAt:F.serverTimestamp()};
    if(old&&next.bestStreak===old.bestStreak&&old.nickname===next.nickname&&old.icon===next.icon&&old.frame===next.frame&&old.title===next.title&&old.badge===next.badge)return old;
    tx.set(target,next);return next;
   });
@@ -85,14 +91,17 @@ export async function createProductionRankingClient(c,[App,A,F]){
  }
  async function queryGame(game,count){
   if(!allowed.has(game))throw err('invalid-ranking-game');
+  const control=await readControl(game);
+  if(control?.exists()&&(control.data().phase!=='ready'||control.data().writeLocked))throw err('ranking-maintenance-active');
   const col=F.collection(db,'productionRankings','v1','games',game,'players');
-  const q=F.query(col,F.orderBy('bestStreak','desc'),F.limit(count));
+  const q=control?.exists()?F.query(col,F.where('visibility','==','active'),F.where('generation','==',control.data().generation)):F.query(col,F.orderBy('bestStreak','desc'),F.limit(count));
   const snap=await F.getDocsFromServer(q);
-  return snap.docs.map(d=>({id:d.id,row:d.data()})).filter(x=>x.id===x.row.uid&&x.row.game===game&&Number.isSafeInteger(x.row.bestStreak)&&x.row.bestStreak>0).map(x=>x.row);
+  return snap.docs.map(d=>d.data()).filter(row=>row.game===game&&Number.isSafeInteger(row.bestStreak)&&row.bestStreak>0).sort((a,b)=>b.bestStreak-a.bestStreak||a.nickname.localeCompare(b.nickname,'ja')).slice(0,count);
  }
  async function rankings(game){return queryGame(game,100);}
+ async function rankingGeneration(game){if(!allowed.has(game))throw err('invalid-ranking-game');const s=await readControl(game);if(!s||!s.exists())return null;if(s.data().phase!=='ready'||s.data().writeLocked)throw err('ranking-maintenance-active');return s.data().generation;}
  async function champions(){return Promise.all([...allowed].map(async game=>({game,row:(await queryGame(game,1))[0]||null})));}
- return {uid,profileUid,publishRanking,rankings,champions,ensurePlayerLink,getExistingPlayerLink,watchPlayerName};
+ return {uid,profileUid,publishRanking,rankings,rankingGeneration,champions,ensurePlayerLink,getExistingPlayerLink,watchPlayerName};
 }
 let pending;
 export function client(){
