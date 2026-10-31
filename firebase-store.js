@@ -13,7 +13,7 @@ export function createFirestoreStore(mode,F,db,{catalog=[],rankingGameIds=[]}={}
    const reads=await Promise.all([tx.get(target),...rankRefs.map(x=>tx.get(x.ref))]),old=reads[0];
    if(!old.exists())throw error('player-not-found');
    const data=old.data();
-   if(data.nickname!==input.expectedNickname)throw error('name-conflict');
+   if(String(data.nickname||'')!==input.expectedNickname)throw error('name-conflict');
    if(data.nickname===nickname)return {ok:true,unchanged:true};
    const rankings=rankRefs.flatMap((x,i)=>{const snap=reads[i+1];return snap.exists()?[{game:x.game,data:snap.data()}]:[]});
    const at=F.serverTimestamp(),backupData={player:data,rankings};
