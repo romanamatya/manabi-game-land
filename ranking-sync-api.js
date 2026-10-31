@@ -59,7 +59,8 @@ export async function createProductionRankingClient(c,[App,A,F]){
   const profile=playerRef(),profileSnap=await F.getDocFromServer(profile);
   if(!profileSnap.exists()){
    if(!validNickname(localNickname))throw err('nickname-required');
-   await F.setDoc(profile,{nickname:localNickname,rankingUid:uid,updatedAt:F.serverTimestamp()});
+   await F.setDoc(profile,{nickname:localNickname,updatedAt:F.serverTimestamp()});
+   await F.updateDoc(profile,{rankingUid:uid,updatedAt:F.serverTimestamp()});
   }else{
    const data=profileSnap.data();
    if(data.rankingUid&&data.rankingUid!==uid)throw err('player-ranking-link-conflict');
