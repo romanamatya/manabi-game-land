@@ -1,5 +1,6 @@
 import {client,errorText} from './spark-auth.js?v=admin-stage2-player-rename-1';
-const readOnly=window.MANABI_SPARK_CONFIG?.adminReadOnly===true;\nconst playerRenameEnabled=window.MANABI_SPARK_CONFIG?.adminFeatures?.playerRename===true;
+const readOnly=window.MANABI_SPARK_CONFIG?.adminReadOnly===true;
+const playerRenameEnabled=window.MANABI_SPARK_CONFIG?.adminFeatures?.playerRename===true;
 const environmentLabel=window.MANABI_SPARK_CONFIG?.mode==='production'?'本番':'確認用';
 const $=id=>document.getElementById(id),S=window.ManabiUpgradeShared,core=window.ManabiEconomyCore,catalog=window.ManabiProfileCatalog;
 let api=null,data=null,events=null,active='players',period=7,query='',sort='nickname',sortDirection=1,detail=null,ticket=0,pending=null,working=false;
