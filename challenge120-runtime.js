@@ -2,6 +2,7 @@
 'use strict';
 if(window.MANABI_ENV?.preview!==false||window.MANABI_ENV?.environment!=='production'||window.MANABI_BACKEND_CONFIG?.challenge120Enabled!==true)return;
 const C=window.ManabiChallenge120Core,storage=window.manabiStorage,game=location.pathname.match(/\/games\/([^/]+)\.html$/)?.[1],test=new URL(location.href).searchParams.has('adminTest');if(!C||!storage||!C.highest[game])return;
+const accessAllowed=()=>window.MANABI_BACKEND_CONFIG?.accountAccessEnabled!==true||window.ManabiPlayerAccess?.canPlay?.()===true;
 const key='mgl_challenge120_v1:'+game,season='production-120-v1',lock='manabi-production-challenge120-'+game;
 let anchorWall=Date.now(),anchorMono=performance.now(),panel,overlay,working=false,serial=Promise.resolve();
 const read=()=>{try{const s=JSON.parse(storage.getItem(key)||'null');if(s?.protocol===2&&s.game===game)return s;}catch{}return C.fresh(game);};
@@ -19,12 +20,12 @@ function paint(s=current()){
  const stamp=phase+':'+s.attemptId+':'+s.unlocked;if(overlay.dataset.stamp===stamp)return;overlay.dataset.stamp=stamp;overlay.replaceChildren(text('h2',phase==='ended'?'2分間チャレンジ終了':'最高称号達成！'));
  if(phase==='ended'){overlay.append(text('p','今回の最高：'+s.attemptBest+'問連続'),text('p','2分間の自己ベスト：'+(s.bests[season]||0)+'問連続'));if(s.endReason==='clock-change')overlay.append(text('p','時計の変更を検出したため終了しました。'));publishLocal(s);}
  overlay.append(text('p','最高連続正解の記録を続けて更新しよう。'));
- const b=text('button',phase==='ended'?'もう一度2分間チャレンジ':'2分間チャレンジ開始');b.type='button';b.onclick=async()=>{if(working)return;working=true;b.disabled=true;try{await serial;await transaction(st=>C.start(st,Date.now(),crypto.randomUUID(),season));location.reload();}catch(e){b.disabled=false;working=false;overlay.append(text('p','開始できません。別のタブの挑戦を確認してください。'));}};overlay.append(b);const home=text('a','ゲーム選択へ戻る');home.href='../'+(game==='kotowaza'?'japanese':game==='alphabet'?'language':game.startsWith('pref-')?'social':'math')+'.html';overlay.append(home);overlay.hidden=false;
+ const b=text('button',phase==='ended'?'もう一度2分間チャレンジ':'2分間チャレンジ開始');b.type='button';b.onclick=async()=>{if(working||!accessAllowed())return;working=true;b.disabled=true;try{await serial;await transaction(st=>C.start(st,Date.now(),crypto.randomUUID(),season));location.reload();}catch(e){b.disabled=false;working=false;overlay.append(text('p','開始できません。別のタブの挑戦を確認してください。'));}};overlay.append(b);const home=text('a','ゲーム選択へ戻る');home.href='../'+(game==='kotowaza'?'japanese':game==='alphabet'?'language':game.startsWith('pref-')?'social':'math')+'.html';overlay.append(home);overlay.hidden=false;
 }
 function tick(){if(working)return;if(read().phase!=='running'){paint();return;}serial=serial.then(()=>transaction(s=>s)).then(s=>paint(s)).catch(()=>{});}
 window.ManabiChallenge120={
- issue(id,questionId){if(id!==game)return null;const s=current();return C.issue(s,questionId);},
- async record(token,correct){let result;serial=serial.then(async()=>{result=await transaction(s=>C.answer(s,token,correct,Math.max(Date.now(),s.lastWall)));paint(result.state);if(result.accepted&&result.ranked)window.dispatchEvent(new Event('manabi-local-record-change'));});await serial;return result?.accepted===true;},
+ issue(id,questionId){if(id!==game||!accessAllowed())return null;const s=current();return C.issue(s,questionId);},
+ async record(token,correct){if(!accessAllowed())return false;let result;serial=serial.then(async()=>{result=await transaction(s=>C.answer(s,token,correct,Math.max(Date.now(),s.lastWall)));paint(result.state);if(result.accepted&&result.ranked)window.dispatchEvent(new Event('manabi-local-record-change'));});await serial;return result?.accepted===true;},
  accepts(token){const s=current();return token?.mode==='practice'?s.phase==='training'&&!s.attemptId:token?.mode==='challenge'&&s.phase==='running'&&token.attemptId===s.attemptId&&Date.now()<s.deadline;},
  state:()=>current()
 };

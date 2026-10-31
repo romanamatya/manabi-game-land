@@ -7,9 +7,9 @@ function install(storage){if(globalThis.MANABI_ENV?.preview!==false)throw Error(
 const pendingPrefix='mgl_kotowaza_pending:';
 const testing=new URL(location.href).searchParams.has('adminTest');
 const read=()=>{const raw=storage.getItem(KEY);return raw?JSON.parse(raw):null};
-async function flush(){if(testing)return;if(!navigator.locks)throw Error('cross-tab-lock-required');return navigator.locks.request(KEY,()=>{for(const key of Object.keys(localStorage).filter(k=>k.startsWith(pendingPrefix))){const item=JSON.parse(localStorage.getItem(key));const q=globalThis.ManabiKotowazaData.find(q=>q.id===item.prompt);if(!q)throw Error('unknown-question');const result=apply(read(),item.id,item.value===q.answer,item.answeredAt);storage.setItem(KEY,JSON.stringify(result.wallet));localStorage.removeItem(key)}window.dispatchEvent(new Event('manabi-economy-change'))})}
+async function flush(){if(testing||window.MANABI_BACKEND_CONFIG?.accountAccessEnabled===true&&!window.ManabiPlayerAccess?.canPlay?.())return;if(!navigator.locks)throw Error('cross-tab-lock-required');return navigator.locks.request(KEY,()=>{for(const key of Object.keys(localStorage).filter(k=>k.startsWith(pendingPrefix))){const item=JSON.parse(localStorage.getItem(key));const q=globalThis.ManabiKotowazaData.find(q=>q.id===item.prompt);if(!q)throw Error('unknown-question');const result=apply(read(),item.id,item.value===q.answer,item.answeredAt);storage.setItem(KEY,JSON.stringify(result.wallet));localStorage.removeItem(key)}window.dispatchEvent(new Event('manabi-economy-change'))})}
 window.addEventListener('online',()=>flush().catch(console.warn));window.addEventListener('DOMContentLoaded',()=>flush().catch(console.warn));
-return {balance:()=>read()?.balance||0,begin:(game,prompt)=>({id:crypto.randomUUID(),prompt}),answer:async(c,value)=>{if(testing)return;localStorage.setItem(pendingPrefix+c.id,JSON.stringify({id:c.id,prompt:c.prompt,value,answeredAt:Date.now()}));return flush()}}}
+return {balance:()=>read()?.balance||0,begin:(game,prompt)=>({id:crypto.randomUUID(),prompt}),answer:async(c,value)=>{if(testing||window.MANABI_BACKEND_CONFIG?.accountAccessEnabled===true&&!window.ManabiPlayerAccess?.canPlay?.())return false;localStorage.setItem(pendingPrefix+c.id,JSON.stringify({id:c.id,prompt:c.prompt,value,answeredAt:Date.now()}));return flush()}}}
 
 return {KEY,day,apply,install};
 });

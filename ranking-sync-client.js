@@ -19,7 +19,7 @@ function readPending(){try{const x=JSON.parse(storage.getItem(PENDING)||'[]');re
 function writePending(rows){try{storage.setItem(PENDING,JSON.stringify([...new Set(rows)].slice(-games.length)))}catch{}}
 function enqueue(task){work=work.then(task).catch(()=>{});return work}
 async function flush(forceProfile=false){
- if(!identityReady)return;
+ if(!identityReady||config?.accountAccessEnabled===true&&!window.ManabiPlayerAccess?.canPlay?.())return;
  const pendingRows=new Set(readPending());
  for(const game of games){const best=localBest(game),old=baseline.get(game)||0;if(best>old)pendingRows.add(game);}
  if(!navigator.onLine){writePending([...pendingRows]);return;}
@@ -47,7 +47,7 @@ async function initializePlayerNameSync(){
  if(startupPromise)return startupPromise;
  startupPromise=(async()=>{
   const api=await client();
-  const nickname=await api.ensurePlayerLink((storage.getItem('mgl_nickname')||'').trim());
+  const nickname=config?.accountAccessEnabled===true?await api.getExistingPlayerLink():await api.ensurePlayerLink((storage.getItem('mgl_nickname')||'').trim());
   identityReady=true;
   applyCanonicalName(nickname);
   profileUnsubscribe?.();profileUnsubscribe=api.watchPlayerName(applyCanonicalName);

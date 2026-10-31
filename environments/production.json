@@ -14,6 +14,11 @@
   "productionAuthVerified": false,
   "productionRulesApproved": false,
   "legacyScoreSyncEnabled": false,
+  "accountAccessEnabled": false,
+  "adminFeatures": {
+    "playerRename": true,
+    "playerSuspension": false
+  },
   "gameIds": [
     "keisan",
     "pref-name",

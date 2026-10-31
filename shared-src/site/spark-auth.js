@@ -19,6 +19,9 @@ export function errorText(e) {
     'permission-denied': '管理権限がないか、認証が失効している。再ログインして。',
     'admin-required': '管理者として認証されていない。',
     'session-revoked': '管理セッションが終了した。少し待って、パスワードで入り直して。',
+    'suspension-not-enabled': '利用停止・復元はRulesと管理者設定の確認待ちです。',
+    'player-suspended':'現在、このアカウントは利用できません。記録・ポイント・所持品は保持されています。',
+    'player-status-conflict':'別の管理者操作で利用状態が変わりました。最新の状態を読み直してください。',
     'rename-not-enabled': '名前変更は切り替え確認待ちのため停止中。閲覧は利用できる。',
     'management-not-enabled':'管理機能の追加Rulesは確認待ち。既存のプレイヤー管理は引き続き利用できる。',
     'device-only-ranking':'このゲームは端末保存のみ。共有ランキングのリセット対象外。',
@@ -63,7 +66,7 @@ export async function createAdminClient(c, [appSdk, A, F]) {
 // Domain operations are separately testable without enabling the production entry point.
 export function createAdminOperations(c,{auth,db},A,F) {
   const contract=validateBackend(c,{requireEnabled:false}),alias=contract.alias;
-  const store=createFirestoreStore(contract.mode,F,db,{catalog:window.ManabiProfileCatalog||[]});
+  const store=createFirestoreStore(contract.mode,F,db,{catalog:window.ManabiProfileCatalog||[],rankingGameIds:c.rankingGameIds||[]});
   const management=createManagementStore(contract.mode,F,db,{players:cursor=>store.list(cursor),rankingGameIds:c.managedRankingGameIds||[]});
   const ref=(kind,id)=>F.doc(db,kind==='players'?contract.players:contract.base+'/'+kind,id);
   const col=kind=>F.collection(db,kind==='players'?contract.players:contract.base+'/'+kind);
@@ -99,6 +102,7 @@ export function createAdminOperations(c,{auth,db},A,F) {
     if (action === 'admin:players') return list('players', input.cursor);
     if (input.confirm !== true) throw error('invalid-input');
     if (action === 'admin:rename') return rename(input);
+    if(action==='admin:setPlayerAccess'){if(c.adminFeatures?.playerSuspension!==true)throw error('suspension-not-enabled');const role=await F.getDocFromServer(ref('private','admin'));if(role.data()?.suspensionEnabled!==true)throw error('suspension-not-enabled');return store.setPlayerAccess(await verify(),input);}
     if(action==='admin:switchSeason'){const user=await verify();if(c.seasonManagementEnabled!==true)throw error('season-management-not-enabled');return createSeasonStore(F,db,contract.base,{enabled:true,legacyRows:async()=>{let rows=[],cursor=null;do{const p=await store.list(cursor);rows.push(...p.rows);cursor=p.cursor;if(rows.length>1000)throw error('ranking-backup-too-large');}while(cursor);return rows;}}).switchAll(user,input);}
     if(action==='admin:reset'&&c.challenge120Enabled===true)throw error('use-atomic-season-switch');
     if(['visibility','campaign','notice','reset','rankingBackup'].some(v=>action==='admin:'+v)){if(c.managementEnabled!==true)throw error('management-not-enabled');const user=await verify();return management.mutate(user,action.slice(6),input);}
