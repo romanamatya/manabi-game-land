@@ -1,0 +1,36 @@
+{
+  "mode": "production",
+  "enabled": true,
+  "environment": "productionAdmin/v1",
+  "expectedProjectId": "manabi-game-land",
+  "firebase": {
+    "apiKey": "AIzaSyAhm6WMqV7yGmNRRDCeZcOk5HH-dlga9no",
+    "authDomain": "manabi-game-land.firebaseapp.com",
+    "projectId": "manabi-game-land",
+    "appId": "1:723974836914:web:4e57af8336083f82a72fab"
+  },
+  "playerSyncEnabled": false,
+  "playerSyncTestEnabled": false,
+  "productionReleaseApproved": true,
+  "legacyScoreSyncEnabled": true,
+  "rankingGameIds": [
+    "keisan",
+    "pref-name",
+    "pref-place",
+    "alphabet",
+    "distribution"
+  ],
+  "gameIds": [
+    "keisan",
+    "pref-name",
+    "pref-place",
+    "alphabet",
+    "distribution",
+    "distribution2",
+    "exchangeAssociation",
+    "kotowaza"
+  ],
+  "adminReadOnly": true,
+  "managementEnabled": false,
+  "seasonManagementEnabled": false
+}

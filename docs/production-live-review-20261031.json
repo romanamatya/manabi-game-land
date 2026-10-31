@@ -1,0 +1,18 @@
+{
+  "projectId": "manabi-game-land",
+  "reviewDate": "2026-10-31",
+  "consoleSignedIn": true,
+  "publishedRulesDisplayedDate": "10月 28, 2026 • 5:04 午前 (console display; timezone not established)",
+  "rulesSource": "live Firebase Console editor innerText",
+  "rulesSHA256": "3dd43379c0778ca63ade2b62ccae35884e95b3514e42f801a758258ceb50a468",
+  "authProvidersListed": [
+    "google.com",
+    "anonymous"
+  ],
+  "technicalPasswordAccountFound": false,
+  "adminDocumentFound": false,
+  "privateCollectionEmpty": true,
+  "firebaseConfigurationChanged": false,
+  "studentDataChanged": false,
+  "sourcePolicyDiffersFromOldRepositorySnapshot": true
+}
