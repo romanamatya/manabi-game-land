@@ -3,6 +3,34 @@ const storage=window.manabiStorage,config=window.MANABI_BACKEND_CONFIG;
 const games=['keisan','pref-name','pref-place','alphabet','distribution','distribution2','exchangeAssociation','kotowaza','multiplicationProperties','shapeExpressions','keisanSummary'];
 const baseline=new Map(),published=new Map();let started=false,work=Promise.resolve(),startupPromise=null,profileUnsubscribe=null,identityReady=config?.playerNameSyncEnabled!==true;
 const PENDING='mgl_production_rank_pending_v1';
+const suspensionEnabled=config?.adminFeatures?.playerSuspension===true;
+let accessUnsubscribe=null,accessOverlay=null,accessState='active';
+function setAccessState(state){
+ if(!suspensionEnabled)return;
+ accessState=state;
+ if(state==='active'){accessOverlay?.remove();accessOverlay=null;return}
+ if(!accessOverlay){
+  accessOverlay=document.createElement('section');accessOverlay.setAttribute('role','alertdialog');accessOverlay.setAttribute('aria-modal','true');
+  Object.assign(accessOverlay.style,{position:'fixed',inset:'0',zIndex:'2147483647',display:'grid',placeItems:'center',padding:'24px',background:'rgba(13,26,49,.94)',color:'#fff',font:'700 20px/1.6 system-ui,sans-serif',textAlign:'center'});
+  const panel=document.createElement('div');Object.assign(panel.style,{maxWidth:'540px',padding:'28px',borderRadius:'24px',background:'#20385e',boxShadow:'0 12px 50px #0008'});
+  const title=document.createElement('h1');title.style.fontSize='1.4em';
+  const message=document.createElement('p');const retry=document.createElement('button');retry.type='button';retry.textContent='もう一度確認する';retry.hidden=true;Object.assign(retry.style,{font:'inherit',padding:'12px 22px',borderRadius:'14px',border:'0',cursor:'pointer'});
+  retry.onclick=async()=>{retry.disabled=true;setAccessState('checking');startupPromise=null;try{await initializePlayerNameSync()}catch{setAccessState('error')}finally{retry.disabled=false}};
+  panel.append(title,message,retry);accessOverlay.append(panel);document.body.append(accessOverlay);accessOverlay._parts={title,message,retry};
+ }
+ const {title,message,retry}=accessOverlay._parts;
+ if(state==='checking'){title.textContent='利用状態を確認しています';message.textContent='通信が終わるまで少し待ってください。';retry.hidden=true}
+ else if(state==='suspended'){title.textContent='このアカウントは利用停止中です';message.textContent='管理者に確認してください。';retry.hidden=true}
+ else {title.textContent='利用状態を確認できません';message.textContent='通信状態を確認して、もう一度お試しください。';retry.hidden=false}
+}
+async function syncPlayerAccess(api){
+ if(!suspensionEnabled)return;
+ setAccessState('checking');
+ const access=await api.playerAccess();
+ setAccessState(access.status);
+ accessUnsubscribe?.();
+ accessUnsubscribe=api.watchPlayerAccess(value=>setAccessState(value.status),()=>setAccessState('error'));
+}
 function profileRow(game){return window.ManabiProfile?.records(storage).find(x=>x.id===game)||null}
 function localBest(game){
  const record=profileRow(game);let best=Math.max(0,Number(record?.best)||0);
@@ -50,15 +78,17 @@ async function initializePlayerNameSync(){
   const nickname=await api.ensurePlayerLink((storage.getItem('mgl_nickname')||'').trim());
   identityReady=true;
   applyCanonicalName(nickname);
+  if(suspensionEnabled)await syncPlayerAccess(api);
   profileUnsubscribe?.();profileUnsubscribe=api.watchPlayerName(applyCanonicalName);
-  await enqueue(()=>flush(true));
- })().catch(error=>{startupPromise=null;throw error;});
+  if(accessState==='active')await enqueue(()=>flush(true));
+ })().catch(error=>{startupPromise=null;if(suspensionEnabled)setAccessState('error');throw error;});
  return startupPromise;
 }
 export function startRankingSync(){
  if(window.MANABI_ENV?.preview!==false||config?.rankingSyncEnabled!==true||new URL(location.href).searchParams.has('adminTest'))return Promise.resolve();
  if(!started){
   started=true;
+  if(suspensionEnabled)setAccessState('checking');
   for(const game of games)baseline.set(game,localBest(game));
   const request=()=>{if(config?.playerNameSyncEnabled===true&&!identityReady)void initializePlayerNameSync().catch(()=>{});return enqueue(flush)};
   window.ManabiSharedRanking={fetch:async game=>(await client()).rankings(game),champions:async()=>(await client()).champions(),refresh:request};
