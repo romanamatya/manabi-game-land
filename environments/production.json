@@ -17,7 +17,8 @@
   "accountAccessEnabled": true,
   "adminFeatures": {
     "playerRename": true,
-    "playerSuspension": true
+    "playerSuspension": true,
+    "rankingManagement": true
   },
   "gameIds": [
     "keisan",

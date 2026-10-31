@@ -1,0 +1,637 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function productionPasswordAdmin() {
+      return request.auth != null
+        && request.auth.token.firebase.sign_in_provider == 'password';
+    }
+    function productionAdminRoleMatches() {
+      let adminPath = /databases/$(database)/documents/productionAdmin/v1/private/admin;
+      return productionPasswordAdmin()
+        && exists(adminPath)
+        && get(adminPath).data.uid == request.auth.uid
+        && get(adminPath).data.enabled == true;
+    }
+    function productionAdminSessionFresh() {
+      let revokePath = /databases/$(database)/documents/productionAdmin/v1/private/revocation;
+      return productionAdminRoleMatches()
+        && exists(revokePath)
+        && get(revokePath).data.after is timestamp
+        && request.auth.token.auth_time is int
+        && get(revokePath).data.after.toMillis() < request.auth.token.auth_time * 1000;
+    }
+    function productionAdminRenameEnabled() {
+      let adminPath = /databases/$(database)/documents/productionAdmin/v1/private/admin;
+      return productionAdminSessionFresh()
+        && get(adminPath).data.renameEnabled == true;
+    }
+    function productionAdminSuspensionEnabled() {
+      let adminPath = /databases/$(database)/documents/productionAdmin/v1/private/admin;
+      return productionAdminSessionFresh()
+        && get(adminPath).data.suspensionEnabled == true;
+    }
+    function productionAdminRankingEnabled() {
+      let adminPath = /databases/$(database)/documents/productionAdmin/v1/private/admin;
+      let revokePath = /databases/$(database)/documents/productionAdmin/v1/private/revocation;
+      return request.auth != null
+        && request.auth.token.firebase.sign_in_provider == 'password'
+        && exists(adminPath) && exists(revokePath)
+        && get(adminPath).data.uid == request.auth.uid
+        && get(adminPath).data.enabled == true
+        && get(adminPath).data.rankingManagementEnabled == true
+        && get(revokePath).data.after is timestamp
+        && request.auth.token.auth_time is int
+        && get(revokePath).data.after.toMillis() < request.auth.token.auth_time * 1000;
+    }
+    function validPlayerNickname(name) {
+      return name is string && name.size() >= 1 && name.size() <= 12
+        && !name.matches('.*[<>\\r\\n].*')
+        && !name.matches('^ .*') && !name.matches('.* $');
+    }
+    function validRankingUid(value) {
+      return value is string && value.matches('^[A-Za-z0-9_-]{1,128}$');
+    }
+    function validRankingGame(game) {
+      return game in ['keisan','pref-name','pref-place','alphabet','distribution','distribution2',
+        'exchangeAssociation','kotowaza','multiplicationProperties','shapeExpressions','keisanSummary'];
+    }
+    function identityLinkPath(rankingUid) {
+      return /databases/$(database)/documents/productionRankings/v1/identityLinks/$(rankingUid);
+    }
+    function linkedPlayerPath(profileUid) {
+      return /databases/$(database)/documents/players/$(profileUid);
+    }
+    function linkedRankingNameMatches(rankingUid, data) {
+      let linkPath = identityLinkPath(rankingUid);
+      let linkData = get(linkPath).data;
+      let profilePath = linkedPlayerPath(linkData.profileUid);
+      return linkData.uid == rankingUid
+        && linkData.profileUid is string
+        && exists(profilePath)
+        && get(profilePath).data.rankingUid == rankingUid
+        && get(profilePath).data.get('accessStatus', 'active') == 'active'
+        && data.nickname == get(profilePath).data.nickname;
+    }
+    function rankingNameCanonical(rankingUid, data) {
+      let linkPath = identityLinkPath(rankingUid);
+      let sameUidProfile = linkedPlayerPath(rankingUid);
+      return (exists(linkPath) && linkedRankingNameMatches(rankingUid, data))
+        || (!exists(linkPath) && exists(sameUidProfile)
+          && get(sameUidProfile).data.get('accessStatus', 'active') == 'active'
+          && (!get(sameUidProfile).data.keys().hasAny(['rankingUid'])
+            || get(sameUidProfile).data.rankingUid == rankingUid)
+          && data.nickname == get(sameUidProfile).data.nickname);
+    }
+    function adminAuditPath(auditId) {
+      return /databases/$(database)/documents/productionAdmin/v1/audit/$(auditId);
+    }
+    function adminBackupPath(backupId) {
+      return /databases/$(database)/documents/productionAdmin/v1/backups/$(backupId);
+    }
+    function adminRenameRefsValid(playerId) {
+      let auditPath = adminAuditPath(request.resource.data.lastAudit);
+      let backupPath = adminBackupPath(request.resource.data.lastBackup);
+      let auditData = getAfter(auditPath).data;
+      let backupData = getAfter(backupPath).data;
+      return existsAfter(auditPath)
+        && existsAfter(backupPath)
+        && auditData.actor == request.auth.uid
+        && auditData.uid == playerId
+        && auditData.action == 'rename'
+        && auditData.backupId == request.resource.data.lastBackup
+        && auditData.beforeName == resource.data.get('nickname', '')
+        && auditData.afterName == request.resource.data.nickname
+        && backupData.actor == request.auth.uid
+        && backupData.uid == playerId
+        && backupData.kind == 'rename'
+        && backupData.data.player == resource.data;
+    }
+    function adminRenamePlayer(playerId) {
+      return request.auth != null
+        && playerId != request.auth.uid
+        && productionAdminRenameEnabled()
+        && request.resource.data.diff(resource.data).affectedKeys()
+          .hasAll(['nickname','lastAudit','lastBackup','adminUpdatedAt'])
+        && request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['nickname','lastAudit','lastBackup','adminUpdatedAt'])
+        && validPlayerNickname(request.resource.data.nickname)
+        && request.resource.data.lastAudit is string
+        && request.resource.data.lastBackup is string
+        && request.resource.data.adminUpdatedAt == request.time
+        && adminRenameRefsValid(playerId);
+    }
+    function adminRenameRanking(game, rowId) {
+      let rankingUid = resource.data.uid;
+      let linkPath = identityLinkPath(rankingUid);
+      let changed = request.resource.data.diff(resource.data).affectedKeys();
+      return validRankingGame(game) && changed.hasAll(['nickname','updatedAt'])
+        && changed.hasOnly(['nickname','updatedAt'])
+        && productionAdminRenameEnabled()
+        && exists(linkPath)
+        && adminRenameLinkedRanking(game, rankingUid, linkPath);
+    }
+    function adminRenameLinkedRanking(game, rankingUid, linkPath) {
+      let linkData = get(linkPath).data;
+      let playerPath = linkedPlayerPath(linkData.profileUid);
+      let playerAfter = getAfter(playerPath).data;
+      let auditPath = adminAuditPath(playerAfter.lastAudit);
+      let backupPath = adminBackupPath(playerAfter.lastBackup);
+      return linkData.uid == rankingUid
+        && exists(playerPath)
+        && playerAfter.rankingUid == rankingUid
+        && request.resource.data.nickname == playerAfter.nickname
+        && request.resource.data.updatedAt == request.time
+        && request.resource.data.diff(resource.data).affectedKeys().hasAll(['nickname','updatedAt'])
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['nickname','updatedAt'])
+        && existsAfter(auditPath) && existsAfter(backupPath)
+        && getAfter(auditPath).data.action == 'rename'
+        && getAfter(auditPath).data.uid == linkData.profileUid
+        && getAfter(backupPath).data.uid == linkData.profileUid;
+    }
+    function validRankingShape(game, rowId, data) {
+      return validRankingGame(game)
+        && data.keys().hasOnly(['uid','game','nickname','bestStreak','icon','frame','title','badge','updatedAt','visibility','generation','lastManagementAudit','lastManagementBackup'])
+        && data.uid is string && (rowId == data.uid || (data.generation is int && rowId == string(data.generation) + '_' + data.uid)) && data.game == game
+        && validPlayerNickname(data.nickname)
+        && data.bestStreak is int && data.bestStreak > 0 && data.bestStreak <= 100000
+        && data.icon is string && data.icon.matches('^[A-Za-z0-9:_-]{1,64}$')
+        && data.frame is string && data.frame.matches('^[A-Za-z0-9:_-]{1,64}$')
+        && (data.title == null || data.title is string && data.title.size() <= 80)
+        && (data.badge == null || data.badge is string && data.badge.matches('^[A-Za-z0-9:_-]{1,64}$'))
+        && (!data.keys().hasAny(['visibility']) || data.visibility in ['active','excluded'])
+        && (!data.keys().hasAny(['generation']) || data.generation is int && data.generation >= 0)
+        && (!data.keys().hasAny(['lastManagementAudit']) || data.lastManagementAudit is string)
+        && (!data.keys().hasAny(['lastManagementBackup']) || data.lastManagementBackup is string)
+        && data.updatedAt == request.time;
+    }
+    function rankingControlPath(game) {
+      return /databases/$(database)/documents/productionRankings/v1/gameControl/$(game);
+    }
+    function rankingLockPath(game, uid) {
+      return /databases/$(database)/documents/productionAdmin/v1/rankingLocks/$(game + '_' + uid);
+    }
+    function rankingManagementAuditPath(id) {
+      return /databases/$(database)/documents/productionAdmin/v1/rankingAudit/$(id);
+    }
+    function rankingManagementBackupPath(id) {
+      return /databases/$(database)/documents/productionAdmin/v1/rankingBackups/$(id);
+    }
+    function rankingRowPath(game,rowId) {
+      return /databases/$(database)/documents/productionRankings/v1/games/$(game)/players/$(rowId);
+    }
+    function rankingManagementReady(game) {
+      let path = rankingControlPath(game);
+      return exists(path) && get(path).data.phase == 'ready' && get(path).data.writeLocked == false;
+    }
+    function rankingControlAllowsChildWrite(game, rowId, uid, data) {
+      let path = rankingControlPath(game);
+      return !exists(rankingLockPath(game, uid)) && (
+        (!exists(path) && rowId == uid) || (exists(path) && get(path).data.phase == 'ready'
+          && get(path).data.writeLocked == false
+          && data.visibility == 'active'
+          && rowId == string(get(path).data.generation) + '_' + uid
+          && data.generation == get(path).data.generation)
+      );
+    }
+    function rankingCanRead(game, rowId) {
+      let path = rankingControlPath(game);
+      return request.auth != null && validRankingGame(game) && (
+        productionAdminSessionFresh() || !exists(path) || rankingManagedRead(path,rowId)
+      );
+    }
+    function rankingCanList(game) {
+      let path = rankingControlPath(game);
+      return request.auth != null && validRankingGame(game) && (
+        productionAdminSessionFresh() || !exists(path) || rankingManagedList(path)
+      );
+    }
+    function rankingManagedList(path) {
+      let control = get(path).data;
+      return control.phase == 'ready' && control.writeLocked == false
+        && resource.data.keys().hasAll(['generation','visibility'])
+        && resource.data.visibility == 'active'
+        && resource.data.generation == control.generation;
+    }
+    function rankingManagedRead(path,rowId) {
+      let control = get(path).data;
+      return control.phase == 'ready' && control.writeLocked == false
+        && resource.data.keys().hasAll(['uid','generation','visibility'])
+        && resource.data.visibility == 'active'
+        && resource.data.generation == control.generation
+        && rowId == string(control.generation) + '_' + resource.data.uid;
+    }
+    function rankingAdminEvidenceValid(game, uid) {
+      let auditId = request.resource.data.lastManagementAudit;
+      let backupId = request.resource.data.lastManagementBackup;
+      let auditPath = rankingManagementAuditPath(auditId);
+      let backupPath = rankingManagementBackupPath(backupId);
+      let lockPath = rankingLockPath(game, uid);
+      return exists(auditPath) && exists(backupPath) && exists(lockPath)
+        && get(auditPath).data.actor == request.auth.uid
+        && get(auditPath).data.game == game
+        && get(auditPath).data.uid == uid
+        && get(auditPath).data.backupId == backupId
+        && get(auditPath).data.beforeBest == resource.data.bestStreak
+        && get(auditPath).data.afterBest == request.resource.data.bestStreak
+        && get(auditPath).data.beforeVisibility == resource.data.get('visibility', 'active')
+        && get(auditPath).data.afterVisibility == request.resource.data.visibility
+        && get(backupPath).data.actor == request.auth.uid
+        && get(backupPath).data.kind == 'entry'
+        && get(backupPath).data.game == game
+        && get(backupPath).data.uid == uid
+        && get(backupPath).data.row == resource.data
+        && get(lockPath).data.protected == true
+        && get(lockPath).data.game == game
+        && get(lockPath).data.uid == uid
+        && get(lockPath).data.auditId == auditId;
+    }
+    function adminManageRanking(game, rowId) {
+      let uid = resource.data.uid;
+      let changed = request.resource.data.diff(resource.data).affectedKeys();
+      return request.auth != null && request.auth.uid != uid
+        && validRankingGame(game)
+        && changed.hasAll(['updatedAt','lastManagementAudit','lastManagementBackup'])
+        && changed.hasOnly(['bestStreak','visibility','updatedAt','lastManagementAudit','lastManagementBackup'])
+        && productionAdminRankingEnabled()
+        && adminManageRankingWithEvidence(game,rowId,uid,changed);
+    }
+    function adminManageRankingWithEvidence(game,rowId,uid,changed) {
+      let auditPath = rankingManagementAuditPath(request.resource.data.lastManagementAudit);
+      let audit = get(auditPath).data;
+      let scoreEdit = audit.action == 'adjust';
+      return exists(auditPath)
+        && (scoreEdit
+          ? changed.hasAll(['bestStreak','updatedAt','lastManagementAudit','lastManagementBackup'])
+            && request.resource.data.visibility == resource.data.get('visibility', 'active')
+          : changed.hasAll(['visibility','updatedAt','lastManagementAudit','lastManagementBackup'])
+            && request.resource.data.bestStreak == resource.data.bestStreak)
+        && changed.hasOnly(['bestStreak','visibility','updatedAt','lastManagementAudit','lastManagementBackup'])
+        && validRankingShape(game, rowId, request.resource.data)
+        && request.resource.data.updatedAt == request.time
+        && request.resource.data.generation == resource.data.generation
+        && request.resource.data.uid == resource.data.uid
+        && request.resource.data.game == resource.data.game
+        && request.resource.data.visibility in ['active','excluded']
+        && rankingAdminEvidenceValid(game, uid);
+    }
+    function adminMigrateRanking(game, rowId) {
+      return request.auth != null
+        && request.auth.token.firebase.sign_in_provider == 'password'
+        && productionAdminRankingEnabled() && validRankingGame(game)
+        && exists(rankingControlPath(game))
+        && adminMigrateRankingWithControl(game,rowId);
+    }
+    function adminMigrateRankingWithControl(game,rowId) {
+      let control = rankingControlPath(game);
+      let backupId = get(control).data.backupId;
+      let uid = request.resource.data.uid;
+      let entryPath = /databases/$(database)/documents/productionAdmin/v1/rankingBackups/$(backupId)/entries/$(uid);
+      let source = get(entryPath).data.row;
+      return get(control).data.phase == 'migrating' && get(control).data.writeLocked == true
+        && rowId == '0_' + uid && !exists(rankingRowPath(game,rowId))
+        && exists(entryPath)
+        && request.resource.data.keys().hasOnly(['uid','game','nickname','bestStreak','icon','frame','title','badge','updatedAt','visibility','generation'])
+        && request.resource.data.uid == uid && request.resource.data.game == game
+        && request.resource.data.nickname == source.get('nickname',null)
+        && request.resource.data.bestStreak == source.get('bestStreak',null)
+        && request.resource.data.icon == source.get('icon',null)
+        && request.resource.data.frame == source.get('frame',null)
+        && request.resource.data.title == source.get('title',null)
+        && request.resource.data.badge == source.get('badge',null)
+        && request.resource.data.updatedAt == source.get('updatedAt',null)
+        && request.resource.data.visibility == 'active'
+        && request.resource.data.generation == 0;
+    }
+
+    match /players/{playerId} {
+      // Preserve the existing authenticated read access; this PR does not broaden it.
+      allow read: if request.auth != null;
+
+      function validDistribution() {
+        return request.resource.data.distributionBestStreak is int
+          && request.resource.data.distributionBestStreak >= 0;
+      }
+      function validSelfPlayerCreate() {
+        return request.resource.data.keys().hasOnly([
+          'nickname','points','bestStreak','prefNameBestStreak','prefPlaceBestStreak',
+          'alphabetBestStreak','distributionBestStreak','appearance','updatedAt'
+        ])
+        && validPlayerNickname(request.resource.data.nickname)
+        && (!request.resource.data.keys().hasAny(['distributionBestStreak']) || validDistribution());
+      }
+      function validSelfPlayerUpdate() {
+        return resource.data.get('accessStatus', 'active') == 'active'
+        && request.resource.data.keys().hasOnly([
+          'nickname','points','bestStreak','prefNameBestStreak','prefPlaceBestStreak',
+          'alphabetBestStreak','distributionBestStreak','appearance','updatedAt','rankingUid',
+          'lastAudit','lastBackup','adminUpdatedAt','accessStatus','lastAccessAudit','lastAccessBackup','accessUpdatedAt'
+        ])
+        && validPlayerNickname(request.resource.data.nickname)
+        && request.resource.data.nickname == resource.data.nickname
+        && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['lastAudit','lastBackup','adminUpdatedAt','accessStatus','lastAccessAudit','lastAccessBackup','accessUpdatedAt'])
+        && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['rankingUid'])
+        && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['distributionBestStreak'])
+          || (request.resource.data.keys().hasAny(['distributionBestStreak']) && validDistribution()
+            && request.resource.data.distributionBestStreak >= resource.data.get('distributionBestStreak', 0)));
+      }
+      allow create: if request.auth != null
+        && request.auth.uid == playerId
+        && validSelfPlayerCreate();
+      function validSelfPlayerLink() {
+        return request.auth != null
+          && request.auth.token.firebase.sign_in_provider == 'anonymous'
+          && !resource.data.keys().hasAny(['rankingUid'])
+          && validRankingUid(request.resource.data.rankingUid)
+          && request.resource.data.updatedAt == request.time
+          && request.resource.data.diff(resource.data).affectedKeys().hasAll(['rankingUid','updatedAt'])
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['rankingUid','updatedAt'])
+          && request.resource.data.nickname == resource.data.nickname
+          && resource.data.get('accessStatus', 'active') == 'active';
+      }
+      function adminAccessRefsValid(playerId) {
+        let auditPath = adminAuditPath(request.resource.data.lastAccessAudit);
+        let backupPath = adminBackupPath(request.resource.data.lastAccessBackup);
+        let auditData = getAfter(auditPath).data;
+        let backupData = getAfter(backupPath).data;
+        let beforeStatus = resource.data.get('accessStatus', 'active');
+        let afterStatus = request.resource.data.accessStatus;
+        return existsAfter(auditPath) && existsAfter(backupPath)
+          && auditData.actor == request.auth.uid
+          && auditData.uid == playerId
+          && auditData.target == 'players/' + playerId
+          && auditData.action == (afterStatus == 'suspended' ? 'suspend' : 'restore')
+          && auditData.beforeStatus == beforeStatus
+          && auditData.afterStatus == afterStatus
+          && auditData.backupId == request.resource.data.lastAccessBackup
+          && backupData.actor == request.auth.uid
+          && backupData.uid == playerId
+          && backupData.target == 'players/' + playerId
+          && backupData.kind == 'access-status'
+          && backupData.beforeStatus == beforeStatus
+          && backupData.afterStatus == afterStatus
+          && backupData.data.player == resource.data;
+      }
+      function adminSetPlayerAccess(playerId) {
+        let changed = request.resource.data.diff(resource.data).affectedKeys();
+        let next = request.resource.data.accessStatus;
+        return request.auth != null
+          && playerId != request.auth.uid
+          && productionAdminSuspensionEnabled()
+          && resource.data.get('accessStatus', 'active') in ['active','suspended']
+          && next in ['active','suspended']
+          && next != resource.data.get('accessStatus', 'active')
+          && changed.hasAll(['accessStatus','lastAccessAudit','lastAccessBackup','accessUpdatedAt'])
+          && changed.hasOnly(['accessStatus','lastAccessAudit','lastAccessBackup','accessUpdatedAt'])
+          && request.resource.data.lastAccessAudit is string
+          && request.resource.data.lastAccessBackup is string
+          && request.resource.data.accessUpdatedAt == request.time
+          && adminAccessRefsValid(playerId);
+      }
+      allow update: if (request.auth != null
+          && request.auth.uid == playerId
+          && validSelfPlayerUpdate())
+        || (request.auth != null
+          && request.auth.uid == playerId
+          && validSelfPlayerLink())
+        || adminRenamePlayer(playerId)
+        || adminSetPlayerAccess(playerId);
+      allow delete: if false;
+    }
+
+    match /productionRankings/v1/games/{game}/players/{uid} {
+      allow get: if rankingCanRead(game,uid);
+      allow list: if rankingCanList(game);
+      allow create: if request.auth != null
+        && request.auth.token.firebase.sign_in_provider == 'anonymous'
+        && request.auth.uid == request.resource.data.uid
+        && validRankingShape(game, uid, request.resource.data)
+        && rankingNameCanonical(request.resource.data.uid, request.resource.data)
+        && rankingControlAllowsChildWrite(game, uid, request.resource.data.uid, request.resource.data);
+      allow create: if adminMigrateRanking(game,uid);
+      allow update: if (request.auth != null
+          && request.auth.token.firebase.sign_in_provider == 'anonymous'
+          && request.auth.uid == request.resource.data.uid
+          && validRankingShape(game, uid, request.resource.data)
+          && request.resource.data.game == resource.data.game
+          && request.resource.data.uid == resource.data.uid
+          && request.resource.data.bestStreak >= resource.data.bestStreak
+          && request.resource.data.visibility == resource.data.get('visibility', 'active')
+          && request.resource.data.generation == resource.data.get('generation', 0)
+          && request.resource.data.lastManagementAudit == resource.data.get('lastManagementAudit', null)
+          && request.resource.data.lastManagementBackup == resource.data.get('lastManagementBackup', null)
+          && rankingNameCanonical(request.resource.data.uid, request.resource.data)
+          && rankingControlAllowsChildWrite(game, uid, request.resource.data.uid, request.resource.data));
+      allow update: if adminRenameRanking(game, uid);
+      allow update: if adminManageRanking(game, uid);
+      allow delete: if false;
+    }
+
+    match /productionRankings/v1/gameControl/{game} {
+      allow get: if request.auth != null && validRankingGame(game);
+      allow list: if productionAdminRankingEnabled();
+      allow create, update: if productionAdminRankingEnabled() && validRankingGame(game)
+        && request.resource.data.keys().hasOnly(['generation','phase','writeLocked','schemaVersion','backupId','updatedAt','previousGeneration','restoredFrom'])
+        && request.resource.data.generation is int && request.resource.data.generation >= 0
+        && request.resource.data.phase in ['migrating','resetting','ready']
+        && request.resource.data.writeLocked is bool
+        && request.resource.data.schemaVersion == 2
+        && request.resource.data.updatedAt == request.time
+        && (request.resource.data.phase != 'ready' || request.resource.data.writeLocked == false);
+      allow delete: if false;
+    }
+
+    match /productionAdmin/v1/rankingLocks/{lockId} {
+      allow get, list: if productionAdminRankingEnabled();
+      allow create, update: if productionAdminRankingEnabled()
+        && request.resource.data.keys().hasOnly(['actor','at','game','uid','protected','action','reason','auditId'])
+        && request.resource.data.actor == request.auth.uid
+        && request.resource.data.at == request.time
+        && validRankingGame(request.resource.data.game)
+        && lockId == request.resource.data.game + '_' + request.resource.data.uid
+        && request.resource.data.protected == true
+        && request.resource.data.reason is string && request.resource.data.reason.size() >= 2 && request.resource.data.reason.size() <= 300
+        && request.resource.data.auditId is string;
+      allow delete: if false;
+    }
+
+    match /productionAdmin/v1/rankingAudit/{auditId} {
+      allow get, list: if productionAdminRankingEnabled();
+      allow create: if productionAdminRankingEnabled()
+        && request.resource.data.actor == request.auth.uid
+        && request.resource.data.at == request.time
+        && request.resource.data.reason is string && request.resource.data.reason.size() >= 2 && request.resource.data.reason.size() <= 300
+        && request.resource.data.action in ['adjust','exclude','restore','migrate','reset','rollback']
+        && validRankingGame(request.resource.data.game)
+        && request.resource.data.backupId is string
+        && (request.resource.data.action in ['migrate','reset','rollback']
+          ? request.resource.data.keys().hasOnly(['actor','at','action','game','reason','backupId','beforeGeneration','afterGeneration','rowCount'])
+            && request.resource.data.beforeGeneration is int && request.resource.data.afterGeneration is int
+            && request.resource.data.rowCount is int && request.resource.data.rowCount >= 0
+          : request.resource.data.keys().hasOnly(['actor','at','action','game','uid','reason','backupId','beforeBest','afterBest','beforeVisibility','afterVisibility'])
+            && request.resource.data.uid is string && request.resource.data.uid != request.auth.uid
+            && request.resource.data.beforeBest is int && request.resource.data.beforeBest > 0
+            && request.resource.data.afterBest is int && request.resource.data.afterBest > 0
+            && request.resource.data.beforeVisibility in ['active','excluded']
+            && request.resource.data.afterVisibility in ['active','excluded']);
+      allow update, delete: if false;
+    }
+
+    match /productionAdmin/v1/rankingBackups/{backupId} {
+      allow get, list: if productionAdminRankingEnabled();
+      allow create: if productionAdminRankingEnabled()
+        && request.resource.data.actor == request.auth.uid
+        && request.resource.data.at == request.time && validRankingGame(request.resource.data.game)
+        && request.resource.data.status in ['copying','complete']
+        && request.resource.data.reason is string && request.resource.data.reason.size() >= 2 && request.resource.data.reason.size() <= 300
+        && request.resource.data.kind in ['entry','migration','reset']
+        && (request.resource.data.kind == 'entry'
+          ? request.resource.data.uid is string && request.resource.data.row is map
+            && request.resource.data.generation is int
+            && request.resource.data.row.keys().hasOnly(['uid','game','nickname','bestStreak','icon','frame','title','badge','updatedAt','visibility','generation','lastManagementAudit','lastManagementBackup'])
+          : request.resource.data.generation is int && request.resource.data.rowCount is int && request.resource.data.rowCount >= 0);
+      allow update: if productionAdminRankingEnabled() && resource.data.actor == request.auth.uid
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['rowCount','reason','status','completedAt'])
+        && request.resource.data.status in ['copying','complete'];
+      allow delete: if false;
+
+      match /entries/{uid} {
+        allow get, list: if productionAdminRankingEnabled();
+        allow create: if productionAdminRankingEnabled()
+          && request.resource.data.keys().hasOnly(['uid','row'])
+          && request.resource.data.uid == uid && request.resource.data.row is map
+          && request.resource.data.row.uid == uid && validRankingGame(request.resource.data.row.game);
+        allow update, delete: if false;
+      }
+    }
+
+    match /productionRankings/v1/identityLinks/{rankingUid} {
+      allow get: if request.auth != null
+        && (request.auth.uid == rankingUid || productionAdminSessionFresh());
+      allow list: if productionAdminSessionFresh();
+      allow create: if request.auth != null
+        && request.auth.token.firebase.sign_in_provider == 'anonymous'
+        && request.auth.uid == rankingUid
+        && request.resource.data.keys().hasOnly(['uid','profileUid','createdAt'])
+        && request.resource.data.uid == rankingUid
+        && request.resource.data.profileUid is string
+        && request.resource.data.profileUid.size() >= 1
+        && request.resource.data.profileUid.size() <= 128
+        && request.resource.data.createdAt == request.time
+        && exists(linkedPlayerPath(request.resource.data.profileUid))
+        && get(linkedPlayerPath(request.resource.data.profileUid)).data.get('accessStatus', 'active') == 'active'
+        && get(linkedPlayerPath(request.resource.data.profileUid)).data.rankingUid == rankingUid;
+      allow update, delete: if false;
+    }
+
+    match /productionAdmin/v1/private/{documentId} {
+      allow get: if productionPasswordAdmin() && (
+        (documentId == 'admin'
+          && resource.data.uid == request.auth.uid
+          && resource.data.enabled == true)
+        || (documentId == 'revocation' && productionAdminRoleMatches())
+      );
+      allow list, create, update, delete: if false;
+    }
+
+    match /productionAdmin/v1/audit/{auditId} {
+      allow get, list: if productionAdminSessionFresh();
+      allow create: if request.resource.data.keys().hasOnly([
+          'actor','at','uid','target','action','reason','backupId','beforeName','afterName'
+        ])
+        && productionAdminRenameEnabled()
+        && request.resource.data.actor == request.auth.uid
+        && request.resource.data.at == request.time
+        && request.resource.data.uid is string
+        && request.resource.data.target == 'players/' + request.resource.data.uid
+        && request.resource.data.action == 'rename'
+        && request.resource.data.reason is string
+        && request.resource.data.reason.size() >= 2
+        && request.resource.data.reason.size() <= 300
+        && request.resource.data.backupId is string
+        && request.resource.data.beforeName is string
+        && request.resource.data.beforeName.size() <= 12
+        && request.resource.data.afterName is string
+        && validPlayerNickname(request.resource.data.afterName)
+        && existsAfter(linkedPlayerPath(request.resource.data.uid))
+        && getAfter(linkedPlayerPath(request.resource.data.uid)).data.lastAudit == auditId
+        && getAfter(linkedPlayerPath(request.resource.data.uid)).data.lastBackup == request.resource.data.backupId;
+      allow create: if validAdminAccessAudit(auditId);
+      allow update, delete: if false;
+    }
+
+    function validAdminAccessAudit(auditId) {
+      let playerPath = linkedPlayerPath(request.resource.data.uid);
+      let audit = request.resource.data;
+      let backupPath = adminBackupPath(audit.backupId);
+      return audit.keys().hasOnly(['actor','at','uid','target','action','reason','backupId','beforeStatus','afterStatus','linkedRankingCount'])
+        && productionAdminSuspensionEnabled()
+        && audit.actor == request.auth.uid
+        && audit.at == request.time
+        && audit.uid is string
+        && audit.target == 'players/' + audit.uid
+        && audit.action in ['suspend','restore']
+        && audit.reason is string && audit.reason.size() >= 2 && audit.reason.size() <= 300
+        && audit.backupId is string
+        && audit.beforeStatus in ['active','suspended']
+        && audit.afterStatus in ['active','suspended']
+        && audit.afterStatus != audit.beforeStatus
+        && audit.action == (audit.afterStatus == 'suspended' ? 'suspend' : 'restore')
+        && audit.linkedRankingCount is int && audit.linkedRankingCount >= 0 && audit.linkedRankingCount <= 10
+        && existsAfter(playerPath)
+        && getAfter(playerPath).data.accessStatus == audit.afterStatus
+        && getAfter(playerPath).data.lastAccessAudit == auditId
+        && getAfter(playerPath).data.lastAccessBackup == audit.backupId
+        && existsAfter(backupPath)
+        && getAfter(backupPath).data.kind == 'access-status'
+        && getAfter(backupPath).data.uid == audit.uid;
+    }
+
+    match /productionAdmin/v1/backups/{backupId} {
+      allow get, list: if productionAdminSessionFresh();
+      allow create: if request.resource.data.keys().hasOnly(['actor','at','uid','target','kind','data'])
+        && productionAdminRenameEnabled()
+        && request.resource.data.actor == request.auth.uid
+        && request.resource.data.at == request.time
+        && request.resource.data.uid is string
+        && request.resource.data.target == 'players/' + request.resource.data.uid
+        && request.resource.data.kind == 'rename'
+        && request.resource.data.data is map
+        && request.resource.data.data.keys().hasOnly(['player','links','rankings'])
+        && request.resource.data.data.player is map
+        && request.resource.data.data.links is list
+        && request.resource.data.data.links.size() <= 10
+        && request.resource.data.data.rankings is list
+        && request.resource.data.data.rankings.size() <= 110
+        && existsAfter(linkedPlayerPath(request.resource.data.uid))
+        && getAfter(linkedPlayerPath(request.resource.data.uid)).data.lastBackup == backupId
+        && getAfter(linkedPlayerPath(request.resource.data.uid)).data.lastAudit is string;
+      allow create: if validAdminAccessBackup(backupId);
+      allow update, delete: if false;
+    }
+
+    function validAdminAccessBackup(backupId) {
+      let playerPath = linkedPlayerPath(request.resource.data.uid);
+      let data = request.resource.data;
+      return data.keys().hasOnly(['actor','at','uid','target','kind','beforeStatus','afterStatus','data'])
+        && productionAdminSuspensionEnabled()
+        && data.actor == request.auth.uid
+        && data.at == request.time
+        && data.uid is string
+        && data.target == 'players/' + data.uid
+        && data.kind == 'access-status'
+        && data.beforeStatus in ['active','suspended']
+        && data.afterStatus in ['active','suspended']
+        && data.afterStatus != data.beforeStatus
+        && data.data is map
+        && data.data.keys().hasOnly(['player','links','rankings'])
+        && data.data.player is map
+        && data.data.links is list && data.data.links.size() <= 10
+        && data.data.rankings is list && data.data.rankings.size() <= 110
+        && existsAfter(playerPath)
+        && getAfter(playerPath).data.accessStatus == data.afterStatus
+        && getAfter(playerPath).data.lastAccessBackup == backupId
+        && getAfter(playerPath).data.lastAccessAudit is string;
+    }
+  }
+}

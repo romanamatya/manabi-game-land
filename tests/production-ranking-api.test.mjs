@@ -9,6 +9,7 @@ const A={getAuth:app=>{if(!authByName.has(app.name))authByName.set(app.name,{cur
 const F={
  getFirestore:()=>({}),
  doc:(db,...parts)=>({path:parts.join('/')}),
+ getDocFromServer:async ref=>({exists:()=>docs.has(ref.path),data:()=>structuredClone(docs.get(ref.path))}),
  collection:(db,...parts)=>({path:parts.join('/')}),
  runTransaction:async(db,fn)=>fn({get:async ref=>({exists:()=>docs.has(ref.path),data:()=>structuredClone(docs.get(ref.path))}),set:(ref,value)=>docs.set(ref.path,structuredClone(value))}),
  serverTimestamp:()=>({serverTimestamp:true}),

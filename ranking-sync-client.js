@@ -1,7 +1,7 @@
-import {client} from './ranking-sync-api.js?v=prod-admin-stage2-rename-1';
+import {client} from './ranking-sync-api.js?v=ranking-admin-v1';
 const storage=window.manabiStorage,config=window.MANABI_BACKEND_CONFIG;
 const games=['keisan','pref-name','pref-place','alphabet','distribution','distribution2','exchangeAssociation','kotowaza','multiplicationProperties','shapeExpressions','keisanSummary'];
-const baseline=new Map(),published=new Map();let started=false,work=Promise.resolve(),startupPromise=null,profileUnsubscribe=null,identityReady=config?.playerNameSyncEnabled!==true;
+const baseline=new Map(),published=new Map(),generationBaseline=new Map();let started=false,work=Promise.resolve(),startupPromise=null,profileUnsubscribe=null,identityReady=config?.playerNameSyncEnabled!==true;
 const PENDING='mgl_production_rank_pending_v1';
 function profileRow(game){return window.ManabiProfile?.records(storage).find(x=>x.id===game)||null}
 function localBest(game){
@@ -25,13 +25,14 @@ async function flush(forceProfile=false){
  if(!navigator.onLine){writePending([...pendingRows]);return;}
  const api=await client();
  for(const game of games){
-  const best=localBest(game),old=baseline.get(game)||0,marker='mgl_production_rank_synced_v1:'+api.uid+':'+game;
+  const best=localBest(game),old=baseline.get(game)||0,generation=await api.rankingGeneration(game),season=generation===null?'legacy':String(generation),marker='mgl_production_rank_synced_v1:'+api.uid+':'+game+':'+season;
+  if(!generationBaseline.has(game))generationBaseline.set(game,generation);else if(generationBaseline.get(game)!==generation){generationBaseline.set(game,generation);baseline.set(game,best);pendingRows.delete(game);continue;}
   if(best>old||(forceProfile&&storage.getItem(marker)))pendingRows.add(game);
   if(best<1)continue;
-  const value=projection(game,best),signature=JSON.stringify(value),cacheKey=api.uid+':'+game;
+  const value=projection(game,best),signature=JSON.stringify(value),cacheKey=api.uid+':'+game+':'+season;
   if(storage.getItem(marker)===signature||published.get(cacheKey)===signature){published.set(cacheKey,signature);baseline.set(game,Math.max(old,best));pendingRows.delete(game);continue;}
-  try{const saved=await api.publishRanking(value);storage.setItem(marker,signature);published.set(cacheKey,signature);baseline.set(game,Math.max(old,best));pendingRows.delete(game);}
-  catch{pendingRows.add(game);}
+  try{const saved=await api.publishRanking(value,{freshRecord:best>old});storage.setItem(marker,signature);published.set(cacheKey,signature);baseline.set(game,Math.max(old,best));pendingRows.delete(game);}
+  catch(error){if(error?.code==='ranking-new-record-required'){published.set(cacheKey,signature);pendingRows.delete(game);}else pendingRows.add(game);}
  }
  writePending([...pendingRows]);
 }

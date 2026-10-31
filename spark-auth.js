@@ -1,7 +1,8 @@
 import {createSeasonStore} from './challenge120-season-store.js?v=adminprod-20261030';
 import {createManagementStore} from './management-store.js?v=adminprod-20261030';
+import {createRankingManagementStore} from './ranking-management-store.js?v=ranking-admin-v1';
 import {validateBackend,contractFor} from './data-contract.js?v=adminprod-20261030';
-import {createFirestoreStore} from './firebase-store.js?v=admin-stage2-player-rename-1';
+import {createFirestoreStore} from './firebase-store.js?v=ranking-admin-v1';
 const config = window.MANABI_SPARK_CONFIG;
 const error = code => Object.assign(new Error(code), {code});
 const validName = value => typeof value === 'string' && value === value.trim() && value.length >= 1 && value.length <= 12 && !/[<>\r\n]/.test(value);
@@ -76,6 +77,7 @@ export function createAdminOperations(c,{auth,db},A,F) {
   const contract=validateBackend(c,{requireEnabled:false,mode:readOnly?'production':undefined}),alias=contract.alias;
   const store=createFirestoreStore(contract.mode,F,db,{catalog:window.ManabiProfileCatalog||[],rankingGameIds:c.rankingGameIds||[]});
   const management=createManagementStore(contract.mode,F,db,{players:cursor=>store.list(cursor),rankingGameIds:c.managedRankingGameIds||[]});
+  const rankingManagement=createRankingManagementStore(F,db,{games:c.rankingGameIds||[]});
   const ref=(kind,id)=>F.doc(db,kind==='players'?contract.players:contract.base+'/'+kind,id);
   const col=kind=>F.collection(db,kind==='players'?contract.players:contract.base+'/'+kind);
   const plain=value=>value?.toMillis?value.toMillis():Array.isArray(value)?value.map(plain):value&&typeof value==='object'?Object.fromEntries(Object.entries(value).map(([k,v])=>[k,plain(v)])):value;
@@ -102,23 +104,25 @@ export function createAdminOperations(c,{auth,db},A,F) {
   async function rename(input) {const user=await verify();if(contract.mode==='production'){const role=await F.getDocFromServer(ref('private','admin'));if(role.data()?.renameEnabled!==true)throw error('rename-not-enabled');}return store.rename(user,input);}
 
   async function call(action, input = {}) {
-    if(readOnly&&!['admin:snapshot','admin:players'].includes(action)&&!(c.adminFeatures?.playerRename===true&&['admin:rename','admin:history'].includes(action))&&!(c.adminFeatures?.playerSuspension===true&&['admin:setPlayerAccess'].includes(action)))throw error('admin-read-only');
+    if(readOnly&&!['admin:snapshot','admin:players'].includes(action)&&!(c.adminFeatures?.playerRename===true&&['admin:rename','admin:history'].includes(action))&&!(c.adminFeatures?.playerSuspension===true&&['admin:setPlayerAccess'].includes(action))&&!(c.adminFeatures?.rankingManagement===true&&['admin:rankingSnapshot','admin:rankingOperation'].includes(action)))throw error('admin-read-only');
     await verify();
     if (action === 'admin:snapshot') {
-      if(readOnly){const players=await list('players');const history=c.adminFeatures?.playerRename===true||c.adminFeatures?.playerSuspension===true?await F.getDocsFromServer(F.query(col('audit'),F.orderBy('at','desc'),F.limit(100))):null;return {players:players.rows,playerCursor:players.cursor,audit:history?.docs.map(d=>plain({...d.data(),id:d.id}))||[]};}
+      if(readOnly){const players=await list('players');const history=c.adminFeatures?.playerRename===true||c.adminFeatures?.playerSuspension===true?await F.getDocsFromServer(F.query(col('audit'),F.orderBy('at','desc'),F.limit(100))):null;const adminDoc=await F.getDocFromServer(ref('private','admin'));const rankingAdmin=adminDoc.data()?.rankingManagementEnabled===true&&c.adminFeatures?.rankingManagement===true?{enabled:true,...await rankingManagement.snapshot()}:{enabled:false,games:[],backups:[],audit:[]};return {players:players.rows,playerCursor:players.cursor,audit:history?.docs.map(d=>plain({...d.data(),id:d.id}))||[],rankingAdmin};}
       const [players, history] = await Promise.all([
         list('players'),
         F.getDocsFromServer(F.query(col('audit'), F.orderBy('at', 'desc'), F.limit(100)))
       ]);
       const seasonStore=createSeasonStore(F,db,contract.base,{enabled:c.seasonManagementEnabled===true,legacyRows:async()=>{let out=[],cursor=null;do{const p=await store.list(cursor);out.push(...p.rows);cursor=p.cursor;if(out.length>1000)throw error('ranking-backup-too-large');}while(cursor);return out;}});const season=await seasonStore.snapshot();
       const more=c.managementEnabled===true?await management.snapshot():{games:(window.ManabiProfileCatalog||[]).map(g=>({id:g.id,published:true,generation:0,rankingSupported:false})),rankings:[],campaigns:[],backups:[],notice:null,managementAudit:[]};
-      const rankings=more.rankings||[];
-      return {season,players:players.rows,playerCursor:players.cursor,...more,rankings,managementReady:c.managementEnabled===true,audit:[...history.docs.map(d=>plain({...d.data(),id:d.id})),...more.managementAudit].sort((a,b)=>(b.at||0)-(a.at||0)).slice(0,100)};
+      const rankings=more.rankings||[];const adminDoc=await F.getDocFromServer(ref('private','admin'));const rankingAdmin=adminDoc.data()?.rankingManagementEnabled===true&&c.adminFeatures?.rankingManagement===true?{enabled:true,...await rankingManagement.snapshot()}:{enabled:false,games:[],backups:[],audit:[]};
+      return {season,players:players.rows,playerCursor:players.cursor,...more,rankings,rankingAdmin,managementReady:c.managementEnabled===true,audit:[...history.docs.map(d=>plain({...d.data(),id:d.id})),...more.managementAudit].sort((a,b)=>(b.at||0)-(a.at||0)).slice(0,100)};
     }
     if (action === 'admin:players') return list('players', input.cursor);
+    if(action==='admin:rankingSnapshot'){const adminDoc=await F.getDocFromServer(ref('private','admin'));if(c.adminFeatures?.rankingManagement!==true||adminDoc.data()?.rankingManagementEnabled!==true)return {enabled:false,games:[],backups:[],audit:[]};return {enabled:true,...await rankingManagement.snapshot()};}
     if (input.confirm !== true) throw error('invalid-input');
     if (action === 'admin:rename') return rename(input);
     if(action==='admin:setPlayerAccess'){if(c.adminFeatures?.playerSuspension!==true)throw error('suspension-not-enabled');const role=await F.getDocFromServer(ref('private','admin'));if(role.data()?.suspensionEnabled!==true)throw error('suspension-not-enabled');return store.setPlayerAccess(await verify(),input);}
+    if(action==='admin:rankingOperation'){const role=await F.getDocFromServer(ref('private','admin'));if(c.adminFeatures?.rankingManagement!==true||role.data()?.rankingManagementEnabled!==true)throw error('ranking-management-not-enabled');const actor=await verify(),op=input.operation,payload={...input};delete payload.operation;return ({migrate:rankingManagement.migrate,adjust:rankingManagement.edit,exclude:rankingManagement.edit,restore:rankingManagement.edit,reset:rankingManagement.reset,resumeReset:rankingManagement.resumeReset,rollback:rankingManagement.rollback})[op]?.(actor,{...payload,action:op==='adjust'||op==='exclude'||op==='restore'?op:undefined})??Promise.reject(error('feature-unverified'));}
     if(action==='admin:switchSeason'){const user=await verify();if(c.seasonManagementEnabled!==true)throw error('season-management-not-enabled');return createSeasonStore(F,db,contract.base,{enabled:true,legacyRows:async()=>{let rows=[],cursor=null;do{const p=await store.list(cursor);rows.push(...p.rows);cursor=p.cursor;if(rows.length>1000)throw error('ranking-backup-too-large');}while(cursor);return rows;}}).switchAll(user,input);}
     if(action==='admin:reset'&&c.challenge120Enabled===true)throw error('use-atomic-season-switch');
     if(['visibility','campaign','notice','reset','rankingBackup'].some(v=>action==='admin:'+v)){if(c.managementEnabled!==true)throw error('management-not-enabled');const user=await verify();return management.mutate(user,action.slice(6),input);}
