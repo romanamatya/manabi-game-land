@@ -46,6 +46,7 @@ export async function createProductionRankingClient(c,[App,A,F]){
    if(profileUid){
     const profileSnap=result[1],linkSnap=result[2];
     if(!profileSnap.exists()||!linkSnap.exists()||linkSnap.data().profileUid!==profileUid||profileSnap.data().rankingUid!==uid)throw err('player-ranking-link-required');
+    if(profileSnap.data().status==='suspended')throw err('player-suspended');
     canonical=profileSnap.data().nickname;
    }
    const value=clean({...input,nickname:canonical});
@@ -61,6 +62,7 @@ export async function createProductionRankingClient(c,[App,A,F]){
   const profile=playerRef(),profileSnap=await F.getDocFromServer(profile);
   if(!profileSnap.exists())throw err('player-profile-required');
   const data=profileSnap.data();
+  if(data.status==='suspended')throw err('player-suspended');
   if(data.rankingUid&&data.rankingUid!==uid)throw err('player-ranking-link-conflict');
   if(!data.rankingUid)await F.updateDoc(profile,{rankingUid:uid,updatedAt:F.serverTimestamp()});
   if(!linkSnap.exists()){
@@ -70,6 +72,20 @@ export async function createProductionRankingClient(c,[App,A,F]){
   const finalProfile=await F.getDocFromServer(profile);
   if(!finalProfile.exists()||finalProfile.data().rankingUid!==uid||!validNickname(finalProfile.data().nickname))throw err('player-ranking-link-conflict');
   return finalProfile.data().nickname;
+ }
+ async function playerAccess(){
+  if(!profileUid)throw err('player-name-sync-disabled');
+  const snapshot=await F.getDocFromServer(playerRef());
+  if(!snapshot.exists()||snapshot.data().rankingUid!==uid)throw err('player-ranking-link-required');
+  return {status:snapshot.data().status==='suspended'?'suspended':'active'};
+ }
+ function watchPlayerAccess(onValue,onError=()=>{}){
+  if(!profileUid||typeof onValue!=='function')throw err('player-name-sync-disabled');
+  return F.onSnapshot(playerRef(),snapshot=>{
+   if(snapshot.metadata.fromCache)return;
+   if(!snapshot.exists()||snapshot.data().rankingUid!==uid){onError(err('player-ranking-link-required'));return;}
+   onValue({status:snapshot.data().status==='suspended'?'suspended':'active'});
+  },onError);
  }
  function watchPlayerName(callback){
   if(!profileUid||typeof callback!=='function')throw err('player-name-sync-disabled');
@@ -84,7 +100,7 @@ export async function createProductionRankingClient(c,[App,A,F]){
  }
  async function rankings(game){return queryGame(game,100);}
  async function champions(){return Promise.all([...allowed].map(async game=>({game,row:(await queryGame(game,1))[0]||null})));}
- return {uid,profileUid,publishRanking,rankings,champions,ensurePlayerLink,watchPlayerName};
+ return {uid,profileUid,publishRanking,rankings,champions,ensurePlayerLink,playerAccess,watchPlayerAccess,watchPlayerName};
 }
 let pending;
 export function client(){
