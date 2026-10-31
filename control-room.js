@@ -71,5 +71,5 @@ try{api=await client();api.watch(async user=>{lock();revocationUnsubscribe?.();i
 
 
 if(window.MANABI_SPARK_CONFIG?.enabled!==true&&window.MANABI_SPARK_CONFIG?.adminReadOnly!==true){$('backendSetup').hidden=false;$('adminPassword').disabled=true;$('passwordSubmit').disabled=true;$('status').textContent='本番の認証・権限を確認後に利用開始。';}
-if(readOnly){for(const b of document.querySelectorAll('[data-tab]'))b.hidden=!(b.dataset.tab==='players'||(playerRenameEnabled&&b.dataset.tab==='history'));$('changePassword').hidden=true;$('logout').title='この端末からログアウト';}
+if(readOnly){for(const b of document.querySelectorAll('[data-tab]'))b.hidden=!(b.dataset.tab==='players'||((playerRenameEnabled||playerSuspensionEnabled)&&b.dataset.tab==='history'));$('changePassword').hidden=true;$('logout').title='この端末からログアウト';}
 
