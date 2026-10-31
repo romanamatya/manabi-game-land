@@ -68,7 +68,7 @@ export async function createAdminClient(c, [appSdk, A, F]) {
 export function createAdminOperations(c,{auth,db},A,F) {
   const readOnly=c.adminReadOnly===true;
   const contract=validateBackend(c,{requireEnabled:false,mode:readOnly?'production':undefined}),alias=contract.alias;
-  const store=createFirestoreStore(contract.mode,F,db,{catalog:window.ManabiProfileCatalog||[]});
+  const store=createFirestoreStore(contract.mode,F,db,{catalog:window.ManabiProfileCatalog||[],rankingGameIds:c.rankingGameIds||[]});
   const management=createManagementStore(contract.mode,F,db,{players:cursor=>store.list(cursor),rankingGameIds:c.managedRankingGameIds||[]});
   const ref=(kind,id)=>F.doc(db,kind==='players'?contract.players:contract.base+'/'+kind,id);
   const col=kind=>F.collection(db,kind==='players'?contract.players:contract.base+'/'+kind);
@@ -96,7 +96,7 @@ export function createAdminOperations(c,{auth,db},A,F) {
   async function rename(input) {const user=await verify();if(contract.mode==='production'){const role=await F.getDocFromServer(ref('private','admin'));if(role.data()?.renameEnabled!==true)throw error('rename-not-enabled');}return store.rename(user,input);}
 
   async function call(action, input = {}) {
-    if(readOnly&&!['admin:snapshot','admin:players'].includes(action))throw error('admin-read-only');
+    if(readOnly&&!['admin:snapshot','admin:players'].includes(action)&&!(action==='admin:rename'&&c.adminFeatures?.playerRename===true))throw error('admin-read-only');
     await verify();
     if (action === 'admin:snapshot') {
       if(readOnly){const players=await list('players');return {players:players.rows,playerCursor:players.cursor};}
