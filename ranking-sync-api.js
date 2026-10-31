@@ -56,6 +56,8 @@ export async function createProductionRankingClient(c,[App,A,F]){
  }
  async function ensurePlayerLink(localNickname){
   if(!profileUid)throw err('player-name-sync-disabled');
+  const link=linkRef(),linkSnap=await F.getDocFromServer(link);
+  if(linkSnap.exists()&&linkSnap.data().profileUid!==profileUid)throw err('player-ranking-link-conflict');
   const profile=playerRef(),profileSnap=await F.getDocFromServer(profile);
   if(!profileSnap.exists()){
    if(!validNickname(localNickname))throw err('nickname-required');
@@ -66,10 +68,7 @@ export async function createProductionRankingClient(c,[App,A,F]){
    if(data.rankingUid&&data.rankingUid!==uid)throw err('player-ranking-link-conflict');
    if(!data.rankingUid)await F.updateDoc(profile,{rankingUid:uid,updatedAt:F.serverTimestamp()});
   }
-  const link=linkRef(),linkSnap=await F.getDocFromServer(link);
-  if(linkSnap.exists()){
-   if(linkSnap.data().profileUid!==profileUid)throw err('player-ranking-link-conflict');
-  }else{
+  if(!linkSnap.exists()){
    try{await F.setDoc(link,{uid,profileUid,createdAt:F.serverTimestamp()});}
    catch(e){const current=await F.getDocFromServer(link);if(!current.exists()||current.data().profileUid!==profileUid)throw e;}
   }
