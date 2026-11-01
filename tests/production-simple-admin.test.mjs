@@ -41,11 +41,16 @@ test('campaign and visibility inputs are validated; other admin actions are excl
  assert.equal(visibilityStatus({}),'published');
 });
 
-test('direct game pages stay inert until publication is confirmed and fail closed on read errors',async()=>{
+test('direct game pages fail closed without making the whole page inert',async()=>{
  const script=await readFile(new URL('../public-admin-settings.js',import.meta.url),'utf8');
- assert.match(script,/document\.documentElement\.inert=true/);
- assert.match(script,/s\?\.status[^\n]+!==?'published'/);
- assert.match(script,/catch\(\(\)=>block\('公開状態を確認できないため/);
+ const gate=await readFile(new URL('../public-game-availability.js',import.meta.url),'utf8');
+ assert.doesNotMatch(script,/document\.documentElement\.inert\s*=\s*true/);
+ assert.doesNotMatch(script,/document\.body\.replaceChildren/);
+ assert.match(script,/ManabiGameAvailability\.create\(document\)/);
+ assert.match(script,/readGameSetting=\(\)=>read\('gameSettings',gameId\)/);
+ assert.match(gate,/state='unknown'/);
+ assert.match(gate,/retryAction=\(\)=>check\(readSetting,hooks\)/);
+ assert.match(gate,/state=settingStatus\(setting\)/);
  assert.match(script,/document\.addEventListener\('click',[\s\S]+?stopImmediatePropagation\(\)/);
 });
 

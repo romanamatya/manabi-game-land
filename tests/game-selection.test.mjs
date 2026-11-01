@@ -66,5 +66,7 @@ test('production 2-minute challenge keeps its ranking route and direct URL guard
  assert.ok(navigation.includes("play.dataset.gameHref=testLink('games/'+id+'.html')"));
  assert.ok(navigation.includes("rank.href=testLink(id==='keisanSummary'?'summary-ranking.html':'ranking.html?game='+id)"))
  const settings=await readFile(new URL('../shared-src/site/public-admin-settings.js',import.meta.url),'utf8');
- assert.ok(settings.includes('document.documentElement.inert=true'));assert.ok(settings.includes("read('gameSettings',gameId)"));assert.ok(settings.includes('subscribeGame(id,onValue,onError)'));
+ const gate=await readFile(new URL('../shared-src/site/public-game-availability.js',import.meta.url),'utf8');
+ assert.ok(!settings.includes('document.documentElement.inert=true'));assert.ok(settings.includes("read('gameSettings',gameId)"));assert.ok(settings.includes('subscribeGame(id,onValue,onError)'));
+ assert.ok(gate.includes("const EXEMPT='a[href],header,nav,aside,#challenge120Gate,#challenge120Status,#publicGameAccessStatus"));
 });

@@ -4,16 +4,18 @@
  const cfg=window.MANABI_BACKEND_CONFIG;if(!cfg)return;
  const games=['keisan','pref-name','pref-place','alphabet','distribution','distribution2','exchangeAssociation','kotowaza','multiplicationProperties','shapeExpressions','keisanSummary'];
  const settingsRoot=cfg.environment==='productionAdmin/v1'?'productionAdmin/v1':cfg.environment==='previewSpark/v1'?'previewSpark/v1':null;
- let dbPromise;
+ let dbPromise,dbGeneration=0;
  async function db(){
   if(dbPromise)return dbPromise;
+  const generation=++dbGeneration;
   dbPromise=(async()=>{
    const [App,A,F]=await Promise.all(['app','auth','firestore'].map(n=>import('https://www.gstatic.com/firebasejs/13.1.0/firebase-'+n+'.js')));
    const app=App.getApps().find(a=>a.name==='[DEFAULT]')||App.initializeApp(cfg.firebase),auth=A.getAuth(app);
    await auth.authStateReady();if(!auth.currentUser)await A.signInAnonymously(auth);
    return {F,db:F.getFirestore(app)};
-  })();return dbPromise;
+  })().catch(error=>{if(generation===dbGeneration)dbPromise=null;throw error;});return dbPromise;
  }
+ function resetDb(){dbGeneration++;dbPromise=null;}
  async function read(collection,id){
   if(!settingsRoot)throw Error('settings-environment-unavailable');
   const {F,db}=await db(),snapshot=await F.getDocFromServer(F.doc(db,settingsRoot+'/'+collection+'/'+id));
@@ -21,22 +23,23 @@
  }
  window.ManabiPublicSettings=Object.freeze({
   availabilityEnabled:cfg.availabilityEnabled===true,
+  reset:resetDb,
   subscribeGame(id,onValue,onError){
    if(!settingsRoot||!games.includes(id))return Promise.reject(Error('game-settings-unavailable'));
    return db().then(({F,db})=>F.onSnapshot(F.doc(db,settingsRoot+'/gameSettings/'+id),{includeMetadataChanges:true},onValue,onError));
   }
  });
- function block(message){
-  document.body.replaceChildren(Object.assign(document.createElement('main'),{innerHTML:''}));
-  const main=document.body.firstChild;main.style='max-width:680px;margin:12vh auto;padding:2rem;font:18px system-ui';
-  const h=document.createElement('h1'),p=document.createElement('p');h.textContent='このゲームは現在利用できません';p.textContent=message;main.append(h,p);
- }
  const gameId=location.pathname.match(/(?:^|\/)games\/([^/]+)\.html$/)?.[1],gated=cfg.availabilityEnabled===true&&games.includes(gameId);
- if(gated){document.documentElement.inert=true;void read('gameSettings',gameId).then(s=>{
-  const status=s?.status||(s?.published===false?'hidden':'published');
-  if(status!=='published')block(status==='preparing'?'公開準備中です。公開までお待ちください。':'現在、このゲームは公開されていません。');
-  else document.documentElement.inert=false;
- }).catch(()=>block('公開状態を確認できないため、ゲームを開始できません。時間をおいて再読み込みしてください。'));}
+ if(gated){
+  const readGameSetting=()=>read('gameSettings',gameId);
+  if(window.ManabiGameAvailability?.create){const reset=()=>window.ManabiPublicSettings?.reset?.();void window.ManabiGameAvailability.create(document).check(readGameSetting,{onTimeout:reset,onError:reset});}
+  else{
+   const deny=e=>{const t=e.target,c=t?.closest?.('button,input,select,textarea,[role="button"]');if(!c||c.closest?.('a[href],header,nav,aside,#challenge120Gate,#challenge120Status,#publicGameAccessStatus,[data-profile-panel]')||!c.closest?.('main,.layout,.play,[data-game-area]'))return;e.preventDefault();e.stopImmediatePropagation();};
+   for(const type of ['click','pointerdown','keydown','submit'])document.addEventListener(type,deny,true);
+   const showUnavailable=()=>{if(!document.body)return;let n=document.getElementById('publicGameAccessStatus');if(!n){n=document.createElement('section');n.id='publicGameAccessStatus';n.setAttribute('role','status');document.body.insertBefore(n,document.body.firstChild);}n.textContent='公開状態を確認できません。ゲームは開始できません。前の画面に戻るか、ページを再読み込みしてください。';};
+   if(document.body)showUnavailable();else document.addEventListener('DOMContentLoaded',showUnavailable,{once:true});
+  }
+ }
  if(cfg.availabilityEnabled===true){
   const guardLinks=()=>{
    const gameOf=a=>new URL(a.href,location.href).pathname.match(/(?:^|\/)games\/([^/]+)\.html$/)?.[1];
