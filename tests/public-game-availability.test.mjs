@@ -100,9 +100,12 @@ test('a failed public-settings read never unlocks play, while status and navigat
  assert.match(runtime,/!\['training','running'\]\.includes\(s\.phase\)/,'challenge still blocks answers outside active phases');
 });
 
-test('missing setting keeps the existing default-public behavior; unknown setting values fail closed',()=>{
- const {api}=setup();assert.equal(api.settingStatus(null),'published');assert.equal(api.settingStatus({}),'published');
- assert.equal(api.settingStatus({status:'unexpected'}),'hidden');assert.equal(api.settingStatus({published:false}),'hidden');
+test('missing or malformed settings remain unconfirmed and fail closed; explicit states are honored',async()=>{
+ const {api,document,answer}=setup();assert.equal(api.settingStatus(null),'unknown');assert.equal(api.settingStatus({}),'unknown');
+ assert.equal(api.settingStatus({status:'unexpected'}),'unknown');assert.equal(api.settingStatus({published:false}),'hidden');assert.equal(api.settingStatus({published:true}),'published');
+ const gate=api.create(document,{timeoutMs:50});assert.equal(await gate.check(()=>Promise.resolve(null)),'unknown');
+ assert.equal(attempt(document,'click',answer).defaultPrevented,true);
+ assert.ok(document.getElementById('publicGameAccessStatus').children.some(node=>node.tagName==='BUTTON'),'unknown settings retain an operable retry');
 });
 
 test('read failures distinguish network, authentication, permission, and unknown errors',()=>{

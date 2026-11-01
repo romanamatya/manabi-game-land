@@ -12,11 +12,11 @@
   return 'unknown';
  }
  function settingStatus(setting){
-  if(!setting)return 'published';
+  if(!setting)return 'unknown';
   if(['published','preparing','hidden'].includes(setting.status))return setting.status;
+  if(setting.published===true)return 'published';
   if(setting.published===false)return 'hidden';
-  if(setting.status==null||setting.status==='')return 'published';
-  return 'hidden';
+  return 'unknown';
  }
  function create(documentRef=window.document,{timeoutMs=TIMEOUT_MS}={}){
   let state='checking',failure='unknown',attempt=0,timer=null,host=null,retryAction=null,domReady=false;
@@ -56,7 +56,7 @@
    timer=setTimeout(()=>{if(id!==attempt||state!=='checking')return;state='unknown';failure='timeout';try{hooks.onTimeout?.()}catch{}retryAction=()=>check(readSetting,hooks);render();},timeoutMs);
    return Promise.resolve().then(readSetting).then(setting=>{
     if(id!==attempt)return 'stale';if(timer)clearTimeout(timer);timer=null;retryAction=null;failure='unknown';
-    state=settingStatus(setting);render();return state;
+    state=settingStatus(setting);if(state==='unknown')retryAction=()=>check(readSetting,hooks);render();return state;
    },error=>{
     if(id!==attempt)return 'stale';if(timer)clearTimeout(timer);timer=null;state='unknown';failure=failureType(error);try{hooks.onError?.(failure,error)}catch{}retryAction=()=>check(readSetting,hooks);render();return state;
    });
