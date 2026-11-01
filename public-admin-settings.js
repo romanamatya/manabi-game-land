@@ -8,12 +8,10 @@
  async function db(){
   if(dbPromise)return dbPromise;
   const generation=++dbGeneration;
-  dbPromise=(async()=>{
-   const [App,A,F]=await Promise.all(['app','auth','firestore'].map(n=>import('https://www.gstatic.com/firebasejs/13.1.0/firebase-'+n+'.js')));
-   const app=App.getApps().find(a=>a.name==='[DEFAULT]')||App.initializeApp(cfg.firebase),auth=A.getAuth(app);
-   await auth.authStateReady();if(!auth.currentUser)await A.signInAnonymously(auth);
-   return {F,db:F.getFirestore(app)};
-  })().catch(error=>{if(generation===dbGeneration)dbPromise=null;throw error;});return dbPromise;
+  dbPromise=Promise.resolve().then(()=>{
+   if(!window.ManabiFirebaseSession?.open)throw Error('firebase-session-unavailable');
+   return window.ManabiFirebaseSession.open(cfg.firebase);
+  }).catch(error=>{if(generation===dbGeneration)dbPromise=null;throw error;});return dbPromise;
  }
  function resetDb(){dbGeneration++;dbPromise=null;}
  async function read(collection,id){

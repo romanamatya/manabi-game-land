@@ -113,6 +113,15 @@ serialTest('non-admin cannot mutate campaign, notice, game settings, audit, or b
  await assertFails(F.setDoc(F.doc(db,'productionAdmin/v1/managementBackups/fake'),{actor:'rank-a'}));
 });
 
+serialTest('anonymous game sessions can read one game setting without permission to enumerate or change settings',async()=>{
+ const anonymous=child('anonymous-game-session').firestore();
+ await assertSucceeds(F.getDoc(F.doc(anonymous,'productionAdmin/v1/gameSettings/keisan')));
+ await assertFails(F.getDocs(F.collection(anonymous,'productionAdmin/v1/gameSettings')));
+ await assertFails(F.setDoc(F.doc(anonymous,'productionAdmin/v1/gameSettings/keisan'),{status:'hidden'}));
+ const unauthenticated=env.unauthenticatedContext().firestore();
+ await assertFails(F.getDoc(F.doc(unauthenticated,'productionAdmin/v1/gameSettings/keisan')));
+});
+
 serialTest('published game ranking still works; preparing and hidden games reject direct URL-style posts',async()=>{
  const adminDb=admin().firestore();
  for(const [game,status] of [['pref-name','preparing'],['alphabet','hidden']])await env.withSecurityRulesDisabled(c=>F.setDoc(F.doc(c.firestore(),'productionAdmin/v1/gameSettings/'+game),{status}));
