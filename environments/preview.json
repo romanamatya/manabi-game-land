@@ -14,6 +14,7 @@
   "productionAuthVerified": false,
   "productionRulesApproved": false,
   "legacyScoreSyncEnabled": false,
+  "challenge120RankingEnabled": false,
   "gameIds": [
     "keisan",
     "pref-name",

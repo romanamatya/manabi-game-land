@@ -1,3 +1,5 @@
+import {CHALLENGE120_CUTOFF_MS,CHALLENGE120_GAMES,CHALLENGE120_PROTOCOL,CHALLENGE120_SEASON,validChallenge120Result} from './challenge120-ranking-model.js';
+
 const GAME_IDS=Object.freeze(['keisan','pref-name','pref-place','alphabet','distribution','distribution2','exchangeAssociation','kotowaza','multiplicationProperties','shapeExpressions','keisanSummary']);
 const err=code=>Object.assign(new Error(code),{code});
 const validLabel=value=>typeof value==='string'&&value.length<=80;
@@ -54,6 +56,26 @@ export async function createProductionRankingClient(c,[App,A,F]){
    tx.set(target,next);return next;
   });
  }
+ function challengeTarget(game){
+  if(!allowed.has(game)||!CHALLENGE120_GAMES.includes(game))throw err('invalid-challenge120-game');
+  return F.doc(db,'productionRankings','v1','challenge120Seasons',CHALLENGE120_SEASON,'games',game,'players',uid);
+ }
+ async function publishChallenge120Score(input){
+  if(c.challenge120RankingEnabled!==true)throw err('challenge120-ranking-disabled');
+  if(!profileUid)throw err('challenge120-linked-profile-required');
+  if(!validChallenge120Result(input))throw err('invalid-challenge120-result');
+  const nickname=await getExistingPlayerLink();
+  const target=challengeTarget(input.game),appearance={icon:input.icon||'cat',frame:input.frame||'plain'};
+  const label=value=>typeof value==='string'&&value.length<=80?value:null;
+  if(!/^[A-Za-z0-9:_-]{1,64}$/.test(appearance.icon)||!/^[A-Za-z0-9:_-]{1,64}$/.test(appearance.frame))throw err('invalid-challenge120-appearance');
+  const badge=typeof input.badge==='string'&&/^[A-Za-z0-9:_-]{1,64}$/.test(input.badge)?input.badge:null;
+  const proposed={protocol:CHALLENGE120_PROTOCOL,mode:'challenge120',season:CHALLENGE120_SEASON,uid,game:input.game,attemptId:input.attemptId,bestStreak:input.bestStreak,nickname,icon:appearance.icon,frame:appearance.frame,title:label(input.title),badge,startedAt:new Date(input.startedAt),endedAt:new Date(input.endedAt),endReason:input.endReason,cutoffAt:new Date(CHALLENGE120_CUTOFF_MS),updatedAt:F.serverTimestamp()};
+  return F.runTransaction(db,async tx=>{
+   const snap=await tx.get(target),old=snap.exists()?snap.data():null;
+   if(old&&Number.isSafeInteger(old.bestStreak)&&old.bestStreak>=proposed.bestStreak)return old;
+   tx.set(target,proposed);return proposed;
+  });
+ }
  async function getExistingPlayerLink(){
   if(!profileUid)throw err('player-name-sync-disabled');
   const [profileSnap,linkSnap]=await Promise.all([F.getDocFromServer(playerRef()),F.getDocFromServer(linkRef())]);
@@ -90,9 +112,15 @@ export async function createProductionRankingClient(c,[App,A,F]){
   const snap=await F.getDocsFromServer(q);
   return snap.docs.map(d=>({id:d.id,row:d.data()})).filter(x=>x.id===x.row.uid&&x.row.game===game&&Number.isSafeInteger(x.row.bestStreak)&&x.row.bestStreak>0).map(x=>x.row);
  }
+ async function challenge120Rankings(game){
+  if(c.challenge120RankingEnabled!==true)throw err('challenge120-ranking-disabled');
+  const target=challengeTarget(game),collection=F.collection(db,'productionRankings','v1','challenge120Seasons',CHALLENGE120_SEASON,'games',game,'players');
+  const snap=await F.getDocsFromServer(F.query(collection,F.orderBy('bestStreak','desc'),F.limit(100)));
+  return snap.docs.map(d=>({id:d.id,row:d.data()})).filter(x=>x.id===x.row.uid&&x.row.game===game&&x.row.season===CHALLENGE120_SEASON&&x.row.mode==='challenge120'&&x.row.protocol===CHALLENGE120_PROTOCOL&&Number.isSafeInteger(x.row.bestStreak)&&x.row.bestStreak>0).map(x=>x.row);
+ }
  async function rankings(game){return queryGame(game,100);}
  async function champions(){return Promise.all([...allowed].map(async game=>({game,row:(await queryGame(game,1))[0]||null})));}
- return {uid,profileUid,publishRanking,rankings,champions,ensurePlayerLink,getExistingPlayerLink,watchPlayerName};
+ return {uid,profileUid,publishRanking,publishChallenge120Score,challenge120Rankings,rankings,champions,ensurePlayerLink,getExistingPlayerLink,watchPlayerName};
 }
 let pending;
 export function client(){

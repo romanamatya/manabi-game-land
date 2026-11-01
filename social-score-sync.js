@@ -1,5 +1,5 @@
 import {validatePlayerBackend,GAME_FIELDS} from './data-contract.js?v=4fa9564408fb';
-import {createFirestoreStore} from './firebase-store.js?v=4fa9564408fb';
+import {createFirestoreStore} from './firebase-store.js?v=challenge120-ranking-v1';
 const config=window.MANABI_SPARK_CONFIG,game=document.body?.dataset.scoreGame;
 // Preview synchronization and production's existing ranking service are independent switches.
 if(config?.mode==='production'&&config.legacyScoreSyncEnabled===true&&!new URL(location.href).searchParams.has('adminTest')&&config.rankingGameIds?.includes(game)&&GAME_FIELDS[game]){

@@ -1,4 +1,5 @@
 import {contractFor,normalizePlayer,legacyScorePatch,canonicalNickname,error} from './data-contract.js';
+import {CHALLENGE120_SEASON} from './challenge120-ranking-model.js';
 export function createFirestoreStore(mode,F,db,{catalog=[],rankingGameIds=[]}={}){
  // Rules can reject a stale backup before a transaction conflict is retried.
  // Retry the complete read/write transaction; never relax validation or write outside it.
@@ -15,21 +16,24 @@ export function createFirestoreStore(mode,F,db,{catalog=[],rankingGameIds=[]}={}
   const links=linkSnap.docs.map(d=>({uid:d.id,data:d.data(),ref:d.ref}));
   if(links.some(x=>x.data.uid!==x.uid||x.data.profileUid!==input.uid))throw error('player-ranking-link-review');
   const rankRefs=links.flatMap(link=>([...new Set(rankingGameIds)]).map(game=>({uid:link.uid,game,linkRef:link.ref,ref:F.doc(db,'productionRankings','v1','games',game,'players',link.uid)})));
+  const challengeRefs=links.flatMap(link=>([...new Set(rankingGameIds)]).map(game=>({uid:link.uid,game,linkRef:link.ref,ref:F.doc(db,'productionRankings','v1','challenge120Seasons',CHALLENGE120_SEASON,'games',game,'players',link.uid)})));
   return transact(async tx=>{
-   const reads=await Promise.all([tx.get(target),...links.map(x=>tx.get(x.ref)),...rankRefs.map(x=>tx.get(x.ref))]),old=reads[0];
+   const reads=await Promise.all([tx.get(target),...links.map(x=>tx.get(x.ref)),...rankRefs.map(x=>tx.get(x.ref)),...challengeRefs.map(x=>tx.get(x.ref))]),old=reads[0];
    if(!old.exists())throw error('player-not-found');
    const data=old.data();
    if(String(data.nickname||'')!==input.expectedNickname)throw error('name-conflict');
    if(data.nickname===nickname)return {ok:true,unchanged:true};
-   const linkStart=1,rankStart=1+links.length;
+   const linkStart=1,rankStart=1+links.length,challengeStart=rankStart+rankRefs.length;
    for(let i=0;i<links.length;i++){const current=reads[linkStart+i];if(!current.exists()||current.data().profileUid!==input.uid||current.data().uid!==links[i].uid)throw error('player-ranking-link-review');}
    const rankings=rankRefs.flatMap((x,i)=>{const snap=reads[rankStart+i];return snap.exists()?[{uid:x.uid,game:x.game,data:snap.data()}]:[]});
-   const at=F.serverTimestamp(),backupData={player:data,links:links.map(x=>({uid:x.uid,profileUid:x.data.profileUid})),rankings};
+   const challengeRankings=challengeRefs.flatMap((x,i)=>{const snap=reads[challengeStart+i];return snap.exists()?[{uid:x.uid,game:x.game,data:snap.data()}]:[]});
+   const at=F.serverTimestamp(),backupData={player:data,links:links.map(x=>({uid:x.uid,profileUid:x.data.profileUid})),rankings,challengeRankings};
    tx.set(b,{actor:user.uid,at,uid:input.uid,target:'players/'+input.uid,kind:'rename',data:backupData});
    tx.set(a,{actor:user.uid,at,uid:input.uid,target:'players/'+input.uid,action:'rename',reason,backupId:b.id,beforeName:String(data.nickname||''),afterName:nickname});
    tx.update(target,{nickname,lastAudit:a.id,lastBackup:b.id,adminUpdatedAt:at});
    for(let i=0;i<rankRefs.length;i++)if(reads[rankStart+i].exists())tx.update(rankRefs[i].ref,{nickname,updatedAt:at});
-   return {ok:true,auditId:a.id,updatedRankRows:rankings.length};
+   for(let i=0;i<challengeRefs.length;i++)if(reads[challengeStart+i].exists())tx.update(challengeRefs[i].ref,{nickname,updatedAt:at});
+   return {ok:true,auditId:a.id,updatedRankRows:rankings.length+challengeRankings.length};
   });
  }
  async function setPlayerAccess(user,input){

@@ -31,6 +31,7 @@
   window.ManabiPlayerAccessReady=import(new URL('player-access-api.js?v=player-access-stage1',runtimeURL).href).then(m=>m.browserPlayerAccess(window.MANABI_BACKEND_CONFIG)).then(access=>{window.ManabiPlayerAccess=access;renderAccess({detail:{status:access.status,rankingLinked:access.rankingLinked}});return access}).catch(()=>{window.ManabiPlayerAccess={status:'unavailable',canPlay:()=>false,refresh:async()=>location.reload()};renderAccess({detail:{status:'unavailable'}});return window.ManabiPlayerAccess});
  }
  if(preview)document.addEventListener('DOMContentLoaded',()=>{document.title='【確認用】'+document.title;const badge=document.createElement('div');badge.textContent=adminTest||syncTest?'テストプレイ · ランキングには記録しない':'確認用 · 本番には影響しない';badge.setAttribute('aria-label','本番と記録を分離した確認用サイト');Object.assign(badge.style,{position:'fixed',bottom:'5px',left:'8px',zIndex:'2000',padding:'4px 9px',background:'#fff6d8',border:'1px solid #dfc56c',borderRadius:'7px',color:'#665120',font:'11px system-ui',pointerEvents:'none'});document.body.append(badge)});
+ if(!preview&&!adminTest&&window.MANABI_BACKEND_CONFIG?.challenge120RankingEnabled===true)window.ManabiChallenge120RankingReady=import(new URL('challenge120-ranking-runtime.js?v=challenge120-ranking-v1',runtimeURL).href).catch(()=>{});
 })();
 
 

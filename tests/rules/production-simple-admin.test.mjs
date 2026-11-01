@@ -16,7 +16,7 @@ let env;const testEnvironments=[];
 describe('four-feature production admin Rules',{concurrency:false},()=>{
 const serialTest=(name,fn)=>test(name,{concurrency:false},fn);
 beforeEach(async()=>{env=await initializeTestEnvironment({projectId,firestore:{host:'127.0.0.1',port:8181,rules:await readFile(rulesUrl,'utf8')}});testEnvironments.push(env);await env.clearFirestore();adminUid='admin-uid-'+Math.random().toString(36).slice(2,8);await env.withSecurityRulesDisabled(async c=>{const db=c.firestore();
- await F.setDoc(F.doc(db,'productionAdmin/v1/private/admin'),{uid:adminUid,enabled:true,renameEnabled:true,suspensionEnabled:true,managementEnabled:true});
+ await F.setDoc(F.doc(db,'productionAdmin/v1/private/admin'),{uid:adminUid,enabled:true,renameEnabled:true,suspensionEnabled:true,managementEnabled:true,challenge120RankingEnabled:false});
  await F.setDoc(F.doc(db,'productionAdmin/v1/private/revocation'),{after:F.Timestamp.fromMillis(100000)});
  await F.setDoc(F.doc(db,'players/profile-a'),{nickname:'そら',points:135,bestStreak:42,prefNameBestStreak:8,appearance:{icon:'cat',frame:'plain',badge:'保持称号',limitedOwned:['frame:gold']},rankingUid:'rank-a'});
  await F.setDoc(F.doc(db,'productionRankings/v1/identityLinks/rank-a'),{uid:'rank-a',profileUid:'profile-a',createdAt:F.Timestamp.fromMillis(1)});
@@ -142,14 +142,67 @@ serialTest('an existing unlinked profile can keep its separate ranking UID and c
  assert.equal(savedRank.bestStreak,19);assert.equal(savedRank.nickname,'こはる');
 });
 
+serialTest('dedicated challenge ranking is isolated from legacy updatedAt rows and accepts only linked post-cutoff scores across all games',async()=>{
+ const cutoffMs=1793458800000,cutoff=F.Timestamp.fromMillis(cutoffMs),legacyUid='challenge-kept-legacy',endMs=Date.now()-5000,startMs=endMs-45000;
+ await env.withSecurityRulesDisabled(async c=>{const db=c.firestore();
+  await F.setDoc(F.doc(db,'players/flag-off'),{nickname:'新記録',rankingUid:'flag-off'});
+  await F.setDoc(F.doc(db,'productionRankings/v1/identityLinks/flag-off'),{uid:'flag-off',profileUid:'flag-off',createdAt:cutoff});
+  await F.setDoc(F.doc(db,'productionRankings/v1/games/keisan/players/'+legacyUid),row(legacyUid,'keisan',999,'旧記録',F.Timestamp.fromMillis(Date.now())));
+ });
+ assert.ok(startMs>=cutoffMs,'test runtime must be on or after the approved cutoff');
+ const flagOffEntry={protocol:3,mode:'challenge120',season:'2026-11-01',uid:'flag-off',game:'keisan',attemptId:'flag-off-run',bestStreak:20,nickname:'新記録',icon:'cat',frame:'plain',title:null,badge:null,startedAt:F.Timestamp.fromMillis(startMs),endedAt:F.Timestamp.fromMillis(endMs),endReason:'wrong-answer',cutoffAt:cutoff,updatedAt:F.serverTimestamp()};
+ await assertFails(F.setDoc(F.doc(child('flag-off').firestore(),'productionRankings/v1/challenge120Seasons/2026-11-01/games/keisan/players/flag-off'),flagOffEntry),'disabled feature flag must reject new entries');
+ await env.withSecurityRulesDisabled(c=>F.updateDoc(F.doc(c.firestore(),'productionAdmin/v1/private/admin'),{challenge120RankingEnabled:true}));
+ const legacyDb=child(legacyUid).firestore(),dedicated=F.collection(legacyDb,'productionRankings/v1/challenge120Seasons/2026-11-01/games/keisan/players');
+ assert.equal((await assertSucceeds(F.getDocs(dedicated))).size,0,'recent updatedAt alone never imports old rows');
+ const legacyShared=(await assertSucceeds(F.getDoc(F.doc(legacyDb,'productionRankings/v1/games/keisan/players/'+legacyUid)))).data();assert.equal(legacyShared.bestStreak,999);
+ const adminRef=F.doc(child('rank-a').firestore(),'productionAdmin/v1/private/admin');await assertFails(F.updateDoc(adminRef,{challenge120RankingEnabled:false}));
+ const minimums={keisan:20,'pref-name':47,'pref-place':47,alphabet:26,distribution:25,distribution2:25,exchangeAssociation:25,kotowaza:20,multiplicationProperties:25,shapeExpressions:25,keisanSummary:30};
+ const games=Object.keys(minimums);
+ for(const game of games){
+  const uid='new-'+game,db=child(uid).firestore();
+  await env.withSecurityRulesDisabled(async c=>{const seed=c.firestore();await F.setDoc(F.doc(seed,'players/'+uid),{nickname:'新記録',rankingUid:uid,points:135,bestStreak:42,appearance:{icon:'owl',frame:'plain',badge:'既存称号',limitedOwned:['frame:gold']}});await F.setDoc(F.doc(seed,'productionRankings/v1/identityLinks/'+uid),{uid,profileUid:uid,createdAt:cutoff});await F.setDoc(F.doc(seed,'productionRankings/v1/games/'+game+'/players/'+uid),row(uid,game,901,'新記録'));});
+  const score=F.doc(db,'productionRankings/v1/challenge120Seasons/2026-11-01/games/'+game+'/players/'+uid);
+  const entry={protocol:3,mode:'challenge120',season:'2026-11-01',uid,game,attemptId:'new-run-'+game,bestStreak:minimums[game],nickname:'新記録',icon:'owl',frame:'plain',title:'既存称号',badge:'keisan:20',startedAt:F.Timestamp.fromMillis(startMs),endedAt:F.Timestamp.fromMillis(endMs),endReason:game==='keisanSummary'?'timeout':'wrong-answer',cutoffAt:cutoff,updatedAt:F.serverTimestamp()};
+  await assertSucceeds(F.setDoc(score,entry),game);
+  await assertFails(F.setDoc(score,{uid,game,bestStreak:999,updatedAt:F.Timestamp.fromMillis(Date.now())}),'legacy updatedAt-only shape is rejected');
+  const higher={...entry,attemptId:'better-run-'+game,bestStreak:minimums[game]+1,updatedAt:F.serverTimestamp()};await assertSucceeds(F.updateDoc(score,higher));
+  await assertFails(F.updateDoc(score,{...higher,attemptId:'lower-run-'+game,bestStreak:minimums[game],updatedAt:F.serverTimestamp()}),'lower score cannot overwrite the dedicated best');
+  assert.equal((await F.getDoc(F.doc(db,'players/'+uid))).data().points,135);
+  assert.equal((await F.getDoc(F.doc(db,'players/'+uid))).data().bestStreak,42);
+  assert.equal((await F.getDoc(F.doc(db,'players/'+uid))).data().appearance.badge,'既存称号');
+  assert.deepEqual((await F.getDoc(F.doc(db,'players/'+uid))).data().appearance.limitedOwned,['frame:gold']);
+  assert.equal((await F.getDoc(F.doc(db,'productionRankings/v1/games/'+game+'/players/'+uid))).data().bestStreak,901);
+  const older={...entry,attemptId:'older-run-'+game,startedAt:F.Timestamp.fromMillis(cutoffMs-90000),endedAt:F.Timestamp.fromMillis(cutoffMs-30000)};
+  await assertFails(F.setDoc(F.doc(child('old-'+game).firestore(),'productionRankings/v1/challenge120Seasons/2026-11-01/games/'+game+'/players/old-'+game),{...older,uid:'old-'+game}));
+  await assertFails(F.deleteDoc(score));
+ }
+ await env.withSecurityRulesDisabled(c=>F.setDoc(F.doc(c.firestore(),'productionAdmin/v1/gameSettings/alphabet'),{status:'hidden'}));
+ const blockedUid='hidden-game-child',blocked=child(blockedUid).firestore();
+ await env.withSecurityRulesDisabled(async c=>{const db=c.firestore();await F.setDoc(F.doc(db,'players/'+blockedUid),{nickname:'新記録',rankingUid:blockedUid});await F.setDoc(F.doc(db,'productionRankings/v1/identityLinks/'+blockedUid),{uid:blockedUid,profileUid:blockedUid,createdAt:cutoff});});
+ const end=F.Timestamp.fromMillis(endMs),start=F.Timestamp.fromMillis(startMs);
+ await assertFails(F.setDoc(F.doc(blocked,'productionRankings/v1/challenge120Seasons/2026-11-01/games/alphabet/players/'+blockedUid),{protocol:3,mode:'challenge120',season:'2026-11-01',uid:blockedUid,game:'alphabet',attemptId:'hidden-run-123',bestStreak:26,nickname:'新記録',icon:'owl',frame:'plain',title:null,badge:null,startedAt:start,endedAt:end,endReason:'wrong-answer',cutoffAt:cutoff,updatedAt:F.serverTimestamp()}));
+ const preparingUid='preparing-game-child',preparing=child(preparingUid).firestore();
+ await env.withSecurityRulesDisabled(async c=>{const db=c.firestore();await F.setDoc(F.doc(db,'productionAdmin/v1/gameSettings/pref-name'),{status:'preparing'});await F.setDoc(F.doc(db,'players/'+preparingUid),{nickname:'準備中',rankingUid:preparingUid});await F.setDoc(F.doc(db,'productionRankings/v1/identityLinks/'+preparingUid),{uid:preparingUid,profileUid:preparingUid,createdAt:cutoff});});
+ await assertFails(F.setDoc(F.doc(preparing,'productionRankings/v1/challenge120Seasons/2026-11-01/games/pref-name/players/'+preparingUid),{protocol:3,mode:'challenge120',season:'2026-11-01',uid:preparingUid,game:'pref-name',attemptId:'preparing-run-123',bestStreak:47,nickname:'準備中',icon:'cat',frame:'plain',title:null,badge:null,startedAt:start,endedAt:end,endReason:'wrong-answer',cutoffAt:cutoff,updatedAt:F.serverTimestamp()}));
+ const mismatchUid='link-mismatch',mismatch=child(mismatchUid).firestore();
+ await env.withSecurityRulesDisabled(async c=>{const db=c.firestore();await F.setDoc(F.doc(db,'players/'+mismatchUid),{nickname:'別の子',rankingUid:'other-ranking-uid'});await F.setDoc(F.doc(db,'productionRankings/v1/identityLinks/'+mismatchUid),{uid:mismatchUid,profileUid:mismatchUid,createdAt:cutoff});});
+ await assertFails(F.setDoc(F.doc(mismatch,'productionRankings/v1/challenge120Seasons/2026-11-01/games/keisan/players/'+mismatchUid),{protocol:3,mode:'challenge120',season:'2026-11-01',uid:mismatchUid,game:'keisan',attemptId:'mismatch-run-123',bestStreak:20,nickname:'別の子',icon:'cat',frame:'plain',title:null,badge:null,startedAt:start,endedAt:end,endReason:'wrong-answer',cutoffAt:cutoff,updatedAt:F.serverTimestamp()}));
+ const unlinkedUid='unlinked-device',unlinked=child(unlinkedUid).firestore();
+ await assertFails(F.setDoc(F.doc(unlinked,'productionRankings/v1/challenge120Seasons/2026-11-01/games/keisan/players/'+unlinkedUid),{protocol:3,mode:'challenge120',season:'2026-11-01',uid:unlinkedUid,game:'keisan',attemptId:'unlinked-run-123',bestStreak:20,nickname:'未連携',icon:'cat',frame:'plain',title:null,badge:null,startedAt:start,endedAt:end,endReason:'wrong-answer',cutoffAt:cutoff,updatedAt:F.serverTimestamp()}));
+});
+
 serialTest('admin nickname change remains authorized and leaves child progress unchanged',async()=>{
  const db=admin().firestore(),profile=F.doc(db,'players/profile-a'),rankRef=F.doc(db,'productionRankings/v1/games/keisan/players/rank-a');
+ const challengeRef=F.doc(db,'productionRankings/v1/challenge120Seasons/2026-11-01/games/keisan/players/rank-a');await env.withSecurityRulesDisabled(async c=>{const seed=c.firestore();await F.setDoc(F.doc(seed,'productionRankings/v1/challenge120Seasons/2026-11-01/games/keisan/players/rank-a'),{protocol:3,mode:'challenge120',season:'2026-11-01',uid:'rank-a',game:'keisan',attemptId:'saved-run-123',bestStreak:24,nickname:'そら',icon:'cat',frame:'plain',title:'計算名人',badge:'keisan:20',startedAt:F.Timestamp.fromMillis(1793458860000),endedAt:F.Timestamp.fromMillis(1793458920000),endReason:'wrong-answer',cutoffAt:F.Timestamp.fromMillis(1793458800000),updatedAt:F.Timestamp.fromMillis(1793458920000)});});
  const old=(await assertSucceeds(F.getDoc(profile))).data(),oldRank=(await assertSucceeds(F.getDoc(rankRef))).data();
  const store=createFirestoreStore('production',F,db,{rankingGameIds:['keisan']});
  const result=await assertSucceeds(store.rename({uid:adminUid},{uid:'profile-a',nickname:'そら星',expectedNickname:'そら'}));
- const after=(await assertSucceeds(F.getDoc(profile))).data(),afterRank=(await assertSucceeds(F.getDoc(rankRef))).data();
+ const after=(await assertSucceeds(F.getDoc(profile))).data(),afterRank=(await assertSucceeds(F.getDoc(rankRef))).data(),afterChallenge=(await assertSucceeds(F.getDoc(challengeRef))).data();
  const audit=(await assertSucceeds(F.getDoc(F.doc(db,'productionAdmin/v1/audit',result.auditId)))).data();
+ const backup=(await assertSucceeds(F.getDoc(F.doc(db,'productionAdmin/v1/backups',after.lastBackup)))).data();
  assert.equal(after.points,old.points);assert.equal(after.bestStreak,old.bestStreak);assert.deepEqual(after.appearance,old.appearance);
- assert.equal(afterRank.nickname,'そら星');assert.equal(afterRank.bestStreak,oldRank.bestStreak);assert.equal(audit.reason,'管理室からのニックネーム変更');
+ assert.equal(afterRank.nickname,'そら星');assert.equal(afterRank.bestStreak,oldRank.bestStreak);assert.equal(afterChallenge.nickname,'そら星');assert.equal(afterChallenge.bestStreak,24);assert.equal(audit.reason,'管理室からのニックネーム変更');
+ assert.equal(backup.data.challengeRankings[0].data.bestStreak,24);
 });
 });

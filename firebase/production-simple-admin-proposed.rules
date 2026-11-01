@@ -26,6 +26,11 @@ service cloud.firestore {
       return productionAdminSessionFresh()
         && get(adminPath).data.renameEnabled == true;
     }
+    function challenge120RankingEnabled() {
+      let adminPath = /databases/$(database)/documents/productionAdmin/v1/private/admin;
+      return exists(adminPath)
+        && get(adminPath).data.get('challenge120RankingEnabled', false) == true;
+    }
     function productionAdminSuspensionEnabled() {
       return false;
     }
@@ -145,6 +150,45 @@ service cloud.firestore {
         && (data.badge == null || data.badge is string && data.badge.matches('^[A-Za-z0-9:_-]{1,64}$'))
         && data.updatedAt == request.time;
     }
+    function challenge120Minimum(game) {
+      return game == 'keisan' ? 20
+        : game == 'pref-name' || game == 'pref-place' ? 47
+        : game == 'alphabet' ? 26
+        : game == 'kotowaza' ? 20
+        : game == 'keisanSummary' ? 30 : 25;
+    }
+    function validChallenge120Entry(game, season, uid, data) {
+      let cutoff = timestamp.value(1793458800000); // 2026-11-01 00:00 JST
+      return validRankingGame(game)
+        && season == '2026-11-01'
+        && data.keys().hasOnly(['protocol','mode','season','uid','game','attemptId',
+          'bestStreak','nickname','icon','frame','title','badge','startedAt','endedAt',
+          'endReason','cutoffAt','updatedAt'])
+        && data.keys().hasAll(['protocol','mode','season','uid','game','attemptId',
+          'bestStreak','nickname','icon','frame','title','badge','startedAt','endedAt',
+          'endReason','cutoffAt','updatedAt'])
+        && data.protocol == 3 && data.mode == 'challenge120'
+        && data.season == season && data.uid == uid && data.game == game
+        && data.attemptId is string && data.attemptId.matches('^[-A-Za-z0-9_]{8,64}$')
+        && data.bestStreak is int && data.bestStreak >= challenge120Minimum(game)
+        && data.bestStreak <= 1000
+        && validPlayerNickname(data.nickname)
+        && data.icon is string && data.icon.matches('^[A-Za-z0-9:_-]{1,64}$')
+        && data.frame is string && data.frame.matches('^[A-Za-z0-9:_-]{1,64}$')
+        && (data.title == null || data.title is string && data.title.size() <= 80)
+        && (data.badge == null || data.badge is string && data.badge.matches('^[A-Za-z0-9:_-]{1,64}$'))
+        && data.startedAt is timestamp && data.startedAt >= cutoff
+        && data.endedAt is timestamp && data.startedAt < data.endedAt
+        && data.endedAt >= cutoff && data.endedAt <= request.time + duration.value(30, 's')
+        && data.endedAt <= data.startedAt + duration.value(150, 's')
+        && data.endReason in ['timeout','wrong-answer']
+        && (game != 'keisanSummary' || data.endReason == 'timeout')
+        && data.cutoffAt == cutoff && data.updatedAt == request.time
+        && exists(identityLinkPath(uid))
+        && linkedRankingNameMatches(uid, data)
+        && challenge120RankingEnabled()
+        && productionGamePublished(game);
+    }
 
     match /players/{playerId} {
       // Preserve the existing authenticated read access; this PR does not broaden it.
@@ -261,6 +305,27 @@ service cloud.firestore {
       allow delete: if false;
     }
 
+    match /productionRankings/v1/challenge120Seasons/{season}/games/{game}/players/{uid} {
+      allow get, list: if request.auth != null && validRankingGame(game) && season == '2026-11-01';
+      allow create: if request.auth != null
+        && request.auth.token.firebase.sign_in_provider == 'anonymous'
+        && request.auth.uid == uid
+        && validChallenge120Entry(game, season, uid, request.resource.data);
+      allow update: if (request.auth != null
+          && request.auth.token.firebase.sign_in_provider == 'anonymous'
+          && request.auth.uid == uid
+          && validChallenge120Entry(game, season, uid, request.resource.data)
+          && request.resource.data.uid == resource.data.uid
+          && request.resource.data.game == resource.data.game
+          && request.resource.data.season == resource.data.season
+          && request.resource.data.protocol == resource.data.protocol
+          && request.resource.data.mode == resource.data.mode
+          && request.resource.data.cutoffAt == resource.data.cutoffAt
+          && request.resource.data.bestStreak > resource.data.bestStreak)
+        || adminRenameRanking(game, uid);
+      allow delete: if false;
+    }
+
     match /productionRankings/v1/identityLinks/{rankingUid} {
       allow get: if request.auth != null
         && (request.auth.uid == rankingUid || productionAdminSessionFresh());
@@ -352,12 +417,14 @@ service cloud.firestore {
         && request.resource.data.target == 'players/' + request.resource.data.uid
         && request.resource.data.kind == 'rename'
         && request.resource.data.data is map
-        && request.resource.data.data.keys().hasOnly(['player','links','rankings'])
+        && request.resource.data.data.keys().hasOnly(['player','links','rankings','challengeRankings'])
         && request.resource.data.data.player is map
         && request.resource.data.data.links is list
         && request.resource.data.data.links.size() <= 10
         && request.resource.data.data.rankings is list
         && request.resource.data.data.rankings.size() <= 110
+        && request.resource.data.data.get('challengeRankings', []) is list
+        && request.resource.data.data.get('challengeRankings', []).size() <= 110
         && existsAfter(linkedPlayerPath(request.resource.data.uid))
         && getAfter(linkedPlayerPath(request.resource.data.uid)).data.lastBackup == backupId
         && getAfter(linkedPlayerPath(request.resource.data.uid)).data.lastAudit is string;
