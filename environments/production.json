@@ -19,10 +19,10 @@
     "playerRename": true,
     "playerSuspension": false
   },
-  "managementEnabled": false,
-  "campaignsEnabled": false,
-  "availabilityEnabled": false,
-  "announcementsEnabled": false,
+  "managementEnabled": true,
+  "campaignsEnabled": true,
+  "availabilityEnabled": true,
+  "announcementsEnabled": true,
   "gameIds": [
     "keisan",
     "pref-name",
@@ -40,3 +40,4 @@
     "distribution"
   ]
 }
+
