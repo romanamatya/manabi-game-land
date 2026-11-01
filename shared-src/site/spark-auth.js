@@ -1,4 +1,4 @@
-import {createManagementStore} from './management-store.js?v=admin-simple-1';
+import {createManagementStore} from './management-store.js?v=availability-read-fix-20261102';
 import {validateBackend,contractFor} from './data-contract.js?v=adminprod-20261030';
 import {createFirestoreStore} from './firebase-store.js?v=admin-stage2-player-rename-1';
 const config = window.MANABI_SPARK_CONFIG;

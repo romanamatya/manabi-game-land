@@ -9,10 +9,10 @@ function card(){
  return {dataset:{gameCard:'keisan'},play,badge,ranking,querySelector(selector){return selector==='[data-game-play]'?play:selector==='[data-game-status]'?badge:null}};
 }
 
-test('visibility state defaults existing records to published and fails closed on uncertainty',()=>{
- assert.equal(visibilityState(null),'published');assert.equal(visibilityState({status:'published'}),'published');
+test('visibility state uses only explicit publication and fails closed for missing or uncertain records',()=>{
+ assert.equal(visibilityState(null),'unknown');assert.equal(visibilityState({}),'unknown');assert.equal(visibilityState({status:'published'}),'published');
  assert.equal(visibilityState({status:'preparing'}),'preparing');assert.equal(visibilityState({status:'hidden'}),'hidden');
- assert.equal(visibilityState({published:false}),'hidden');assert.equal(visibilityState({status:'surprise'}),'unknown');
+ assert.equal(visibilityState({published:false}),'hidden');assert.equal(visibilityState({published:true}),'published');assert.equal(visibilityState({status:'surprise'}),'unknown');
  assert.equal(visibilityState({status:'hidden'},{fromCache:true}),'checking');assert.equal(visibilityState(null,{error:true}),'unknown');
 });
 
@@ -49,12 +49,26 @@ test('preview selection pages keep every listed game and separate play from rank
  }
 });
 
+test('every production and shared game-selection page loads the Firebase session before the settings reader',async()=>{
+ for(const file of ['../math-calculation.html','../japanese.html','../social.html','../language.html','../shared-src/site/math.html','../shared-src/site/japanese.html','../shared-src/site/social.html','../shared-src/site/language.html']){
+  const html=await readFile(new URL(file,import.meta.url),'utf8');
+  assert.match(html,/game-selection\.js/,file+': game picker is present');
+  const session=html.indexOf('public-firebase-session.js'),settings=html.indexOf('public-admin-settings.js'),picker=html.indexOf('game-selection.js');
+  assert.ok(session>=0&&settings>session&&picker>settings,file+': session broker must load before settings and game picker');
+ }
+});
+
+test('a missing settings document stays unknown on the game picker instead of appearing public',async()=>{
+ const c=card(),binding=bindGameAvailability(c,{enabled:true,settings:{subscribeGame(id,onValue){onValue({exists:()=>false,data:()=>null,metadata:{fromCache:false}});return ()=>{}}}});
+ await binding.ready;assert.equal(c.play.disabled,true);assert.equal(c.badge.textContent,'公開状態を確認できません');binding.dispose();
+});
+
 
 test('production subject pages expose separate play and ranking controls',async()=>{
  for(const file of ['japanese.html','social.html','language.html']){
   const html=await readFile(new URL('../'+file,import.meta.url),'utf8');
   const cards=[...html.matchAll(/<article class="card game-card" data-game-card="([^"]+)">([\s\S]*?)<\/article>/g)];
-  assert.ok(cards.length>0,file);assert.match(html,/src="game-selection\.js\?v=game-picker-ui-1"/);
+  assert.ok(cards.length>0,file);assert.match(html,/src="game-selection\.js\?v=availability-read-fix-20261102"/);
   for(const [,id,body] of cards){assert.match(body,new RegExp('data-game-id="'+id+'"'));assert.match(body,/data-game-play[^>]*disabled/);assert.match(body,/data-game-ranking/);}
  }
 });

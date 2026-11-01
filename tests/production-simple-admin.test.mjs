@@ -38,7 +38,7 @@ test('campaign and visibility inputs are validated; other admin actions are excl
  for(const action of ['reset','rankingBackup','setPlayerAccess','switchSeason'])assert.throws(()=>checkedInput(action,{game:'keisan'}),/unknown-management-action/);
  assert.equal(visibilityStatus({published:false}),'hidden');
  assert.equal(visibilityStatus({status:'preparing',published:true}),'preparing');
- assert.equal(visibilityStatus({}),'published');
+ assert.equal(visibilityStatus({}),'unknown');assert.equal(visibilityStatus(null),'unknown');assert.equal(visibilityStatus({status:'surprise'}),'unknown');assert.equal(visibilityStatus({published:true}),'published');
 });
 
 test('direct game pages fail closed without making the whole page inert',async()=>{

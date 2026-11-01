@@ -2,7 +2,13 @@
 export const GAME_IDS=Object.freeze(['keisan','pref-name','pref-place','alphabet','distribution','distribution2','exchangeAssociation','kotowaza','multiplicationProperties','shapeExpressions','keisanSummary']);
 export const AUDIT_REASON='管理室からの操作';
 export const normalPolicy=()=>({multiplier:1,cap:50,campaignId:null});
-export function visibilityStatus(setting){return setting?.status|| (setting?.published===false?'hidden':'published')}
+export function visibilityStatus(setting){
+ if(!setting||typeof setting!=='object')return 'unknown';
+ if(['published','preparing','hidden'].includes(setting.status))return setting.status;
+ if(setting.published===true)return 'published';
+ if(setting.published===false)return 'hidden';
+ return 'unknown';
+}
 export function policyFor(setting,now=Date.now()){
  const c=setting?.campaign;
  return c?.enabled===true&&Number.isSafeInteger(c.startAt)&&Number.isSafeInteger(c.endAt)&&c.startAt<=now&&now<c.endAt?{multiplier:2,cap:50,campaignId:c.id}:normalPolicy();
