@@ -1,7 +1,7 @@
 (function(root,factory){if(typeof module==='object'&&module.exports)module.exports=factory();else root.ManabiUpgradeShared=factory()})(typeof globalThis!=='undefined'?globalThis:this,()=>{
 'use strict';
 const highest={keisan:20,'pref-name':47,'pref-place':47,alphabet:26,kotowaza:20,distribution:25};
-const fields={keisan:'bestStreak','pref-name':'prefNameBestStreak','pref-place':'prefPlaceBestStreak',alphabet:'alphabetBestStreak',kotowaza:'kotowazaBestStreak',distribution:'distributionBestStreak'};
+const fields={keisan:'bestStreak','pref-name':'prefNameBestStreak','pref-place':'prefPlaceBestStreak',alphabet:'alphabetBestStreak',kotowaza:'kotowazaBestStreak',distribution:'distributionBestStreak',kakudo:'kakudoBestStreak'};
 const names={keisan:'計算のきまり','pref-name':'都道府県の名前','pref-place':'都道府県の場所',alphabet:'アルファベット',kotowaza:'ことわざ・慣用句',distribution:'分配のきまり①'};
 function assert(ok,message){if(!ok)throw Error(message)}
 function game(id){assert(Object.hasOwn(highest,id),'unknown-game');return id}
