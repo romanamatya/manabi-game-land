@@ -1,4 +1,4 @@
-import {client,errorText} from './spark-auth.js?v=f1da08913bc0';
+import {client,errorText} from './spark-auth.js?v=d91dccb7e6d6';
 const cfg=window.MANABI_SPARK_CONFIG,renameEnabled=cfg?.adminFeatures?.playerRename===true,managementEnabled=cfg?.managementEnabled===true;
 const $=id=>document.getElementById(id),names=window.ManabiUpgradeShared?.names||{},catalog=window.ManabiProfileCatalog||[];
 const statusLabels={published:'公開中',preparing:'公開準備中',hidden:'非公開',unknown:'未確認'};
