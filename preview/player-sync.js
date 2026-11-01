@@ -1,6 +1,6 @@
-import './spark-config.js?v=a4b8625a2f22';
-import {browserClient} from './player-sync-api.js?v=a4b8625a2f22';
-import {capture,read,zero,number,localBalances,union,GAMES,error,observeBalances} from './player-sync-model.js?v=a4b8625a2f22';
+import './spark-config.js?v=ca904d1b8c86';
+import {browserClient} from './player-sync-api.js?v=ca904d1b8c86';
+import {capture,read,zero,number,localBalances,union,GAMES,error,observeBalances} from './player-sync-model.js?v=ca904d1b8c86';
 const META='mgl_sync_v2',BACKUP='mgl_sync_original_v2';
 const watched=new Set(['mgl_nickname','mgl_economy_v1','mgl_profile','mgl_best','mq_pref_name','mq_pref_place',...GAMES.map(g=>'mgl_'+g),'mgl_limited_icons_v1','mgl_limited_frames_v1']);
 export async function start(){
@@ -52,7 +52,7 @@ export async function start(){
   status(p.status!=='active'?'このプレイヤーは利用停止中。':result.appearanceConflict?'別の端末の新しい装備を反映した。':'確認用Firebaseに同期済み');
  });}
  async function pull(){if(!api)return;const r=await api.pull(meta().deviceId);if(r.player&&r.ledger)await apply(r);}
- async function flush(){if(!snapshot().nickname)return;if(running){again=true;return running;}running=(async()=>{do{again=false;const client=await connect(),m=structuredClone(meta()),local=snapshot();const result=await client.push(local,m,catalog,core);result.sentAppearance=local.appearance;await apply(result);}while(again);})().catch(e=>{status(describe(e));throw e}).finally(()=>{running=null;});return running;}
+ async function flush(){if(window.MANABI_BACKEND_CONFIG?.accountAccessEnabled===true&&!window.ManabiPlayerAccess?.canPlay?.())return;if(!snapshot().nickname)return;if(running){again=true;return running;}running=(async()=>{do{again=false;const client=await connect(),m=structuredClone(meta()),local=snapshot();const result=await client.push(local,m,catalog,core);result.sentAppearance=local.appearance;await apply(result);}while(again);})().catch(e=>{status(describe(e));throw e}).finally(()=>{running=null;});return running;}
  const publicApi={flush,uid:()=>api?.uid||meta().uid,buy:async(id,subject)=>{if(!navigator.onLine)throw error('purchase-online-required');await flush();await api.buy(id,subject,core);await pull();return {wallet:read(storage,'mgl_economy_v1',core.initial())};},status:()=>lastNotice};
  window.ManabiPlayerSync=publicApi;
  window.addEventListener('online',()=>flush().catch(()=>{}));window.addEventListener('storage',e=>{if(e.key?.endsWith(META)||e.key?.includes('mgl_economy_v1'))schedule();});document.addEventListener('visibilitychange',()=>{if(!document.hidden)flush().catch(()=>{});});window.addEventListener('pageshow',schedule);

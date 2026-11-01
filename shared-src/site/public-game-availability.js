@@ -37,14 +37,14 @@
   }
   for(const type of ['click','pointerdown','keydown','submit'])documentRef.addEventListener(type,guard,true);
   render();
-  function check(readSetting){
+  function check(readSetting,hooks={}){
    const id=++attempt;if(timer)clearTimeout(timer);state='checking';retryAction=null;render();
-   timer=setTimeout(()=>{if(id!==attempt||state!=='checking')return;state='unknown';retryAction=()=>check(readSetting);render();},timeoutMs);
+   timer=setTimeout(()=>{if(id!==attempt||state!=='checking')return;state='unknown';try{hooks.onTimeout?.()}catch{}retryAction=()=>check(readSetting,hooks);render();},timeoutMs);
    return Promise.resolve().then(readSetting).then(setting=>{
     if(id!==attempt)return 'stale';if(timer)clearTimeout(timer);timer=null;retryAction=null;
     state=settingStatus(setting);render();return state;
    },()=>{
-    if(id!==attempt)return 'stale';if(timer)clearTimeout(timer);timer=null;state='unknown';retryAction=()=>check(readSetting);render();return state;
+    if(id!==attempt)return 'stale';if(timer)clearTimeout(timer);timer=null;state='unknown';try{hooks.onError?.()}catch{}retryAction=()=>check(readSetting,hooks);render();return state;
    });
   }
   function dispose(){attempt++;if(timer)clearTimeout(timer);for(const type of ['click','pointerdown','keydown','submit'])documentRef.removeEventListener(type,guard,true);host?.remove();host=null;}

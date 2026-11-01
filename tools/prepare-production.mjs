@@ -6,8 +6,15 @@ export async function prepare({currentRules,project='manabi-game-land',output=pa
  const baseline=path.join(root,'firebase/production-baseline-provided.rules'),input=currentRules?path.resolve(currentRules):baseline,proposed=path.join(root,'firebase/production-proposed.rules'),recovery=path.join(root,'firebase/production-recovery.rules');
  const text=await fs.readFile(input,'utf8');if(!/rules_version\s*=\s*['"]2['"]/.test(text)||!text.includes('service cloud.firestore'))throw Error('not-firestore-rules');await fs.mkdir(out,{recursive:true});
  const sha=s=>crypto.createHash('sha256').update(s).digest('hex'),candidate=await fs.readFile(proposed,'utf8'),emergency=await fs.readFile(recovery,'utf8');
- await fs.writeFile(path.join(out,'rules-before.rules'),text);await fs.writeFile(path.join(out,'rules-proposed.rules'),candidate);await fs.writeFile(path.join(out,'rules-recovery.rules'),emergency);
- let diff;try{diff=execFileSync('diff',['-u','--label','before','--label','proposed',path.join(out,'rules-before.rules'),proposed],{encoding:'utf8'})}catch(e){if(e.status!==1)throw e;diff=e.stdout}await fs.writeFile(path.join(out,'rules.diff'),diff);
+ const beforePath=path.join(out,'rules-before.rules');await fs.writeFile(beforePath,text);await fs.writeFile(path.join(out,'rules-proposed.rules'),candidate);await fs.writeFile(path.join(out,'rules-recovery.rules'),emergency);
+ let diff;try{diff=execFileSync('diff',['-u','--label','before','--label','proposed',beforePath,proposed],{encoding:'utf8'})}catch(e){
+  if(e.status===1)diff=e.stdout;
+  else if(e.code==='ENOENT'){
+   const beforeRel=path.relative(root,beforePath),proposedRel=path.relative(root,proposed);let output;
+   try{output=execFileSync('git',['diff','--no-index','--no-color','--',beforeRel,proposedRel],{cwd:root,encoding:'utf8'})}catch(gitError){if(gitError.status!==1)throw gitError;output=gitError.stdout;}
+   diff=output.replace(/^diff --git[^\n]*\n/,'').replace(/^index [^\n]*\n/,'').replace(/^--- a\/[^\n]*\n/,'--- before\n').replace(/^\+\+\+ b\/[^\n]*\n/,'+++ proposed\n');
+  }else throw e;
+ }await fs.writeFile(path.join(out,'rules.diff'),diff);
  const c=JSON.parse(await fs.readFile(path.join(root,'environments/production.json'))),p=JSON.parse(await fs.readFile(path.join(root,'environments/preview.json')));
  if(c.projectId!==project||c.firebase.projectId!==project||p.projectId!=='manabi-game-landcheck'||p.playerSyncEnabled!==false||c.playerSyncEnabled!==false)throw Error('unsafe-environment');
  const m={projectId:project,currentRulesSource:currentRules?'operator-supplied-copy':'previously-user-provided-baseline',liveConsoleVerified:false,requiresCurrentRulesReview:true,beforeSHA256:sha(text),proposedSHA256:sha(candidate),recoverySHA256:sha(emergency),matchesProvidedBaseline:text===await fs.readFile(baseline,'utf8'),runtimeGates:{adminEnabled:c.adminEnabled,legacyScoreSyncEnabled:c.legacyScoreSyncEnabled,productionReleaseApproved:c.productionReleaseApproved,productionRulesApproved:c.productionRulesApproved,productionAuthVerified:c.productionAuthVerified,playerSyncEnabled:c.playerSyncEnabled},approvals:{auth:'pending',rules:'pending',site:'pending',renamePermission:'pending'},publicRootTouched:false,firebaseContacted:false};await fs.writeFile(path.join(out,'PREFLIGHT.json'),JSON.stringify(m,null,2)+'\n');return m;
