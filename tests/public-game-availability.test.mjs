@@ -41,16 +41,16 @@ function attempt(document,type,target){return document.dispatch(type,target)}
 test('all 11 root game pages load the safe availability guard before settings; practice and challenge pages keep their runtime filter',async()=>{
  for(const id of gameIds){
   const html=await readFile(new URL(`../games/${id}.html`,import.meta.url),'utf8');
-  const guard=html.indexOf('public-game-availability.js?v=availability-guard-v2'),settings=html.indexOf('public-admin-settings.js?v=availability-guard-v2');
-  assert.ok(guard>=0,`${id}: availability guard is loaded`);assert.ok(settings>guard,`${id}: guard loads before settings`);
+  const session=html.indexOf('public-firebase-session.js?v=shared-firebase-session-v1'),guard=html.indexOf('public-game-availability.js?v=firebase-session-recovery-v1'),settings=html.indexOf('public-admin-settings.js?v=firebase-session-recovery-v1');
+  assert.ok(session>=0,`${id}: shared Firebase session broker is loaded`);assert.ok(guard>session,`${id}: broker loads before the availability guard`);assert.ok(settings>guard,`${id}: guard loads before settings`);
   assert.doesNotMatch(html,/document\.documentElement\.inert\s*=\s*true/);
   if(id!=='keisanSummary')assert.match(html,/challenge120-runtime\.js\?v=availability-guard-v2/,`${id}: challenge mode remains wired`);
  }
  for(const filename of await readdir(new URL('../shared-src/site/games/',import.meta.url))){
   if(!filename.endsWith('.html'))continue;
   const html=await readFile(new URL(`../shared-src/site/games/${filename}`,import.meta.url),'utf8');
-  const guard=html.indexOf('public-game-availability.js?v=availability-guard-v2'),settings=html.indexOf('public-admin-settings.js?v=availability-guard-v2');
-  assert.ok(guard>=0,`${filename}: shared site includes the guard`);assert.ok(settings>guard,`${filename}: shared site loads the guard first`);
+  const session=html.indexOf('public-firebase-session.js?v=shared-firebase-session-v1'),guard=html.indexOf('public-game-availability.js?v=firebase-session-recovery-v1'),settings=html.indexOf('public-admin-settings.js?v=firebase-session-recovery-v1');
+  assert.ok(session>=0,`${filename}: shared site includes the Firebase session broker`);assert.ok(guard>session,`${filename}: shared site loads the broker before the guard`);assert.ok(settings>guard,`${filename}: shared site loads the guard first`);
  }
 });
 
@@ -100,7 +100,18 @@ test('a failed public-settings read never unlocks play, while status and navigat
  assert.match(runtime,/!\['training','running'\]\.includes\(s\.phase\)/,'challenge still blocks answers outside active phases');
 });
 
-test('missing setting keeps the existing default-public behavior; unknown setting values fail closed',()=>{
- const {api}=setup();assert.equal(api.settingStatus(null),'published');assert.equal(api.settingStatus({}),'published');
- assert.equal(api.settingStatus({status:'unexpected'}),'hidden');assert.equal(api.settingStatus({published:false}),'hidden');
+test('missing or malformed settings remain unconfirmed and fail closed; explicit states are honored',async()=>{
+ const {api,document,answer}=setup();assert.equal(api.settingStatus(null),'unknown');assert.equal(api.settingStatus({}),'unknown');
+ assert.equal(api.settingStatus({status:'unexpected'}),'unknown');assert.equal(api.settingStatus({published:false}),'hidden');assert.equal(api.settingStatus({published:true}),'published');
+ const gate=api.create(document,{timeoutMs:50});assert.equal(await gate.check(()=>Promise.resolve(null)),'unknown');
+ assert.equal(attempt(document,'click',answer).defaultPrevented,true);
+ assert.ok(document.getElementById('publicGameAccessStatus').children.some(node=>node.tagName==='BUTTON'),'unknown settings retain an operable retry');
+});
+
+test('read failures distinguish network, authentication, permission, and unknown errors',()=>{
+ const {api}=setup();
+ assert.equal(api.failureType({code:'unavailable'}),'network');
+ assert.equal(api.failureType({code:'auth/operation-not-allowed'}),'authentication');
+ assert.equal(api.failureType({code:'permission-denied'}),'permission');
+ assert.equal(api.failureType(new Error('other')),'unknown');
 });

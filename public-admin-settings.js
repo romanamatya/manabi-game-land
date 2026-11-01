@@ -4,21 +4,26 @@
  const cfg=window.MANABI_BACKEND_CONFIG;if(!cfg)return;
  const games=['keisan','pref-name','pref-place','alphabet','distribution','distribution2','exchangeAssociation','kotowaza','multiplicationProperties','shapeExpressions','keisanSummary'];
  const settingsRoot=cfg.environment==='productionAdmin/v1'?'productionAdmin/v1':cfg.environment==='previewSpark/v1'?'previewSpark/v1':null;
+ function gameAvailabilityStatus(setting){
+  if(!setting)return 'unknown';
+  if(['published','preparing','hidden'].includes(setting.status))return setting.status;
+  if(setting.published===true)return 'published';
+  if(setting.published===false)return 'hidden';
+  return 'unknown';
+ }
  let dbPromise,dbGeneration=0;
  async function db(){
   if(dbPromise)return dbPromise;
   const generation=++dbGeneration;
-  dbPromise=(async()=>{
-   const [App,A,F]=await Promise.all(['app','auth','firestore'].map(n=>import('https://www.gstatic.com/firebasejs/13.1.0/firebase-'+n+'.js')));
-   const app=App.getApps().find(a=>a.name==='[DEFAULT]')||App.initializeApp(cfg.firebase),auth=A.getAuth(app);
-   await auth.authStateReady();if(!auth.currentUser)await A.signInAnonymously(auth);
-   return {F,db:F.getFirestore(app)};
-  })().catch(error=>{if(generation===dbGeneration)dbPromise=null;throw error;});return dbPromise;
+  dbPromise=Promise.resolve().then(()=>{
+   if(!window.ManabiFirebaseSession?.open)throw Error('firebase-session-unavailable');
+   return window.ManabiFirebaseSession.open(cfg.firebase);
+  }).catch(error=>{if(generation===dbGeneration)dbPromise=null;throw error;});return dbPromise;
  }
  function resetDb(){dbGeneration++;dbPromise=null;}
  async function read(collection,id){
   if(!settingsRoot)throw Error('settings-environment-unavailable');
-  const {F,db}=await db(),snapshot=await F.getDocFromServer(F.doc(db,settingsRoot+'/'+collection+'/'+id));
+  const session=await db(),snapshot=await session.F.getDocFromServer(session.F.doc(session.db,settingsRoot+'/'+collection+'/'+id));
   return snapshot.exists()?snapshot.data():null;
  }
  window.ManabiPublicSettings=Object.freeze({
@@ -45,15 +50,14 @@
    const gameOf=a=>new URL(a.href,location.href).pathname.match(/(?:^|\/)games\/([^/]+)\.html$/)?.[1];
    const anchors=[...document.querySelectorAll('a[href]')].filter(a=>games.includes(gameOf(a)));
    if(!anchors.length)return;
-   const ids=[...new Set(anchors.map(gameOf))];let ready=false,hidden=new Set();
+   const ids=[...new Set(anchors.map(gameOf))],statuses=new Map(ids.map(id=>[id,'checking']));
    document.addEventListener('click',e=>{
     const a=e.target.closest?.('a[href]');if(!a)return;const id=gameOf(a);
-    if(games.includes(id)&&(!ready||hidden.has(id))){e.preventDefault();e.stopImmediatePropagation();if(ready)alert('このゲームは現在利用できません。');}
+    const status=statuses.get(id);
+    if(games.includes(id)&&status!=='published'){e.preventDefault();e.stopImmediatePropagation();if(status!=='checking')alert(status==='hidden'?'このゲームは現在非公開です。':status==='preparing'?'このゲームは公開準備中です。':'公開状態を確認できないため、このゲームは開始できません。');}
    },true);
-   void Promise.all(ids.map(async id=>[id,await read('gameSettings',id)])).then(settings=>{
-    hidden=new Set(settings.filter(([,s])=>{const status=s?.status||(s?.published===false?'hidden':'published');return status!=='published'}).map(([id])=>id));ready=true;
-    for(const a of anchors){if(hidden.has(gameOf(a))){a.setAttribute('aria-disabled','true');a.classList.add('game-unavailable');}}
-   }).catch(()=>{hidden=new Set(ids);ready=true;for(const a of anchors){a.setAttribute('aria-disabled','true');a.classList.add('game-unavailable');}});
+   const mark=(id,status)=>{statuses.set(id,status);if(status!=='published')for(const a of anchors.filter(item=>gameOf(item)===id)){a.setAttribute('aria-disabled','true');a.classList.add('game-unavailable');}};
+   for(const id of ids)void read('gameSettings',id).then(setting=>mark(id,gameAvailabilityStatus(setting)),()=>mark(id,'unknown'));
   };
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',guardLinks,{once:true});else guardLinks();
  }
