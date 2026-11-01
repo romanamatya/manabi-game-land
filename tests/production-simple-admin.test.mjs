@@ -42,3 +42,13 @@ test('direct game pages stay inert until publication is confirmed and fail close
  assert.match(script,/catch\(\(\)=>block\('公開状態を確認できないため/);
  assert.match(script,/document\.addEventListener\('click',[\s\S]+?stopImmediatePropagation\(\)/);
 });
+
+test('retired suspension controls are disabled while legacy profile data remains untouched',async()=>{
+ const environment=await readFile(new URL('../environment.js',import.meta.url),'utf8');
+ const runtime=await readFile(new URL('../environment-runtime.js',import.meta.url),'utf8');
+ const rules=await readFile(new URL('../firebase/production-simple-admin-proposed.rules',import.meta.url),'utf8');
+ assert.match(environment,/"accountAccessEnabled":false/);
+ assert.match(environment,/"playerSuspension":false/);
+ assert.match(runtime,/const accessEnabled=!preview&&window\.MANABI_BACKEND_CONFIG\?\.accountAccessEnabled===true/);
+ assert.match(rules,/function productionAdminSuspensionEnabled\(\)\s*\{\s*return false;/);
+});
