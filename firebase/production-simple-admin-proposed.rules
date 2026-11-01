@@ -419,6 +419,32 @@ service cloud.firestore {
         && backup.before is list && backup.before.size() == 1
         && (backup.before[0] == null || backup.before[0] == resource.data);
     }
+    function managementBulkVisibilityValid(auditId, backupId, gameId, creating) {
+      let auditPath = managementAuditPath(auditId);
+      let backupPath = managementBackupPath(backupId);
+      let settingsPath = /databases/$(database)/documents/productionAdmin/v1/gameSettings/$(gameId);
+      let audit = getAfter(auditPath).data;
+      let backup = getAfter(backupPath).data;
+      let gamePath = 'productionAdmin/v1/gameSettings/' + gameId;
+      return productionManagementEnabled()
+        && audit.id == auditId && audit.actor == request.auth.uid
+        && audit.action == 'visibilityBatch' && audit.backupId == backupId
+        && audit.targets is list && audit.targets.size() >= 1 && audit.targets.size() <= 11
+        && gamePath in audit.targets
+        && audit.afterByGame is map && audit.afterByGame.keys().hasAny([gameId])
+        && audit.afterByGame[gameId] == request.resource.data.status
+        && backup.id == backupId && backup.auditId == auditId
+        && backup.actor == request.auth.uid && backup.action == 'visibilityBatch'
+        && backup.targets == audit.targets && backup.beforeByGame is map
+        && audit.beforeByGame == backup.beforeByGame
+        && backup.beforeByGame.keys().hasAny([gameId])
+        && request.resource.data.lastAudit == auditId
+        && request.resource.data.lastBackup == backupId
+        && request.resource.data.updatedAt == request.time
+        && (creating
+          ? (!exists(settingsPath) && backup.beforeByGame[gameId] == null)
+          : (backup.beforeByGame[gameId] == resource.data));
+    }
 
     match /productionAdmin/v1/gameSettings/{gameId} {
       allow get: if request.auth != null;
@@ -428,14 +454,17 @@ service cloud.firestore {
         && request.resource.data.status in ['published','preparing','hidden']
         && request.resource.data.updatedAt == request.time
         && request.resource.data.lastAudit is string && request.resource.data.lastBackup is string
-        && (managementWriteValid(request.resource.data.lastAudit, request.resource.data.lastBackup, 'productionAdmin/v1/gameSettings/' + gameId, 'visibility')
+        && (managementBulkVisibilityValid(request.resource.data.lastAudit, request.resource.data.lastBackup, gameId, true)
+          || managementWriteValid(request.resource.data.lastAudit, request.resource.data.lastBackup, 'productionAdmin/v1/gameSettings/' + gameId, 'visibility')
           || managementWriteValid(request.resource.data.lastAudit, request.resource.data.lastBackup, 'productionAdmin/v1/gameSettings/' + gameId, 'campaign'));
       allow update: if request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status','campaign','updatedAt','lastAudit','lastBackup'])
         && gameId in ['keisan','pref-name','pref-place','alphabet','distribution','distribution2','exchangeAssociation','kotowaza','multiplicationProperties','shapeExpressions','keisanSummary']
         && request.resource.data.status in ['published','preparing','hidden']
         && request.resource.data.updatedAt == request.time
         && request.resource.data.lastAudit is string && request.resource.data.lastBackup is string
-        && (managementWriteValid(request.resource.data.lastAudit, request.resource.data.lastBackup, 'productionAdmin/v1/gameSettings/' + gameId, 'campaign') || managementWriteValid(request.resource.data.lastAudit, request.resource.data.lastBackup, 'productionAdmin/v1/gameSettings/' + gameId, 'visibility'));
+        && (managementBulkVisibilityValid(request.resource.data.lastAudit, request.resource.data.lastBackup, gameId, false)
+          || managementWriteValid(request.resource.data.lastAudit, request.resource.data.lastBackup, 'productionAdmin/v1/gameSettings/' + gameId, 'campaign')
+          || managementWriteValid(request.resource.data.lastAudit, request.resource.data.lastBackup, 'productionAdmin/v1/gameSettings/' + gameId, 'visibility'));
       allow delete: if false;
     }
 
@@ -456,13 +485,19 @@ service cloud.firestore {
     match /productionAdmin/v1/managementAudit/{auditId} {
       allow get, list: if productionAdminSessionFresh();
       allow create: if productionManagementEnabled()
-        && request.resource.data.keys().hasOnly(['id','actor','at','action','targets','reason','before','after','backupId'])
+        && request.resource.data.keys().hasOnly(['id','actor','at','action','targets','reason','before','after','beforeByGame','afterByGame','backupId'])
         && request.resource.data.id == auditId && request.resource.data.actor == request.auth.uid
-        && request.resource.data.at == request.time && request.resource.data.action in ['campaign','notice','visibility']
+        && request.resource.data.at == request.time && request.resource.data.action in ['campaign','notice','visibility','visibilityBatch']
         && request.resource.data.targets is list && request.resource.data.targets.size() >= 1 && request.resource.data.targets.size() <= 11
         && request.resource.data.reason is string && request.resource.data.reason.size() >= 2 && request.resource.data.reason.size() <= 300
-        && request.resource.data.before is list && request.resource.data.before.size() <= 11
-        && (request.resource.data.after is list || request.resource.data.after is map)
+        && ((request.resource.data.action == 'visibilityBatch'
+          && request.resource.data.beforeByGame is map
+          && request.resource.data.beforeByGame.keys().size() == request.resource.data.targets.size()
+          && request.resource.data.afterByGame is map
+          && request.resource.data.afterByGame.keys().size() == request.resource.data.targets.size())
+          || (request.resource.data.action in ['campaign','notice','visibility']
+            && request.resource.data.before is list && request.resource.data.before.size() <= 11
+            && (request.resource.data.after is list || request.resource.data.after is map)))
         && request.resource.data.backupId is string
         && getAfter(managementBackupPath(request.resource.data.backupId)).data.auditId == auditId;
       allow update, delete: if false;
@@ -471,11 +506,15 @@ service cloud.firestore {
     match /productionAdmin/v1/managementBackups/{backupId} {
       allow get, list: if productionAdminSessionFresh();
       allow create: if productionManagementEnabled()
-        && request.resource.data.keys().hasOnly(['id','actor','at','action','targets','before','reason','auditId'])
+        && request.resource.data.keys().hasOnly(['id','actor','at','action','targets','before','beforeByGame','reason','auditId'])
         && request.resource.data.id == backupId && request.resource.data.actor == request.auth.uid
-        && request.resource.data.at == request.time && request.resource.data.action in ['campaign','notice','visibility']
+        && request.resource.data.at == request.time && request.resource.data.action in ['campaign','notice','visibility','visibilityBatch']
         && request.resource.data.targets is list && request.resource.data.targets.size() >= 1 && request.resource.data.targets.size() <= 11
-        && request.resource.data.before is list && request.resource.data.before.size() <= 11
+        && ((request.resource.data.action == 'visibilityBatch'
+          && request.resource.data.beforeByGame is map
+          && request.resource.data.beforeByGame.keys().size() == request.resource.data.targets.size())
+          || (request.resource.data.action in ['campaign','notice','visibility']
+            && request.resource.data.before is list && request.resource.data.before.size() <= 11))
         && request.resource.data.reason is string && request.resource.data.reason.size() >= 2 && request.resource.data.reason.size() <= 300
         && request.resource.data.auditId is string
         && getAfter(managementAuditPath(request.resource.data.auditId)).data.backupId == backupId;

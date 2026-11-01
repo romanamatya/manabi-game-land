@@ -3,6 +3,9 @@ import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
 import {initializeTestEnvironment,assertFails,assertSucceeds} from '@firebase/rules-unit-testing';
 import * as F from 'firebase/firestore';
+import {GAME_IDS} from '../../management-model.js';
+import {createManagementStore} from '../../shared-src/site/management-store.js';
+import {createFirestoreStore} from '../../shared-src/site/firebase-store.js';
 
 const projectId='demo-manabi-simple-admin',rulesUrl=new URL('../../firebase/production-simple-admin-proposed.rules',import.meta.url);
 let adminUid='admin-uid';
@@ -34,6 +37,22 @@ async function adminWrite(db,action,refs,values){
  await apply.commit();return {audit,backup};
 }
 
+async function writeVisibilityBatch(db,games,status,{mismatchGame=null,auditId=null,backupId=null}={}){
+ const audit=F.doc(db,'productionAdmin/v1/managementAudit',auditId||crypto.randomUUID());
+ const backup=F.doc(db,'productionAdmin/v1/managementBackups',backupId||crypto.randomUUID());
+ const refs=games.map(game=>F.doc(db,'productionAdmin/v1/gameSettings/'+game));
+ return F.runTransaction(db,async tx=>{
+  const snaps=await Promise.all(refs.map(ref=>tx.get(ref)));
+  const beforeByGame=Object.fromEntries(games.map((game,i)=>[game,snaps[i].exists()?snaps[i].data():null]));
+  const afterByGame=Object.fromEntries(games.map(game=>[game,status]));
+  const targets=refs.map(ref=>ref.path),at=F.serverTimestamp(),reason='管理室からの操作';
+  tx.set(backup,{id:backup.id,actor:adminUid,at,action:'visibilityBatch',targets,beforeByGame,reason,auditId:audit.id});
+  tx.set(audit,{id:audit.id,actor:adminUid,at,action:'visibilityBatch',targets,beforeByGame,afterByGame,reason,backupId:backup.id});
+  for(let i=0;i<refs.length;i++)tx.set(refs[i],{status:games[i]===mismatchGame?'hidden':status,updatedAt:at,lastAudit:audit.id,lastBackup:backup.id},{merge:true});
+  return {audit,backup};
+ });
+}
+
 serialTest('admin can change game visibility; child can read state but cannot change it',async()=>{
  const adminDb=admin().firestore(),target=F.doc(adminDb,'productionAdmin/v1/gameSettings/keisan');
  await assertSucceeds(adminWrite(adminDb,'visibility',[target],[{status:'hidden',updatedAt:F.serverTimestamp()}]));
@@ -62,6 +81,27 @@ serialTest('admin can schedule and manually end a multi-game campaign with one b
  await assertFails(F.updateDoc(F.doc(student,'productionAdmin/v1/gameSettings/keisan'),{campaign:{enabled:false}}));
  for(const game of games){const target=F.doc(db,'productionAdmin/v1/gameSettings/'+game);await assertSucceeds(adminWrite(db,'campaign',[target],[{status:'published',campaign:{id:campaignId,enabled:false,startAt,endAt},updatedAt:F.serverTimestamp()}]));}
  assert.equal((await assertSucceeds(F.getDoc(F.doc(student,'productionAdmin/v1/gameSettings/keisan')))).data().campaign.enabled,false);
+});
+
+serialTest('admin can atomically change all game visibility with shared audit and backup under Rules access limits',async()=>{
+ const adminDb=admin().firestore(),games=[...GAME_IDS];
+ await env.withSecurityRulesDisabled(async c=>{
+  const db=c.firestore();
+  await F.setDoc(F.doc(db,'productionAdmin/v1/gameSettings/keisan'),{status:'hidden',campaign:{id:'keep-campaign',enabled:true,startAt:10,endAt:20}});
+  await F.setDoc(F.doc(db,'productionAdmin/v1/gameSettings/alphabet'),{status:'preparing'});
+ });
+ const result=await assertSucceeds(createManagementStore('production',F,adminDb).mutate({uid:adminUid},'visibilityBatch',{games,status:'published'}));
+ const audit=F.doc(adminDb,'productionAdmin/v1/managementAudit/'+result.auditId),backup=F.doc(adminDb,'productionAdmin/v1/managementBackups/'+result.backupId);
+ for(const game of games){const saved=(await assertSucceeds(F.getDoc(F.doc(adminDb,'productionAdmin/v1/gameSettings/'+game)))).data();assert.equal(saved.status,'published');assert.equal(saved.lastAudit,audit.id);assert.equal(saved.lastBackup,backup.id);}
+ const kept=(await F.getDoc(F.doc(adminDb,'productionAdmin/v1/gameSettings/keisan'))).data();assert.deepEqual(kept.campaign,{id:'keep-campaign',enabled:true,startAt:10,endAt:20});
+ const auditData=(await F.getDoc(audit)).data(),backupData=(await F.getDoc(backup)).data();
+ assert.equal(auditData.action,'visibilityBatch');assert.equal(auditData.reason,'管理室からの操作');assert.equal(auditData.targets.length,GAME_IDS.length);
+ assert.equal(backupData.beforeByGame.keisan.status,'hidden');assert.equal(backupData.beforeByGame.alphabet.status,'preparing');assert.equal(backupData.beforeByGame['pref-name'],null);
+ const badAudit='atomic-reject-audit',badBackup='atomic-reject-backup';
+ await assertFails(writeVisibilityBatch(adminDb,games,'preparing',{mismatchGame:games.at(-1),auditId:badAudit,backupId:badBackup}));
+ for(const game of games)assert.equal((await F.getDoc(F.doc(adminDb,'productionAdmin/v1/gameSettings/'+game))).data().status,'published');
+ assert.equal((await assertSucceeds(F.getDoc(F.doc(adminDb,'productionAdmin/v1/managementAudit/'+badAudit)))).exists(),false);
+ assert.equal((await assertSucceeds(F.getDoc(F.doc(adminDb,'productionAdmin/v1/managementBackups/'+badBackup)))).exists(),false);
 });
 
 serialTest('non-admin cannot mutate campaign, notice, game settings, audit, or backup',async()=>{
@@ -104,11 +144,12 @@ serialTest('an existing unlinked profile can keep its separate ranking UID and c
 
 serialTest('admin nickname change remains authorized and leaves child progress unchanged',async()=>{
  const db=admin().firestore(),profile=F.doc(db,'players/profile-a'),rankRef=F.doc(db,'productionRankings/v1/games/keisan/players/rank-a');
- const old=(await assertSucceeds(F.getDoc(profile))).data(),oldRank=(await assertSucceeds(F.getDoc(rankRef))).data(),at=F.serverTimestamp(),batch=F.writeBatch(db);
- batch.set(F.doc(db,'productionAdmin/v1/backups/rename-backup'),{actor:adminUid,at,uid:'profile-a',target:'players/profile-a',kind:'rename',data:{player:old,links:[{uid:'rank-a',profileUid:'profile-a'}],rankings:[{uid:'rank-a',game:'keisan',data:oldRank}]}});
- batch.set(F.doc(db,'productionAdmin/v1/audit/rename-audit'),{actor:adminUid,at,uid:'profile-a',target:'players/profile-a',action:'rename',reason:'本人確認済み',backupId:'rename-backup',beforeName:'そら',afterName:'そら星'});
- batch.update(profile,{nickname:'そら星',lastAudit:'rename-audit',lastBackup:'rename-backup',adminUpdatedAt:at});batch.update(rankRef,{nickname:'そら星',updatedAt:at});
- await assertSucceeds(batch.commit());const after=(await assertSucceeds(F.getDoc(profile))).data();
+ const old=(await assertSucceeds(F.getDoc(profile))).data(),oldRank=(await assertSucceeds(F.getDoc(rankRef))).data();
+ const store=createFirestoreStore('production',F,db,{rankingGameIds:['keisan']});
+ const result=await assertSucceeds(store.rename({uid:adminUid},{uid:'profile-a',nickname:'そら星',expectedNickname:'そら'}));
+ const after=(await assertSucceeds(F.getDoc(profile))).data(),afterRank=(await assertSucceeds(F.getDoc(rankRef))).data();
+ const audit=(await assertSucceeds(F.getDoc(F.doc(db,'productionAdmin/v1/audit',result.auditId)))).data();
  assert.equal(after.points,old.points);assert.equal(after.bestStreak,old.bestStreak);assert.deepEqual(after.appearance,old.appearance);
+ assert.equal(afterRank.nickname,'そら星');assert.equal(afterRank.bestStreak,oldRank.bestStreak);assert.equal(audit.reason,'管理室からのニックネーム変更');
 });
 });

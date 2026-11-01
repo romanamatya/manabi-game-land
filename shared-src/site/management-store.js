@@ -32,7 +32,20 @@ export function createManagementStore(mode,F,db){
   return {games,notice:notice.exists()?plain(notice.data()):null,managementAudit:audit,campaigns};
  }
  async function mutate(user,action,input){
-  checkedInput(action,input);
+  input=checkedInput(action,input);
+  if(action==='visibilityBatch'){
+   const refs=input.games.map(game=>ref('gameSettings',game)),audit=F.doc(col('managementAudit')),backup=F.doc(col('managementBackups'));
+   return F.runTransaction(db,async tx=>{
+    const snaps=await Promise.all(refs.map(target=>tx.get(target)));
+    const beforeByGame=Object.fromEntries(input.games.map((game,i)=>[game,snaps[i].exists()?snaps[i].data():null]));
+    const afterByGame=Object.fromEntries(input.games.map(game=>[game,input.status]));
+    const targets=refs.map(target=>target.path),at=F.serverTimestamp();
+    tx.set(backup,{id:backup.id,actor:user.uid,at,action,targets,beforeByGame,reason:input.reason,auditId:audit.id});
+    tx.set(audit,{id:audit.id,actor:user.uid,at,action,targets,beforeByGame,afterByGame,reason:input.reason,backupId:backup.id});
+    for(const target of refs)tx.set(target,{status:input.status,updatedAt:at,lastAudit:audit.id,lastBackup:backup.id},{merge:true});
+    return {ok:true,auditId:audit.id,backupId:backup.id,games:[...input.games],status:input.status};
+   });
+  }
   if(action==='campaign'){
    const campaignId=F.doc(col('managementAudit')).id,results=[];
    for(const game of input.games){

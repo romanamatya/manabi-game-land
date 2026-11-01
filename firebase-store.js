@@ -6,8 +6,8 @@ export function createFirestoreStore(mode,F,db,{catalog=[],rankingGameIds=[]}={}
  const c=contractFor(mode),ref=uid=>F.doc(db,c.players,uid),audit=()=>F.doc(F.collection(db,c.audit)),backup=()=>F.doc(F.collection(db,c.backups));
  const list=async cursor=>{const clauses=[F.orderBy(F.documentId()),...(cursor?[F.startAfter(cursor)]:[]),F.limit(100)];const s=await F.getDocsFromServer(F.query(F.collection(db,c.players),...clauses));return {rows:s.docs.map(d=>normalizePlayer(d.data(),d.id,c,catalog)),cursor:s.size===100?s.docs.at(-1).id:null};};
  async function rename(user,input){
-  const nickname=typeof input.nickname==='string'?input.nickname.trim():'',reason=typeof input.reason==='string'?input.reason.trim():'';
-  if(!input.uid||input.uid===user.uid||nickname.length<1||nickname.length>12||/[<>\\r\\n]/.test(nickname)||reason.length<2||reason.length>300||typeof input.expectedNickname!=='string')throw error('invalid-input');
+  const nickname=typeof input.nickname==='string'?input.nickname.trim():'',reason='管理室からのニックネーム変更';
+  if(!input.uid||input.uid===user.uid||nickname.length<1||nickname.length>12||/[<>\r\n]/.test(nickname)||typeof input.expectedNickname!=='string')throw error('invalid-input');
   const target=ref(input.uid),a=audit(),b=backup();
   const linksQuery=mode==='production'?F.query(F.collection(db,'productionRankings','v1','identityLinks'),F.where('profileUid','==',input.uid),F.limit(11)):null;
   const linkSnap=linksQuery?await F.getDocsFromServer(linksQuery):{docs:[]};

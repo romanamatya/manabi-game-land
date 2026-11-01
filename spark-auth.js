@@ -101,7 +101,7 @@ export function createAdminOperations(c,{auth,db},A,F) {
   async function rename(input) {const user=await verify();if(contract.mode==='production'){const role=await F.getDocFromServer(ref('private','admin'));if(role.data()?.renameEnabled!==true)throw error('rename-not-enabled');}return store.rename(user,input);}
 
   async function call(action, input = {}) {
-    const managementActions=['admin:campaign','admin:notice','admin:visibility'];
+    const managementActions=['admin:campaign','admin:notice','admin:visibility','admin:visibilityBatch'];
     if(readOnly&&!['admin:snapshot','admin:players'].includes(action)&&!(c.adminFeatures?.playerRename===true&&action==='admin:rename')&&!(c.managementEnabled===true&&managementActions.includes(action)))throw error('admin-read-only');
     await verify();
     if (action === 'admin:snapshot') {
