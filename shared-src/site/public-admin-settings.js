@@ -2,7 +2,7 @@
 // release flags are approved. This is a UI guard, not authorization for legacy clients.
 (()=>{
  const cfg=window.MANABI_BACKEND_CONFIG;if(!cfg)return;
- const games=['keisan','pref-name','pref-place','alphabet','distribution','distribution2','exchangeAssociation','kotowaza','multiplicationProperties','shapeExpressions','keisanSummary'];
+ const games=['keisan','pref-name','pref-place','alphabet','distribution','distribution2','exchangeAssociation','kotowaza','multiplicationProperties','shapeExpressions','keisanSummary','kakudo'];
  const settingsRoot=cfg.environment==='productionAdmin/v1'?'productionAdmin/v1':cfg.environment==='previewSpark/v1'?'previewSpark/v1':null;
  function gameAvailabilityStatus(setting){
   if(!setting)return 'unknown';

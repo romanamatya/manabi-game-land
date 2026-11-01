@@ -1,6 +1,6 @@
 // Read/write only when the separate environment flag and verified readiness are enabled.
 export const CHALLENGE_PROTOCOL=2;
-export const CHALLENGE_GAMES=['keisan','pref-name','pref-place','alphabet','distribution','distribution2','exchangeAssociation','kotowaza','multiplicationProperties','shapeExpressions'];
+export const CHALLENGE_GAMES=['keisan','pref-name','pref-place','alphabet','distribution','distribution2','exchangeAssociation','kotowaza','multiplicationProperties','shapeExpressions','kakudo'];
 export function createSeasonStore(F,db,base,{enabled=false,legacyRows=async()=>[]}={}){
  const ref=(c,id)=>F.doc(db,base+'/'+c,id),control=ref('challengeControl','current');
  const plain=x=>x?.toMillis?x.toMillis():Array.isArray(x)?x.map(plain):x&&typeof x==='object'?Object.fromEntries(Object.entries(x).map(([k,v])=>[k,plain(v)])):x;
