@@ -55,6 +55,10 @@ export async function createProductionRankingClient(c,[App,A,F]){
    if(profileUid){const profileSnap=result[1],linkSnap=result[2];if(!profileSnap.exists()||!linkSnap.exists()||linkSnap.data().profileUid!==profileUid||profileSnap.data().rankingUid!==uid)throw err('player-ranking-link-required');canonical=profileSnap.data().nickname;}
    if(managed&&!old&&!freshRecord)throw err('ranking-new-record-required');
    const value=clean({...input,nickname:canonical},managed?{...managed,lastManagementAudit:old?.lastManagementAudit,lastManagementBackup:old?.lastManagementBackup}:null);
+   // In a managed generation, a profile refresh from a stale device may carry
+   // an older lifetime best (including an old 120-second result). Only an
+   // explicitly fresh score may change the shared generation's score/title.
+   if(managed&&old&&!freshRecord){value.bestStreak=old.bestStreak;value.title=old.title;}
    const bestStreak=Math.max(value.bestStreak,Number.isSafeInteger(old?.bestStreak)?old.bestStreak:0),title=old&&value.bestStreak<old.bestStreak?old.title:value.title,next={...value,title,bestStreak,updatedAt:F.serverTimestamp()};
    if(old&&next.bestStreak===old.bestStreak&&old.nickname===next.nickname&&old.icon===next.icon&&old.frame===next.frame&&old.title===next.title&&old.badge===next.badge)return old;
    tx.set(target,next);return next;

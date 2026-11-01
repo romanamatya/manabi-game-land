@@ -46,6 +46,26 @@ test('keeps best score monotonic while allowing display metadata to change',asyn
  assert.equal(next.frame,'star');
  assert.equal(next.title,'計算名人');
 });
+test('a stale 120-second best cannot overwrite a new managed-generation result during a metadata refresh',async()=>{
+ docs.clear();authByName.clear();apps.length=0;
+ docs.set('productionRankings/v1/gameControl/keisan',{generation:4,phase:'ready',writeLocked:false});
+ docs.set('productionRankings/v1/games/keisan/players/4_student-a',{uid:'student-a',game:'keisan',nickname:'そら',bestStreak:12,icon:'cat',frame:'plain',title:'新世代の称号',badge:null,generation:4,visibility:'active'});
+ const a=await createProductionRankingClient(config,sdk);
+ const refreshed=await a.publishRanking({...profile('keisan',40,'古い端末の名前'),frame:'star'},{freshRecord:false});
+ assert.equal(refreshed.bestStreak,12);
+ assert.equal(refreshed.title,'新世代の称号');
+ assert.equal(refreshed.frame,'star');
+ const current=await a.publishRanking(profile('keisan',41),{freshRecord:true});
+ assert.equal(current.bestStreak,41);
+ assert.equal(current.title,'計算名人');
+});
+test('a stale device cannot recreate an empty managed generation from its old local best',async()=>{
+ docs.clear();authByName.clear();apps.length=0;
+ docs.set('productionRankings/v1/gameControl/keisan',{generation:5,phase:'ready',writeLocked:false});
+ const a=await createProductionRankingClient(config,sdk);
+ await assert.rejects(a.publishRanking(profile('keisan',40),{freshRecord:false}),/ranking-new-record-required/);
+ assert.equal(docs.has('productionRankings/v1/games/keisan/players/5_student-a'),false);
+});
 test('rejects invalid game IDs, names, and private data',async()=>{
  docs.clear();authByName.clear();apps.length=0;
  const a=await createProductionRankingClient(config,sdk);

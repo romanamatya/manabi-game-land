@@ -9,6 +9,7 @@ on:
       - 'environment.js'
       - 'environments/**'
       - 'ranking-sync-client.js'
+      - 'ranking-sync-api.js'
       - 'ranking-sync-shared-score.js'
       - 'control-room.js'
       - 'tests/production-ranking-shared-score.test.mjs'
