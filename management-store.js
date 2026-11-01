@@ -1,34 +1,58 @@
-import {GAME_IDS,checkedInput,rankingRows} from './management-model.js?v=adminprod-20261030';
+import {GAME_IDS,checkedInput,visibilityStatus} from './management-model.js?v=admin-simple-1';
 import {contractFor} from './data-contract.js?v=adminprod-20261030';
-export function createManagementStore(mode,F,db,{players,rankingGameIds=[]}={}){
- const c=contractFor(mode),base=c.base,ref=(collection,id)=>F.doc(db,base+'/'+collection,id),col=k=>F.collection(db,base+'/'+k);
+
+export function createManagementStore(mode,F,db){
+ const {base}=contractFor(mode),ref=(collection,id)=>F.doc(db,base+'/'+collection,id),col=k=>F.collection(db,base+'/'+k);
  const plain=x=>x?.toMillis?x.toMillis():Array.isArray(x)?x.map(plain):x&&typeof x==='object'?Object.fromEntries(Object.entries(x).map(([k,v])=>[k,plain(v)])):x;
- const query=async k=>(await F.getDocsFromServer(F.query(col(k),F.orderBy('at','desc'),F.limit(100)))).docs.map(d=>plain({...d.data(),id:d.id}));
- async function snapshot(){const [settings,notice,audit,campaigns,backups]=await Promise.all([Promise.all(GAME_IDS.map(id=>F.getDocFromServer(ref('gameSettings',id)))),F.getDocFromServer(ref('notices','current')),query('managementAudit'),query('campaignHistory'),query('rankingBackups')]);
-  const legacyNotice=!notice.exists()?await F.getDocFromServer(ref('settings','notice')):null;
-  const games=GAME_IDS.map(id=>({id,published:true,generation:0,rankingSupported:rankingGameIds.includes(id),...plain(settings.find(d=>d.id===id)?.data()||{})}));
-  let all=[];if(rankingGameIds.length){let cursor=null;do{const page=await players(cursor);all.push(...page.rows);cursor=page.cursor;if(all.length>1000)throw Error('ranking-backup-too-large');}while(cursor);}
-  const rankings=games.flatMap(g=>g.rankingSupported&&g.generation===0?rankingRows(all,g.id).map(r=>({...r,game:g.id,generation:g.generation})):[]);
-  return {rankings,games,notice:notice.exists()?plain(notice.data()):legacyNotice?.exists()?plain(legacyNotice.data()):null,managementAudit:audit,campaigns,backups};
- }
- async function mutate(user,action,input){checkedInput(action,input);if(['reset','rankingBackup'].includes(action)&&!rankingGameIds.includes(input.game))throw Error('device-only-ranking');
-  let rows=[];if(['reset','rankingBackup'].includes(action)){let cursor=null,all=[];do{const page=await players(cursor);all.push(...page.rows);cursor=page.cursor;if(all.length>1000)throw Error('ranking-backup-too-large');}while(cursor);rows=rankingRows(all,input.game);}
-  const target=action==='notice'?ref('notices','current'):ref('gameSettings',input.game),a=F.doc(col('managementAudit')),b=F.doc(col('managementBackups')),rank=F.doc(col('rankingBackups')),campaign=F.doc(col('campaignHistory'));
-  return F.runTransaction(db,async tx=>{const snapshot=await tx.get(target),old=snapshot.exists()?snapshot.data():null,at=F.serverTimestamp(),game=input.game;
-   let next;
-   if(action==='notice')next={title:input.title,body:input.body,published:input.published,revision:(old?.revision||0)+1,updatedAt:at,lastAudit:a.id,lastBackup:b.id};
-   else{next={published:true,generation:0,campaign:{enabled:false,endAt:null,id:null},...old,revision:(old?.revision||0)+1,updatedAt:at,lastAudit:a.id,lastBackup:b.id};
-    if(action==='visibility')next.published=input.published;
-    if(action==='campaign')next.campaign={enabled:input.enabled,endAt:input.enabled?input.endAt??null:null,id:input.enabled?campaign.id:null};
-    if(action==='reset'){next.generation=(old?.generation||0)+1;next.rankingResetAt=at;next.rankingBackup=rank.id;}
-   }
-   if(action==='rankingBackup'){tx.set(rank,{actor:user.uid,at,game,generation:old?.generation||0,rows,reason:input.reason});tx.set(a,{actor:user.uid,at,action,game,target:base+'/rankingBackups/'+rank.id,reason:input.reason,backupId:rank.id});return {backupId:rank.id};}
-   tx.set(b,{actor:user.uid,at,target:target.path,action,game:game||null,before:old});
-   tx.set(a,{actor:user.uid,at,action,game:game||null,target:target.path,reason:input.reason,backupId:b.id,before:old,after:next});tx.set(target,next);
-   if(action==='reset')tx.set(rank,{actor:user.uid,at,game,generation:old?.generation||0,rows,reason:input.reason});
-   if(action==='campaign')tx.set(campaign,{actor:user.uid,at,game,enabled:input.enabled,startAt:input.enabled?Date.now():null,endAt:input.endAt??null,previousCampaign:old?.campaign?.id||null});
-   return {ok:true,auditId:a.id,backupId:b.id};
+ const stable=x=>Array.isArray(x)?x.map(stable):x&&typeof x==='object'?Object.fromEntries(Object.keys(x).sort().map(k=>[k,stable(x[k])])):x;
+ const same=(a,b)=>JSON.stringify(stable(a))===JSON.stringify(stable(b));
+ const list=async k=>(await F.getDocsFromServer(F.query(col(k),F.orderBy('at','desc'),F.limit(100)))).docs.map(d=>plain({...d.data(),id:d.id}));
+ async function writeOne(user,action,target,reason,makeNext){
+  const audit=F.doc(col('managementAudit')),backup=F.doc(col('managementBackups'));
+  const prepared=await F.runTransaction(db,async tx=>{
+   const snap=await tx.get(target),rawBefore=snap.exists()?snap.data():null,before=rawBefore?plain(rawBefore):null,at=F.serverTimestamp();
+   const next=makeNext(before,at,audit.id,backup.id),targets=[target.path];
+   const after=Object.fromEntries(Object.entries(next).filter(([key])=>!['updatedAt','lastAudit','lastBackup'].includes(key)));
+   tx.set(backup,{id:backup.id,actor:user.uid,at,action,targets,before:[rawBefore],reason,auditId:audit.id});
+   tx.set(audit,{id:audit.id,actor:user.uid,at,action,targets,reason,before:[before],after:[after],backupId:backup.id});
+   return {before,next};
   });
+  await F.runTransaction(db,async tx=>{
+   const snap=await tx.get(target),current=snap.exists()?plain(snap.data()):null;
+   if(!same(current,prepared.before))throw Error('management-target-changed-after-backup');
+   tx.set(target,prepared.next,{merge:true});
+  });
+  return {ok:true,auditId:audit.id,backupId:backup.id};
+ }
+ async function snapshot(){
+  const [docs,notice,audit]=await Promise.all([Promise.all(GAME_IDS.map(id=>F.getDocFromServer(ref('gameSettings',id)))),F.getDocFromServer(ref('notices','current')),list('managementAudit')]);
+  const games=GAME_IDS.map(id=>{const data=docs.find(d=>d.id===id)?.exists()?plain(docs.find(d=>d.id===id).data()):{};return {id,...data,status:visibilityStatus(data)}});
+  const campaignMap=new Map();for(const game of games){const c=game.campaign;if(!c?.id)continue;const row=campaignMap.get(c.id)||{...c,games:[],enabled:true};row.games.push(game.id);row.enabled=row.enabled&&c.enabled===true;campaignMap.set(c.id,row)}
+  const campaigns=[...campaignMap.values()];
+  return {games,notice:notice.exists()?plain(notice.data()):null,managementAudit:audit,campaigns};
+ }
+ async function mutate(user,action,input){
+  checkedInput(action,input);
+  if(action==='campaign'){
+   const campaignId=F.doc(col('managementAudit')).id,results=[];
+   for(const game of input.games){
+    const target=ref('gameSettings',game);
+    try{const result=await writeOne(user,action,target,input.reason,(previous,at,auditId,backupId)=>{
+     const stamp=Date.now();
+     if(input.enabled&&previous?.campaign?.enabled===true&&Number(previous.campaign.endAt)>stamp)throw Error('campaign-already-scheduled');
+     return {status:previous?.status||'published',...previous,campaign:{id:input.enabled?campaignId:(previous?.campaign?.id||null),enabled:input.enabled,startAt:input.startAt,endAt:input.endAt,actor:user.uid},updatedAt:at,lastAudit:auditId,lastBackup:backupId};
+    });results.push({...result,game,campaignId});}catch(error){if(results.length){const partial=new Error(`一部のゲームだけ更新しました（${results.map(r=>r.game).join('、')}）。状態を確認して再操作してください。 ${error.message||''}`);partial.code='campaign-partial';throw partial;}throw error;}
+   }
+   return {ok:true,campaignId,results};
+  }
+  const target=action==='visibility'?ref('gameSettings',input.game):ref('notices','current');
+  return writeOne(user,action,target,input.reason,(previous,at,auditId,backupId)=>action==='notice'?{
+   title:input.deleted===true?(previous?.title||''):input.title,
+   body:input.deleted===true?(previous?.body||''):input.body,
+   published:input.deleted===true?false:input.published,
+   deleted:input.deleted===true,revision:(previous?.revision||0)+1,
+   updatedAt:at,lastAudit:auditId,lastBackup:backupId
+  }:{status:input.status,updatedAt:at,lastAudit:auditId,lastBackup:backupId});
  }
  return {snapshot,mutate,plain};
 }
