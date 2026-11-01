@@ -1,13 +1,14 @@
 import {client} from './ranking-sync-api.js?v=ranking-admin-v1';
+import {bestSharedScore} from './ranking-sync-shared-score.js';
 const storage=window.manabiStorage,config=window.MANABI_BACKEND_CONFIG;
 const games=['keisan','pref-name','pref-place','alphabet','distribution','distribution2','exchangeAssociation','kotowaza','multiplicationProperties','shapeExpressions','keisanSummary'];
 const baseline=new Map(),published=new Map(),generationBaseline=new Map();let started=false,work=Promise.resolve(),startupPromise=null,profileUnsubscribe=null,identityReady=config?.playerNameSyncEnabled!==true;
 const PENDING='mgl_production_rank_pending_v1';
 function profileRow(game){return window.ManabiProfile?.records(storage).find(x=>x.id===game)||null}
 function localBest(game){
- const record=profileRow(game);let best=Math.max(0,Number(record?.best)||0);
- try{const s=JSON.parse(storage.getItem('mgl_challenge120_v1:'+game)||'null');for(const n of Object.values(s?.bests||{}))if(Number.isSafeInteger(n))best=Math.max(best,n);if(Number.isSafeInteger(s?.attemptBest))best=Math.max(best,s.attemptBest)}catch{}
- return best;
+ const record=profileRow(game);let challenge=null;
+ try{challenge=JSON.parse(storage.getItem('mgl_challenge120_v1:'+game)||'null')}catch{}
+ return bestSharedScore(record,challenge);
 }
 function projection(game,best){
  const catalog=window.ManabiProfileCatalog?.find(x=>x.id===game),rows=window.ManabiProfile?.records(storage)||[];

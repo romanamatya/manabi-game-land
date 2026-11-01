@@ -97,16 +97,19 @@ test('admin exclusion hides a row, restore reveals it, and the record remains pr
 });
 
 test('a ranking migration copies legacy rows without altering or exposing their old documents',async()=>{
- const childDb=child(),legacy=F.doc(childDb,rowPath('keisan','child-a'));await assertSucceeds(writeRow(legacy,row('child-a','keisan',12)));
+ const childDb=child(),childBDb=child('child-b'),legacyA=F.doc(childDb,rowPath('keisan','child-a')),legacyB=F.doc(childBDb,rowPath('keisan','child-b'));
+ await assertSucceeds(writeRow(legacyA,row('child-a','keisan',12)));await assertSucceeds(writeRow(legacyB,row('child-b','keisan',23,{nickname:'はな'})));
  const a=admin(),backupId='migration-1',at=F.serverTimestamp();
- await assertSucceeds(F.runTransaction(a,async tx=>{tx.set(F.doc(a,controlPath('keisan')),{generation:0,phase:'migrating',writeLocked:true,schemaVersion:2,backupId,updatedAt:at});tx.set(F.doc(a,backupPath(backupId)),{actor:adminId,at,kind:'migration',game:'keisan',generation:0,status:'copying',rowCount:1,reason:'移行テスト'});}));
- const source=(await F.getDoc(F.doc(a,rowPath('keisan','child-a')))).data();
- await assertSucceeds(F.setDoc(F.doc(a,backupEntryPath(backupId,'child-a')),{uid:'child-a',row:source}));
- await assertSucceeds(F.setDoc(F.doc(a,rowPath('keisan','0_child-a')),{...source,generation:0,visibility:'active'}));
+ await assertSucceeds(F.runTransaction(a,async tx=>{tx.set(F.doc(a,controlPath('keisan')),{generation:0,phase:'migrating',writeLocked:true,schemaVersion:2,backupId,updatedAt:at});tx.set(F.doc(a,backupPath(backupId)),{actor:adminId,at,kind:'migration',game:'keisan',generation:0,status:'copying',rowCount:2,reason:'移行テスト'});}));
+ const sourceA=(await F.getDoc(F.doc(a,rowPath('keisan','child-a')))).data(),sourceB=(await F.getDoc(F.doc(a,rowPath('keisan','child-b')))).data();
+ await assertSucceeds(F.setDoc(F.doc(a,backupEntryPath(backupId,'child-a')),{uid:'child-a',row:sourceA}));await assertSucceeds(F.setDoc(F.doc(a,backupEntryPath(backupId,'child-b')),{uid:'child-b',row:sourceB}));
+ await assertSucceeds(F.setDoc(F.doc(a,rowPath('keisan','0_child-a')),{...sourceA,generation:0,visibility:'active'}));await assertSucceeds(F.setDoc(F.doc(a,rowPath('keisan','0_child-b')),{...sourceB,generation:0,visibility:'active'}));
  const locked=F.doc(a,controlPath('keisan'));await assertFails(F.getDocs(F.query(F.collection(childDb,'productionRankings/v1/games/keisan/players'),F.where('visibility','==','active'),F.where('generation','==',0))));
  await assertSucceeds(F.updateDoc(locked,{phase:'ready',writeLocked:false,updatedAt:F.serverTimestamp()}));
- const listed=await assertSucceeds(F.getDocs(F.query(F.collection(childDb,'productionRankings/v1/games/keisan/players'),F.where('visibility','==','active'),F.where('generation','==',0))));assert.equal(listed.size,1);assert.equal(listed.docs[0].id,'0_child-a');
- await assertFails(F.getDoc(legacy));
+ const listed=await assertSucceeds(F.getDocs(F.query(F.collection(childDb,'productionRankings/v1/games/keisan/players'),F.where('visibility','==','active'),F.where('generation','==',0))));assert.equal(listed.size,2);assert.deepEqual(listed.docs.map(d=>d.id).sort(),['0_child-a','0_child-b']);
+ assert.equal((await assertSucceeds(F.getDoc(F.doc(a,backupEntryPath(backupId,'child-a')))).then(s=>s.data())).row.bestStreak,12);assert.equal((await assertSucceeds(F.getDoc(F.doc(a,backupEntryPath(backupId,'child-b')))).then(s=>s.data())).row.bestStreak,23);
+ assert.equal((await assertSucceeds(F.getDoc(F.doc(a,rowPath('keisan','child-a')))).then(s=>s.data())).bestStreak,12);assert.equal((await assertSucceeds(F.getDoc(F.doc(a,rowPath('keisan','child-b')))).then(s=>s.data())).bestStreak,23);
+ await assertFails(F.getDoc(legacyA));
  await assertFails(writeRow(F.doc(childDb,rowPath('keisan','child-a')),row('child-a','keisan',15)));
 });
 
@@ -120,6 +123,7 @@ test('reset locks writes until backup completes, advances one game generation, a
  await assertSucceeds(F.setDoc(F.doc(a,backupEntryPath(backupId,'child-a')),{uid:'child-a',row:before}));
  const finalAt=F.serverTimestamp();await assertSucceeds(F.runTransaction(a,async tx=>{tx.update(F.doc(a,controlPath('keisan')),{generation:1,phase:'ready',writeLocked:false,previousGeneration:0,updatedAt:finalAt});tx.update(F.doc(a,backupPath(backupId)),{status:'complete',completedAt:finalAt});tx.set(F.doc(a,auditPath('reset-audit')),{actor:adminId,at:finalAt,action:'reset',game:'keisan',reason:'学期切り替え',backupId,beforeGeneration:0,afterGeneration:1,rowCount:1});}));
  const oldStillThere=await assertSucceeds(F.getDoc(old));assert.equal(oldStillThere.data().bestStreak,20);
+ await assertFails(writeRow(F.doc(ordinary,rowPath('keisan','0_child-a')),row('child-a','keisan',99,{generation:0,visibility:'active'})));
  await assertSucceeds(writeRow(F.doc(ordinary,rowPath('keisan','1_child-a')),row('child-a','keisan',5,{generation:1,visibility:'active'})));
  const newRows=await assertSucceeds(F.getDocs(F.query(F.collection(ordinary,'productionRankings/v1/games/keisan/players'),F.where('visibility','==','active'),F.where('generation','==',1))));assert.equal(newRows.size,1);assert.equal(newRows.docs[0].data().bestStreak,5);
  await assertFails(F.getDocs(F.query(F.collection(ordinary,'productionRankings/v1/games/keisan/players'),F.where('visibility','==','active'),F.where('generation','==',0))));
