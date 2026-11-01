@@ -29,8 +29,9 @@ async function adminWrite(db,action,refs,values){
  batch.set(backup,{id:backup.id,actor:adminUid,at,action,targets,before,reason,auditId:audit.id});
  const after=values.map(value=>Object.fromEntries(Object.entries(value).filter(([key])=>key!=='updatedAt')));
  batch.set(audit,{id:audit.id,actor:adminUid,at,action,targets,reason,before,after,backupId:backup.id});
- refs.forEach((ref,i)=>batch.set(ref,{...values[i],lastAudit:audit.id,lastBackup:backup.id}));
- await batch.commit();return {audit,backup};
+ await batch.commit();
+ const apply=F.writeBatch(db);refs.forEach((ref,i)=>apply.set(ref,{...values[i],lastAudit:audit.id,lastBackup:backup.id}));
+ await apply.commit();return {audit,backup};
 }
 
 serialTest('admin can change game visibility; child can read state but cannot change it',async()=>{

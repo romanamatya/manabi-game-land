@@ -405,9 +405,19 @@ service cloud.firestore {
     function managementAuditPath(id) { return /databases/$(database)/documents/productionAdmin/v1/managementAudit/$(id); }
     function managementBackupPath(id) { return /databases/$(database)/documents/productionAdmin/v1/managementBackups/$(id); }
     function managementWriteValid(auditId, backupId, targetPath, action) {
+      let auditPath = managementAuditPath(auditId);
+      let backupPath = managementBackupPath(backupId);
+      let audit = get(auditPath).data;
+      let backup = get(backupPath).data;
       return productionManagementEnabled()
-        && auditId is string && backupId is string
-        && targetPath is string && action in ['campaign','notice','visibility'];
+        && audit.id == auditId && audit.actor == request.auth.uid
+        && audit.action == action && audit.backupId == backupId
+        && audit.targets.size() == 1 && targetPath in audit.targets
+        && backup.id == backupId && backup.auditId == auditId
+        && backup.actor == request.auth.uid && backup.action == action
+        && backup.targets == audit.targets && backup.targets.size() == 1
+        && backup.before is list && backup.before.size() == 1
+        && (backup.before[0] == null || backup.before[0] == resource.data);
     }
 
     match /productionAdmin/v1/gameSettings/{gameId} {
@@ -418,7 +428,8 @@ service cloud.firestore {
         && request.resource.data.status in ['published','preparing','hidden']
         && request.resource.data.updatedAt == request.time
         && request.resource.data.lastAudit is string && request.resource.data.lastBackup is string
-        && managementWriteValid(request.resource.data.lastAudit, request.resource.data.lastBackup, 'productionAdmin/v1/gameSettings/' + gameId, 'visibility');
+        && (managementWriteValid(request.resource.data.lastAudit, request.resource.data.lastBackup, 'productionAdmin/v1/gameSettings/' + gameId, 'visibility')
+          || managementWriteValid(request.resource.data.lastAudit, request.resource.data.lastBackup, 'productionAdmin/v1/gameSettings/' + gameId, 'campaign'));
       allow update: if request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status','campaign','updatedAt','lastAudit','lastBackup'])
         && gameId in ['keisan','pref-name','pref-place','alphabet','distribution','distribution2','exchangeAssociation','kotowaza','multiplicationProperties','shapeExpressions','keisanSummary']
         && request.resource.data.status in ['published','preparing','hidden']
