@@ -85,6 +85,23 @@ serialTest('published game ranking still works; preparing and hidden games rejec
  await assertSucceeds(F.setDoc(F.doc(student,'productionRankings/v1/games/keisan/players/rank-new'),row('rank-new','keisan',1,'にじ',F.serverTimestamp())));
 });
 
+serialTest('an existing unlinked profile can keep its separate ranking UID and continue the shared ranking',async()=>{
+ const profileUid='legacy-profile',rankingUid='legacy-ranker';
+ await env.withSecurityRulesDisabled(async c=>{const db=c.firestore();
+  await F.setDoc(F.doc(db,'players/'+profileUid),{nickname:'こはる',points:88,bestStreak:12,appearance:{icon:'owl'},updatedAt:F.Timestamp.fromMillis(1)});
+  await F.setDoc(F.doc(db,'productionRankings/v1/games/keisan/players/'+rankingUid),row(rankingUid,'keisan',18,'こはる'));
+ });
+ const profileDb=child(profileUid).firestore(),rankingDb=child(rankingUid).firestore();
+ const profile=F.doc(profileDb,'players/'+profileUid),link=F.doc(rankingDb,'productionRankings/v1/identityLinks/'+rankingUid);
+ const rank=F.doc(rankingDb,'productionRankings/v1/games/keisan/players/'+rankingUid);
+ await assertSucceeds(F.updateDoc(profile,{rankingUid,updatedAt:F.serverTimestamp()}));
+ await assertSucceeds(F.setDoc(link,{uid:rankingUid,profileUid,createdAt:F.serverTimestamp()}));
+ await assertSucceeds(F.updateDoc(rank,row(rankingUid,'keisan',19,'こはる',F.serverTimestamp())));
+ const savedProfile=(await F.getDoc(profile)).data(),savedRank=(await F.getDoc(rank)).data();
+ assert.equal(savedProfile.points,88);assert.equal(savedProfile.bestStreak,12);assert.equal(savedProfile.rankingUid,rankingUid);
+ assert.equal(savedRank.bestStreak,19);assert.equal(savedRank.nickname,'こはる');
+});
+
 serialTest('admin nickname change remains authorized and leaves child progress unchanged',async()=>{
  const db=admin().firestore(),profile=F.doc(db,'players/profile-a'),rankRef=F.doc(db,'productionRankings/v1/games/keisan/players/rank-a');
  const old=(await assertSucceeds(F.getDoc(profile))).data(),oldRank=(await assertSucceeds(F.getDoc(rankRef))).data(),at=F.serverTimestamp(),batch=F.writeBatch(db);
