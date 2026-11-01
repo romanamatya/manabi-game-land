@@ -14,11 +14,15 @@
   "productionAuthVerified": false,
   "productionRulesApproved": false,
   "legacyScoreSyncEnabled": false,
-  "accountAccessEnabled": true,
+  "accountAccessEnabled": false,
   "adminFeatures": {
     "playerRename": true,
-    "playerSuspension": true
+    "playerSuspension": false
   },
+  "managementEnabled": false,
+  "campaignsEnabled": false,
+  "availabilityEnabled": false,
+  "announcementsEnabled": false,
   "gameIds": [
     "keisan",
     "pref-name",
