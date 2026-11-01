@@ -8,6 +8,8 @@
     "appId": "1:499579497285:web:b272cb00a535b583a3ec2c"
   },
   "playerSyncEnabled": false,
+  "rankingSyncEnabled": true,
+  "learningAnalysisEnabled": true,
   "adminEnabled": true,
   "dataSchema": "previewSpark/v1",
   "productionReleaseApproved": false,

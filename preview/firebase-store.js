@@ -1,4 +1,4 @@
-import {contractFor,normalizePlayer,legacyScorePatch,canonicalNickname,error} from './data-contract.js?v=d91dccb7e6d6';
+import {contractFor,normalizePlayer,legacyScorePatch,canonicalNickname,error} from './data-contract.js?v=785e38d0207a';
 export function createFirestoreStore(mode,F,db,{catalog=[],rankingGameIds=[]}={}){
  // Rules can reject a stale backup before a transaction conflict is retried.
  // Retry the complete read/write transaction; never relax validation or write outside it.
@@ -24,7 +24,7 @@ export function createFirestoreStore(mode,F,db,{catalog=[],rankingGameIds=[]}={}
    const linkStart=1,rankStart=1+links.length;
    for(let i=0;i<links.length;i++){const current=reads[linkStart+i];if(!current.exists()||current.data().profileUid!==input.uid||current.data().uid!==links[i].uid)throw error('player-ranking-link-review');}
    const rankings=rankRefs.flatMap((x,i)=>{const snap=reads[rankStart+i];return snap.exists()?[{uid:x.uid,game:x.game,data:snap.data()}]:[]});
-   const at=F.serverTimestamp(),backupData={player:data,links:links.map(x=>({uid:x.uid,profileUid:x.data.profileUid})),rankings};
+   const at=F.serverTimestamp(),backupData=mode==='preview'?data:{player:data,links:links.map(x=>({uid:x.uid,profileUid:x.data.profileUid})),rankings};
    tx.set(b,{actor:user.uid,at,uid:input.uid,target:'players/'+input.uid,kind:'rename',data:backupData});
    tx.set(a,{actor:user.uid,at,uid:input.uid,target:'players/'+input.uid,action:'rename',reason,backupId:b.id,beforeName:String(data.nickname||''),afterName:nickname});
    tx.update(target,{nickname,lastAudit:a.id,lastBackup:b.id,adminUpdatedAt:at});

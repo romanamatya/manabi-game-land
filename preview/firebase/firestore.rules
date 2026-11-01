@@ -281,7 +281,7 @@ service cloud.firestore {
 
     // Sanitized, per-game public leaderboard projection. Player profiles stay private.
     function rankingGame(game) {
-      return game in ['keisan','pref-name','pref-place','alphabet','distribution','distribution2','exchangeAssociation','kotowaza','multiplicationProperties','shapeExpressions','keisanSummary'];
+      return game in ['keisan','pref-name','pref-place','alphabet','distribution','distribution2','exchangeAssociation','kotowaza','multiplicationProperties','shapeExpressions','keisanSummary','kakudo'];
     }
     function rankingShape(game, uid, data) {
       return rankingGame(game) && data.keys().hasOnly(['uid','game','nickname','bestStreak','icon','frame','title','badge','updatedAt'])
@@ -308,6 +308,59 @@ service cloud.firestore {
         && request.resource.data.game == resource.data.game
         && request.resource.data.uid == resource.data.uid
         && request.resource.data.bestStreak >= resource.data.bestStreak;
+      allow delete: if false;
+    }
+
+    // Challenge records are stored under a different collection from regular
+    // best streaks; an old practice record cannot enter this board.
+    function challengeRankingShape(game, uid, data) {
+      return rankingGame(game) && data.keys().hasOnly(['uid','game','mode','nickname','bestStreak','icon','frame','title','badge','updatedAt'])
+        && data.uid == uid && data.game == game && data.mode == 'challenge120'
+        && nameOK(data.nickname) && data.bestStreak is int && data.bestStreak >= 1 && data.bestStreak <= 100000
+        && data.icon is string && data.icon.size() <= 40 && data.frame is string && data.frame.size() <= 40
+        && (data.title == null || data.title is string && data.title.size() <= 80)
+        && (data.badge == null || data.badge is string && data.badge.size() <= 80)
+        && data.updatedAt == request.time;
+    }
+    match /previewSpark/v1/challenge120Rankings/{game}/players/{uid} {
+      allow get, list: if request.auth != null && rankingGame(game);
+      allow create: if request.auth != null
+        && request.auth.token.firebase.sign_in_provider == 'anonymous' && request.auth.uid == uid
+        && challengeRankingShape(game, uid, request.resource.data);
+      allow update: if request.auth != null
+        && request.auth.token.firebase.sign_in_provider == 'anonymous' && request.auth.uid == uid
+        && challengeRankingShape(game, uid, request.resource.data)
+        && request.resource.data.bestStreak >= resource.data.bestStreak;
+      allow delete: if false;
+    }
+
+    function learningAnswerShape(data, uid) {
+      return data.keys().hasOnly(['uid','game','mode','angle','total','correct','updatedAt'])
+        && data.uid == uid && data.game == 'kakudo' && data.mode in ['read','match']
+        && data.angle in [0,45,60,90,120,135,150,180,210,225,240,270,300,315,330,360]
+        && data.total is int && data.total >= 1 && data.total <= 1000000
+        && data.correct is int && data.correct >= 0 && data.correct <= data.total
+        && data.updatedAt == request.time;
+    }
+    match /previewSpark/v1/learningAnswers/{uid_game_mode_angle} {
+      // Administrators see only per-angle totals, never individual answers.
+      allow get, list: if admin();
+      allow create: if request.auth != null
+        && request.auth.token.firebase.sign_in_provider == 'anonymous'
+        && request.auth.uid == request.resource.data.uid
+        && request.resource.data.total == 1
+        && request.resource.data.correct in [0,1]
+        && learningAnswerShape(request.resource.data, request.auth.uid);
+      allow update: if request.auth != null
+        && request.auth.token.firebase.sign_in_provider == 'anonymous'
+        && request.auth.uid == resource.data.uid
+        && request.resource.data.uid == resource.data.uid
+        && request.resource.data.game == resource.data.game
+        && request.resource.data.mode == resource.data.mode
+        && request.resource.data.angle == resource.data.angle
+        && request.resource.data.total == resource.data.total + 1
+        && request.resource.data.correct in [resource.data.correct, resource.data.correct + 1]
+        && learningAnswerShape(request.resource.data, request.auth.uid);
       allow delete: if false;
     }
 

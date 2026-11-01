@@ -31,6 +31,10 @@ export function createManagementStore(mode,F,db){
   const campaigns=[...campaignMap.values()];
   return {games,notice:notice.exists()?plain(notice.data()):null,managementAudit:audit,campaigns};
  }
+ async function learningAnalysis(){
+  const result=await F.getDocsFromServer(F.query(col('learningAnswers'),F.limit(2000)));
+  return result.docs.map(d=>plain({...d.data(),id:d.id}));
+ }
  async function mutate(user,action,input){
   input=checkedInput(action,input);
   if(action==='visibilityBatch'){
@@ -67,5 +71,5 @@ export function createManagementStore(mode,F,db){
    updatedAt:at,lastAudit:auditId,lastBackup:backupId
   }:{status:input.status,updatedAt:at,lastAudit:auditId,lastBackup:backupId});
  }
- return {snapshot,mutate,plain};
+ return {snapshot,mutate,learningAnalysis,plain};
 }

@@ -10,13 +10,13 @@ const M=await import('../../player-sync-model.js');
 const context={};context.window=context;vm.createContext(context);
 for(const path of ['../../economy-core.js','../../profile-catalog.js'])vm.runInContext(await readFile(new URL(path,import.meta.url),'utf8'),context);
 const core=context.ManabiEconomyCore,catalog=context.ManabiProfileCatalog;
-const cfg={enabled:true,environment:'previewSpark/v1',expectedProjectId:'demo-manabi-preview',firebase:{projectId:'demo-manabi-preview',authDomain:'demo-manabi-preview.firebaseapp.com',apiKey:'demo-api-key',appId:'demo-app'}};
+const cfg={mode:'preview',enabled:true,environment:'previewSpark/v1',expectedProjectId:'manabi-game-landcheck',firebase:{projectId:'manabi-game-landcheck',authDomain:'manabi-game-landcheck.firebaseapp.com',apiKey:'demo-api-key',appId:'demo-app'}};
 const base='previewSpark/v1';let env;
 const client=async(uid='child-a',testScope=false)=>{const db=env.authenticatedContext(uid,{firebase:{sign_in_provider:'anonymous'},auth_time:Math.floor(Date.now()/1000)}).firestore(),auth={currentUser:{uid,isAnonymous:true},authStateReady:async()=>{}};return createPlayerClient(cfg,[{getApps:()=>[],initializeApp:()=>({options:cfg.firebase})},{getAuth:()=>auth,setPersistence:async()=>{},browserLocalPersistence:{}},{...F,getFirestore:()=>db}],{testScope});};
 const local=()=>({nickname:'ねこ',balances:{...M.zero(),math:200},best:Object.fromEntries(M.GAMES.map(g=>[g,0])),titles:[],owned:[],appearance:{icon:'cat',frame:'plain',badge:null}});
 const meta=(id='device-aaaaaaaa',balances={...M.zero(),math:200})=>({deviceId:id,baseline:{balances},earned:M.zero(),appearanceBase:0,appearanceDirty:false});
 const pRef=(db,uid='child-a',scope='players')=>F.doc(db,base,scope,uid);
-before(async()=>{env=await initializeTestEnvironment({projectId:'demo-manabi-preview',firestore:{host:'127.0.0.1',port:8080,rules:await readFile('firestore.rules','utf8')}})});
+before(async()=>{env=await initializeTestEnvironment({projectId:'manabi-game-landcheck',firestore:{host:'127.0.0.1',port:8080,rules:await readFile('firestore.rules','utf8')}})});
 beforeEach(async()=>{await env.clearFirestore();await env.withSecurityRulesDisabled(c=>Promise.all([F.setDoc(F.doc(c.firestore(),base,'private','admin'),{uid:'admin-for-sync-test',enabled:true}),F.setDoc(F.doc(c.firestore(),base,'private','revocation'),{after:F.Timestamp.fromMillis(0),actor:'console'})]));});
 after(()=>env.cleanup());
 test('imports local points, best, titles, owned items and appearance without loss',async()=>{
@@ -85,7 +85,7 @@ test('pure local projection preserves unacknowledged offline earnings',()=>{
 
 test('complete six-game legacy inventory and subject equipment fit the migration Rules',async()=>{
  const a=await client(),l=local(),m=meta();for(const g of M.GAMES)l.best[g]=700;
- l.titles=Array.from(catalog.flatMap(g=>g.titles.map(t=>t.id)));l.owned=Array.from(core.catalog.map(i=>i.id));
- l.appearance={icon:'icon-030',frame:'frame-15',badge:'distribution:25',subjectIcons:{math:'icon-007',social:'icon-031',english:'icon-032',japanese:'icon-023'},subjectFrames:{math:'frame-11'},limitedOwned:Array.from(core.limitedRewards.map(i=>i.id)),limitedFramesOwned:['frame-11'],volume:1,reduceMotion:false};
+ l.titles=Array.from(catalog.filter(g=>M.GAMES.includes(g.id)).flatMap(g=>g.titles.map(t=>t.id)));l.owned=['icon-022','icon-031','icon-010','icon-032','icon-023','icon-007','frame-11','frame-14'];
+ l.appearance={icon:'icon-007',frame:'frame-11',badge:'distribution:25',subjectIcons:{math:'icon-007',social:'icon-031',english:'icon-032',japanese:'icon-023'},subjectFrames:{math:'frame-11'},limitedOwned:Array.from(core.limitedRewards.map(i=>i.id).filter(id=>l.owned.includes(id))),limitedFramesOwned:['frame-11'],volume:1,reduceMotion:false};
  const r=await a.push(l,m,catalog,core);assert.equal(r.player.titles.length,32);assert.equal(r.player.best.keisan,700);assert.equal(r.player.owned.length,l.owned.length);assert.equal(r.player.appearance.subjectFrames.math,'frame-11');
 });

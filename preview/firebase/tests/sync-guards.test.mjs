@@ -1,6 +1,7 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-globalThis.window={MANABI_ENV:{preview:true},manabiStorage:{getItem(){throw Error('storage must not be read while inactive')}}};
+const previewConfig={mode:'preview',enabled:true,environment:'previewSpark/v1',expectedProjectId:'manabi-game-landcheck',firebase:{projectId:'manabi-game-landcheck',authDomain:'manabi-game-landcheck.firebaseapp.com',apiKey:'test',appId:'test'},playerSyncEnabled:false};
+globalThis.window={MANABI_ENV:{preview:true},MANABI_BACKEND_CONFIG:previewConfig,MANABI_SPARK_CONFIG:previewConfig,manabiStorage:{getItem(){throw Error('storage must not be read while inactive')}}};
 globalThis.location={href:'https://romanamatya.github.io/manabi-game-land/preview/index.html'};
 const {start}=await import('../../player-sync.js');
 const M=await import('../../player-sync-model.js');

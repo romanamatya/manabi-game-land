@@ -1,0 +1,18 @@
+import {before,after,beforeEach,test} from 'node:test';
+import assert from 'node:assert/strict';
+import {readFile} from 'node:fs/promises';
+import {initializeTestEnvironment,assertFails,assertSucceeds} from '@firebase/rules-unit-testing';
+import * as F from 'firebase/firestore';
+import {createManagementStore} from '../../../shared-src/site/management-store.js';
+import {summarizeKakudoLearning} from '../../../shared-src/site/kakudo-learning-analysis.js';
+const projectId='demo-manabi-preview';
+let env;
+const ref=(db,id)=>F.doc(db,'previewSpark/v1/learningAnswers',id);
+const row=(uid='child-a',mode='read',angle=90,total=1,correct=1)=>({uid,game:'kakudo',mode,angle,total,correct,updatedAt:F.serverTimestamp()});
+const child=uid=>env.authenticatedContext(uid,{firebase:{sign_in_provider:'anonymous'}}).firestore();
+before(async()=>{env=await initializeTestEnvironment({projectId,firestore:{host:'127.0.0.1',port:8080,rules:await readFile(new URL('../firestore.rules',import.meta.url),'utf8')}});});
+beforeEach(async()=>env.clearFirestore());
+after(async()=>env?.cleanup());
+test('child can create and monotonically increment only own valid per-angle records',async()=>{const db=child('child-a'),r=ref(db,'child-a_kakudo_read_90');await assertSucceeds(F.setDoc(r,row()));await assertSucceeds(F.updateDoc(r,{total:2,correct:2,updatedAt:F.serverTimestamp()}));await assertFails(F.updateDoc(r,{total:5,correct:5,updatedAt:F.serverTimestamp()}));await assertFails(F.updateDoc(r,{total:3,correct:3,angle:180,updatedAt:F.serverTimestamp()}));await assertFails(F.deleteDoc(r));});
+test('children cannot read learning analytics or write another UID',async()=>{const db=child('child-a');await assertSucceeds(F.setDoc(ref(db,'child-a_kakudo_match_45'),row('child-a','match',45)));await assertFails(F.getDoc(ref(db,'child-a_kakudo_match_45')));await assertFails(F.setDoc(ref(db,'child-b_kakudo_read_90'),row('child-b')));await assertFails(F.getDocs(F.collection(db,'previewSpark/v1/learningAnswers')));});
+test('administrator can retrieve persisted answer aggregates and the management view summarizes them',async()=>{await env.withSecurityRulesDisabled(async context=>{const seed=context.firestore();await F.setDoc(F.doc(seed,'previewSpark/v1/private/admin'),{uid:'teacher',enabled:true});await F.setDoc(F.doc(seed,'previewSpark/v1/private/revocation'),{after:F.Timestamp.fromMillis(0),actor:'console'});await F.setDoc(F.doc(seed,'previewSpark/v1/learningAnswers/child-a_kakudo_read_90'),{uid:'child-a',game:'kakudo',mode:'read',angle:90,total:4,correct:3,updatedAt:F.Timestamp.now()});await F.setDoc(F.doc(seed,'previewSpark/v1/learningAnswers/child-b_kakudo_read_90'),{uid:'child-b',game:'kakudo',mode:'read',angle:90,total:6,correct:4,updatedAt:F.Timestamp.now()});});const db=env.authenticatedContext('teacher',{firebase:{sign_in_provider:'password'},auth_time:Math.floor(Date.now()/1000)+1}).firestore();const rows=await assertSucceeds(createManagementStore('preview',F,db).learningAnalysis());const summary=summarizeKakudoLearning(rows);assert.deepEqual(summary.map(({mode,angle,total,correct,accuracyPercent})=>({mode,angle,total,correct,accuracyPercent})),[{mode:'read',angle:90,total:10,correct:7,accuracyPercent:70}]);assert.deepEqual(summarizeKakudoLearning([{mode:'match',angle:225,total:1,correct:0}]).map(({mode,angle,accuracyPercent})=>({mode,angle,accuracyPercent})),[{mode:'match',angle:225,accuracyPercent:0}]);assert.deepEqual(summarizeKakudoLearning([{mode:'read',angle:75,total:1,correct:1}]),[]);});

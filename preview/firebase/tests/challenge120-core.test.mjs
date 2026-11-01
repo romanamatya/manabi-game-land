@@ -1,6 +1,9 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import C from '../../challenge120-core.js';
+import {readFile} from 'node:fs/promises';
+import vm from 'node:vm';
+const sandbox={structuredClone};sandbox.globalThis=sandbox;vm.runInNewContext(await readFile(new URL('../../challenge120-core.js',import.meta.url),'utf8'),sandbox);const C=sandbox.ManabiChallenge120Core;
 for(const [game,need] of Object.entries(C.highest))test(game+' starts at its earned threshold and keeps real highest',()=>{let s=C.unlock(C.fresh(game),true);s=C.start(s,1000,'attempt','season');assert.equal(s.streak,need);assert.equal(s.attemptBest,need);let tok=C.issue(s,'q1');let result=C.answer(s,tok,true,2000);assert.equal(result.state.streak,need+1);assert.equal(result.state.attemptBest,need+1);});
 test('wrong answer ends challenge and records threshold without allowing practice again',()=>{let s=C.start(C.unlock(C.fresh('keisan'),true),1000,'attempt','season');let r=C.answer(s,C.issue(s,'q1'),false,2000);assert.equal(r.state.phase,'ended');assert.equal(r.state.endReason,'wrong-answer');assert.equal(r.state.bests.season,20);assert.equal(C.answer(r.state,{...C.issue(r.state,'q2'),mode:'practice'},true,3000).accepted,false);});
 test('retry starts threshold and never lowers previous best',()=>{let s=C.start(C.unlock(C.fresh('distribution'),true),0,'a','season');for(let i=0;i<8;i++)s=C.answer(s,C.issue(s,'q'+i),true,i+1).state;s=C.settle(s,120001);assert.equal(s.bests.season,33);s=C.start(s,130000,'b','season');assert.equal(s.streak,25);s=C.settle(s,250001);assert.equal(s.bests.season,33);});
+test('timeout stops accepting answers and preserves the final challenge record',()=>{let s=C.start(C.unlock(C.fresh('kakudo'),true),1000,'timeout-test','season');const token=C.issue(s,'q1');s=C.answer(s,token,true,2000).state;s=C.settle(s,121000);assert.equal(s.phase,'ended');assert.equal(s.endReason,'timeout');assert.equal(s.bests.season,26);const after=C.answer(s,C.issue(s,'q2'),true,121001);assert.equal(after.accepted,false);assert.equal(after.state.bests.season,26);});

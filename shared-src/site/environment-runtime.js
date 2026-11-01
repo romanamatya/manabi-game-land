@@ -3,6 +3,7 @@
  const preview=window.MANABI_ENV?.preview===true;
  const adminTest=new URL(location.href).searchParams.has('adminTest');
  const syncTest=preview&&new URL(location.href).searchParams.get('syncTest')==='1';
+ if(preview&&window.MANABI_BACKEND_CONFIG?.rankingSyncEnabled===true&&!adminTest&&!syncTest){window.ManabiRankingReady=import(new URL('ranking-sync-client.js?v=rank-share-1',runtimeURL).href).then(m=>m.startRankingSync()).catch(()=>null);}
  const storagePrefix=adminTest?(preview?'manabi_public_preview_test:':'manabi_preview_test:'):syncTest?'manabi_public_preview_sync_test:':preview?'manabi_public_preview:':'';
  const accessEnabled=!preview&&window.MANABI_BACKEND_CONFIG?.accountAccessEnabled===true;let accessWritable=!accessEnabled;const memoryFallback=new Map(),fallbackKeys=new Set(),sessionPrefix='manabi_storage_fallback:'+storagePrefix;
  function protectedKey(key){return /^(mgl_|leaderboard_players|manabi_ranking_outbox|localPlayerId)/.test(String(key))}

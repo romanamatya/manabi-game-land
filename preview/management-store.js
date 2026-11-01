@@ -1,5 +1,5 @@
-import {GAME_IDS,checkedInput,visibilityStatus} from './management-model.js?v=d91dccb7e6d6';
-import {contractFor} from './data-contract.js?v=d91dccb7e6d6';
+import {GAME_IDS,checkedInput,visibilityStatus} from './management-model.js?v=785e38d0207a';
+import {contractFor} from './data-contract.js?v=785e38d0207a';
 
 export function createManagementStore(mode,F,db){
  const {base}=contractFor(mode),ref=(collection,id)=>F.doc(db,base+'/'+collection,id),col=k=>F.collection(db,base+'/'+k);
@@ -30,6 +30,10 @@ export function createManagementStore(mode,F,db){
   const campaignMap=new Map();for(const game of games){const c=game.campaign;if(!c?.id)continue;const row=campaignMap.get(c.id)||{...c,games:[],enabled:true};row.games.push(game.id);row.enabled=row.enabled&&c.enabled===true;campaignMap.set(c.id,row)}
   const campaigns=[...campaignMap.values()];
   return {games,notice:notice.exists()?plain(notice.data()):null,managementAudit:audit,campaigns};
+ }
+ async function learningAnalysis(){
+  const result=await F.getDocsFromServer(F.query(col('learningAnswers'),F.limit(2000)));
+  return result.docs.map(d=>plain({...d.data(),id:d.id}));
  }
  async function mutate(user,action,input){
   input=checkedInput(action,input);
@@ -67,5 +71,5 @@ export function createManagementStore(mode,F,db){
    updatedAt:at,lastAudit:auditId,lastBackup:backupId
   }:{status:input.status,updatedAt:at,lastAudit:auditId,lastBackup:backupId});
  }
- return {snapshot,mutate,plain};
+ return {snapshot,mutate,learningAnalysis,plain};
 }

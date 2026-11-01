@@ -1,6 +1,6 @@
-import {createManagementStore} from './management-store.js?v=d91dccb7e6d6';
-import {validateBackend,contractFor} from './data-contract.js?v=d91dccb7e6d6';
-import {createFirestoreStore} from './firebase-store.js?v=d91dccb7e6d6';
+import {createManagementStore} from './management-store.js?v=785e38d0207a';
+import {validateBackend,contractFor} from './data-contract.js?v=785e38d0207a';
+import {createFirestoreStore} from './firebase-store.js?v=785e38d0207a';
 const config = window.MANABI_SPARK_CONFIG;
 const error = code => Object.assign(new Error(code), {code});
 const validName = value => typeof value === 'string' && value === value.trim() && value.length >= 1 && value.length <= 12 && !/[<>\r\n]/.test(value);
@@ -102,7 +102,7 @@ export function createAdminOperations(c,{auth,db},A,F) {
 
   async function call(action, input = {}) {
     const managementActions=['admin:campaign','admin:notice','admin:visibility','admin:visibilityBatch'];
-    if(readOnly&&!['admin:snapshot','admin:players'].includes(action)&&!(c.adminFeatures?.playerRename===true&&action==='admin:rename')&&!(c.managementEnabled===true&&managementActions.includes(action)))throw error('admin-read-only');
+    if(readOnly&&!['admin:snapshot','admin:players'].includes(action)&&!(c.learningAnalysisEnabled===true&&action==='admin:learningAnalysis')&&!(c.adminFeatures?.playerRename===true&&action==='admin:rename')&&!(c.managementEnabled===true&&managementActions.includes(action)))throw error('admin-read-only');
     await verify();
     if (action === 'admin:snapshot') {
       if(readOnly){const players=await list('players');const more=c.managementEnabled===true?await management.snapshot():{games:(window.ManabiProfileCatalog||[]).map(g=>({id:g.id,status:'published'})),campaigns:[],notice:null,managementAudit:[]};return {players:players.rows,playerCursor:players.cursor,...more,managementReady:c.managementEnabled===true};}
@@ -114,6 +114,7 @@ export function createAdminOperations(c,{auth,db},A,F) {
       return {players:players.rows,playerCursor:players.cursor,...more,managementReady:c.managementEnabled===true,audit:history.docs.map(d=>plain({...d.data(),id:d.id}))};
     }
     if (action === 'admin:players') return list('players', input.cursor);
+    if (action === 'admin:learningAnalysis') {if(c.learningAnalysisEnabled!==true)throw error('feature-unverified');return management.learningAnalysis();}
     if (input.confirm !== true) throw error('invalid-input');
     if (action === 'admin:rename') return rename(input);
     if(managementActions.includes(action)){if(c.managementEnabled!==true)throw error('management-not-enabled');const role=await F.getDocFromServer(ref('private','admin'));if(role.data()?.managementEnabled!==true)throw error('management-not-enabled');const user=await verify();return management.mutate(user,action.slice(6),input);}

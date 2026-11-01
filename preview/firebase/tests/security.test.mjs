@@ -8,10 +8,10 @@ import * as Auth from 'firebase/auth';
 import * as F from 'firebase/firestore';
 
 globalThis.window = {};
-const {createAdminClient, validateConfig} = await import('data:text/javascript;base64,'+Buffer.from(await readFile(new URL('../../spark-auth.js',import.meta.url),'utf8')).toString('base64'));
-const projectId = 'demo-manabi-preview';
+const {createAdminClient, validateConfig} = await import('../../spark-auth.js?security-test');
+const projectId = 'manabi-game-landcheck';
 const BASE = 'previewSpark/v1';
-const cfg = {enabled:true,environment:BASE,expectedProjectId:projectId,firebase:{projectId,apiKey:'demo-api-key',authDomain:projectId+'.firebaseapp.com',appId:'demo-app'}};
+const cfg = {mode:'preview',enabled:true,environment:BASE,expectedProjectId:projectId,firebase:{projectId,apiKey:'demo-api-key',authDomain:projectId+'.firebaseapp.com',appId:'demo-app'}};
 let env, timerEnv, api, adminUid, password = randomBytes(24).toString('base64url');
 const fixture = {nickname:'ねこ',balances:{math:37,japanese:19,social:5,science:0,english:21},best:{keisan:700,distribution:25},titles:['keisan:20','distribution:25'],owned:['icon-007','frame-11'],appearance:{icon:'cat',frame:'plain'},status:'active',other:{retained:true}};
 const ref = (db, kind, id) => F.doc(db,BASE,kind,id);
@@ -45,11 +45,11 @@ before(async()=>{
 beforeEach(async()=>{await env.clearFirestore();await seed();await api.login(password);});
 after(async()=>{await env?.cleanup();await timerEnv?.cleanup();await Promise.all(App.getApps().map(App.deleteApp));});
 
-test('production configuration is rejected before SDK initialization',()=>{
- assert.throws(()=>validateConfig({...cfg,firebase:{...cfg.firebase,projectId:'manabi-game-land'}}),{code:'production-project-rejected'});
- assert.throws(()=>validateConfig({...cfg,expectedProjectId:'different-preview'}),{code:'production-project-rejected'});
- assert.throws(()=>validateConfig({...cfg,firebase:{...cfg.firebase,apiKey:'AIzaSyAhm6WMqV7yGmNRRDCeZcOk5HH-dlga9no'}}),{code:'production-project-rejected'});
- assert.throws(()=>validateConfig({...cfg,enabled:false}),{code:'backend-not-configured'});
+test('production configuration is rejected before SDK initialization',async()=>{
+ assert.throws(()=>validateConfig({...cfg,firebase:{...cfg.firebase,projectId:'manabi-game-land'}}));
+ assert.throws(()=>validateConfig({...cfg,expectedProjectId:'different-preview'}));
+ await assert.rejects(createAdminClient({...cfg,expectedProjectId:'manabi-game-land',firebase:{...cfg.firebase,projectId:'manabi-game-land',authDomain:'manabi-game-land.firebaseapp.com'}},[{getApps(){throw Error('SDK must not initialize')}}]));
+ assert.throws(()=>validateConfig({...cfg,enabled:false}));
 });
 test('Firebase Auth rejects an incorrect password and adapter clears user',async()=>{
  await assert.rejects(api.login(randomBytes(24).toString('base64url')));

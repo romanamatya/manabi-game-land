@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-const config={mode:'preview',enabled:true,environment:'previewSpark/v1',expectedProjectId:'manabi-game-landcheck',firebase:{projectId:'manabi-game-landcheck',authDomain:'manabi-game-landcheck.firebaseapp.com',apiKey:'test',appId:'test'}};
+const config={mode:'preview',enabled:true,environment:'previewSpark/v1',expectedProjectId:'manabi-game-landcheck',rankingGameIds:['keisan','kakudo'],firebase:{projectId:'manabi-game-landcheck',authDomain:'manabi-game-landcheck.firebaseapp.com',apiKey:'test',appId:'test'}};
 globalThis.window={MANABI_SPARK_CONFIG:config};
 globalThis.location={pathname:'/preview/ranking.html'};
 const {createPlayerClient}=await import('../../player-sync-api.js?api-test');
@@ -30,4 +30,24 @@ test('player API publishes only the public projection, preserves best, and reads
  assert.equal(f.docs.get(aPath).bestStreak,18);
  const rows=await childB.rankings('keisan');
  assert.deepEqual(rows.map(r=>[r.uid,r.bestStreak]),[['child-a',18],['child-b',12]]);
+});
+
+test('Kakudo is a separate allowlisted shared ranking and cannot write another game',async()=>{
+ const f=fixture(),client=await createPlayerClient(config,[f.App,f.A,f.F]);
+ const saved=await client.publishRanking({game:'kakudo',bestStreak:25,nickname:'かくど',icon:'cat',frame:'plain',title:'角度の見きわめ王',badge:'kakudo:25',points:500});
+ assert.equal(saved.game,'kakudo');assert.equal(f.docs.get('previewSpark/v1/rankings/kakudo/players/child-a').bestStreak,25);
+ await assert.rejects(client.publishRanking({game:'keisanSummary',bestStreak:10,nickname:'かくど'}),{code:'ranking-game-not-allowed'});
+});
+
+test('challenge rankings are stored separately from normal rankings and learning answers are per-angle aggregates',async()=>{
+ const f=fixture(),client=await createPlayerClient(config,[f.App,f.A,f.F]);
+ await client.publishRanking({game:'kakudo',bestStreak:12,nickname:'かくど'});
+ await client.publishChallengeRanking({game:'kakudo',bestStreak:25,nickname:'かくど'});
+ assert.equal(f.docs.get('previewSpark/v1/rankings/kakudo/players/child-a').bestStreak,12);
+ assert.equal(f.docs.get('previewSpark/v1/challenge120Rankings/kakudo/players/child-a').bestStreak,25);
+ await client.recordLearningAnswer({game:'kakudo',mode:'read',angle:90,correct:true});
+ await client.recordLearningAnswer({game:'kakudo',mode:'read',angle:90,correct:false});
+ assert.equal(f.docs.get('previewSpark/v1/learningAnswers/child-a_kakudo_read_90').total,2);
+ assert.equal(f.docs.get('previewSpark/v1/learningAnswers/child-a_kakudo_read_90').correct,1);
+ await assert.rejects(client.recordLearningAnswer({game:'kakudo',mode:'read',angle:91,correct:true}),{code:'invalid-learning-answer'});
 });

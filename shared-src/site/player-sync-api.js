@@ -62,7 +62,46 @@ export async function createPlayerClient(config,[App,A,F],{testScope=false}={}){
   });
   return readPair();
  }
- return {uid,auth,db,push,pull,buy,watch:callback=>F.onSnapshot(playerRef,{includeMetadataChanges:false},s=>{if(!s.metadata.fromCache)callback(null)},e=>callback(e))};
+ // Shared rankings are a separate, public projection. They never read or write
+ // private player balances, inventory, or profile documents.
+ const rankingGames=new Set(Array.isArray(config.rankingGameIds)?config.rankingGameIds:[]);
+ function rankingRef(game,playerUid=uid){
+  if(config.mode!=='preview'||!rankingGames.has(game)||typeof playerUid!=='string'||!playerUid)throw error('ranking-game-not-allowed');
+  return F.doc(db,base,'rankings',game,'players',playerUid);
+ }
+ function challengeRankingRef(game,playerUid=uid){
+  if(config.mode!=='preview'||!rankingGames.has(game)||typeof playerUid!=='string'||!playerUid)throw error('ranking-game-not-allowed');
+  return F.doc(db,base,'challenge120Rankings',game,'players',playerUid);
+ }
+ async function publishRanking(input){
+  if(!input||typeof input!=='object')throw error('invalid-ranking');
+  const game=input.game,best=Number(input.bestStreak);
+  if(!Number.isSafeInteger(best)||best<1||best>100000||typeof input.nickname!=='string'||input.nickname.length<1||input.nickname.length>12)throw error('invalid-ranking');
+  const text=(value,max=40)=>typeof value==='string'&&value.length<=max?value:null;
+  const target=rankingRef(game),projection={uid,game,nickname:input.nickname,bestStreak:best,icon:text(input.icon,40),frame:text(input.frame,40),title:text(input.title,80),badge:text(input.badge,80),updatedAt:F.serverTimestamp()};
+  return F.runTransaction(db,async tx=>{const old=await tx.get(target),prior=old.exists()?old.data():{},saved={...projection,bestStreak:Math.max(best,number(prior.bestStreak))};tx.set(target,saved);return saved;});
+ }
+ async function rankings(game){
+  const root=F.collection(db,base,'rankings',game,'players'),q=F.query(root,F.orderBy('bestStreak','desc'),F.limit(100));
+  const result=await F.getDocsFromServer(q);
+  return result.docs.map(doc=>({id:doc.id,...doc.data()}));
+ }
+ async function publishChallengeRanking(input){
+  if(!input||!Number.isSafeInteger(Number(input.bestStreak))||Number(input.bestStreak)<1||Number(input.bestStreak)>100000||typeof input.nickname!=='string'||input.nickname.length<1||input.nickname.length>12)throw error('invalid-ranking');
+  const target=challengeRankingRef(input.game),best=Number(input.bestStreak),text=(value,max=40)=>typeof value==='string'&&value.length<=max?value:null;
+  const projection={uid,game:input.game,mode:'challenge120',nickname:input.nickname,bestStreak:best,icon:text(input.icon),frame:text(input.frame),title:text(input.title,80),badge:text(input.badge,80),updatedAt:F.serverTimestamp()};
+  return F.runTransaction(db,async tx=>{const old=await tx.get(target),prior=old.exists()?old.data():{},saved={...projection,bestStreak:Math.max(best,number(prior.bestStreak))};tx.set(target,saved);return saved;});
+ }
+ async function challengeRankings(game){
+  const root=F.collection(db,base,'challenge120Rankings',game,'players'),q=F.query(root,F.orderBy('bestStreak','desc'),F.limit(100));
+  const result=await F.getDocsFromServer(q);return result.docs.map(doc=>({id:doc.id,...doc.data()}));
+ }
+ async function recordLearningAnswer(input){
+  if(config.mode!=='preview'||input?.game!=='kakudo'||!['read','match'].includes(input.mode)||![0,45,60,90,120,135,150,180,210,225,240,270,300,315,330,360].includes(input.angle)||typeof input.correct!=='boolean')throw error('invalid-learning-answer');
+  const target=F.doc(db,base,'learningAnswers',uid+'_'+input.game+'_'+input.mode+'_'+input.angle);
+  return F.runTransaction(db,async tx=>{const old=await tx.get(target),row=old.exists()?old.data():{uid,game:input.game,mode:input.mode,angle:input.angle,total:0,correct:0};const next={...row,total:number(row.total)+1,correct:number(row.correct)+(input.correct?1:0),updatedAt:F.serverTimestamp()};tx.set(target,next);return next;});
+ }
+ return {uid,auth,db,push,pull,buy,publishRanking,rankings,publishChallengeRanking,challengeRankings,recordLearningAnswer,watch:callback=>F.onSnapshot(playerRef,{includeMetadataChanges:false},s=>{if(!s.metadata.fromCache)callback(null)},e=>callback(e))};
 }
 export async function browserClient(config){const sdks=await Promise.all(['app','auth','firestore'].map(n=>import('https://www.gstatic.com/firebasejs/13.1.0/firebase-'+n+'.js')));return createPlayerClient(config,sdks);}
 
