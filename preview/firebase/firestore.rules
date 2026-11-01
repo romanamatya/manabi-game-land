@@ -337,10 +337,20 @@ service cloud.firestore {
     function learningAnswerShape(data, uid) {
       return data.keys().hasOnly(['uid','game','mode','angle','total','correct','updatedAt'])
         && data.uid == uid && data.game == 'kakudo' && data.mode in ['read','match']
-        && data.angle in [0,45,60,90,120,135,150,180,210,225,240,270,300,315,330,360]
+        && data.angle in [30,45,60,90,120,135,150,180,210,225,240,270,300,315,330,360]
         && data.total is int && data.total >= 1 && data.total <= 1000000
         && data.correct is int && data.correct >= 0 && data.correct <= data.total
         && data.updatedAt == request.time;
+    }
+    function learningAngleText(angle) {
+      return angle == 30 ? '30' : angle == 45 ? '45' : angle == 60 ? '60' : angle == 90 ? '90'
+        : angle == 120 ? '120' : angle == 135 ? '135' : angle == 150 ? '150' : angle == 180 ? '180'
+        : angle == 210 ? '210' : angle == 225 ? '225' : angle == 240 ? '240' : angle == 270 ? '270'
+        : angle == 300 ? '300' : angle == 315 ? '315' : angle == 330 ? '330' : angle == 360 ? '360' : '';
+    }
+    function learningAnswerIdMatches(id, uid, data) {
+      return learningAngleText(data.angle) != ''
+        && id == uid + '_kakudo_' + data.mode + '_' + learningAngleText(data.angle);
     }
     match /previewSpark/v1/learningAnswers/{uid_game_mode_angle} {
       // Administrators see only per-angle totals, never individual answers.
@@ -348,6 +358,7 @@ service cloud.firestore {
       allow create: if request.auth != null
         && request.auth.token.firebase.sign_in_provider == 'anonymous'
         && request.auth.uid == request.resource.data.uid
+        && learningAnswerIdMatches(uid_game_mode_angle, request.auth.uid, request.resource.data)
         && request.resource.data.total == 1
         && request.resource.data.correct in [0,1]
         && learningAnswerShape(request.resource.data, request.auth.uid);
@@ -358,6 +369,7 @@ service cloud.firestore {
         && request.resource.data.game == resource.data.game
         && request.resource.data.mode == resource.data.mode
         && request.resource.data.angle == resource.data.angle
+        && learningAnswerIdMatches(uid_game_mode_angle, request.auth.uid, request.resource.data)
         && request.resource.data.total == resource.data.total + 1
         && request.resource.data.correct in [resource.data.correct, resource.data.correct + 1]
         && learningAnswerShape(request.resource.data, request.auth.uid);
