@@ -40,7 +40,7 @@ function bindEconomy(e){
 let economy=window.ManabiEconomy;
 Object.defineProperty(window,'ManabiEconomy',{configurable:true,enumerable:true,get(){return economy},set(value){economy=bindEconomy(value)}});
 if(economy)economy=bindEconomy(economy);
-for(const type of ['click','pointerdown','keydown'])document.addEventListener(type,e=>{if(e.target.closest?.('#challenge120Gate,#challenge120Status,header,a,dialog'))return;const s=current();if(!['training','running'].includes(s.phase)){e.preventDefault();e.stopImmediatePropagation();paint(s);}},true);
+for(const type of ['click','pointerdown','keydown'])document.addEventListener(type,e=>{if(e.target.closest?.('#challenge120Gate,#challenge120Status,#publicGameAccessStatus,header,a,dialog'))return;const s=current();if(!['training','running'].includes(s.phase)){e.preventDefault();e.stopImmediatePropagation();paint(s);}},true);
 const init=()=>{let s=current();if(!storage.getItem(key)&&s.phase==='training'){const raw=game==='keisan'?Number(storage.getItem('mgl_keisan_practice_streak')||0):(()=>{try{return JSON.parse(storage.getItem('mgl_'+game)||'{}').streak||0}catch{return 0}})();s.practiceStreak=Math.min(raw,C.highest[game]-1);}save(s);paint(s);setInterval(tick,200);};
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
 window.addEventListener('storage',()=>paint());window.addEventListener('pageshow',tick);document.addEventListener('visibilitychange',tick);window.addEventListener('pagehide',()=>{const s=current();save(s);});
