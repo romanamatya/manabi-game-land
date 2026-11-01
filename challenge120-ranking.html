@@ -3,13 +3,13 @@
 <head>
  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow">
  <title>2分間チャレンジ専用ランキング｜マナビクエスト</title>
- <script src="environment.js?v=challenge120-ranking-v1"></script>
- <script src="environment-runtime.js?v=challenge120-ranking-v1"></script>
- <script src="public-admin-settings.js?v=challenge120-ranking-v1"></script>
- <script src="profile-catalog.js?v=challenge120-ranking-v1"></script>
- <script src="identity-view.js?v=challenge120-ranking-v1"></script>
- <link rel="stylesheet" href="profile.css?v=challenge120-ranking-v1">
- <script type="module" src="challenge120-ranking.js?v=challenge120-ranking-v1"></script>
+ <script src="environment.js?v=challenge120-ranking-v2"></script>
+ <script src="environment-runtime.js?v=challenge120-ranking-v2"></script>
+ <script src="public-admin-settings.js?v=challenge120-ranking-v2"></script>
+ <script src="profile-catalog.js?v=challenge120-ranking-v2"></script>
+ <script src="identity-view.js?v=challenge120-ranking-v2"></script>
+ <link rel="stylesheet" href="profile.css?v=challenge120-ranking-v2">
+ <script type="module" src="challenge120-ranking.js?v=challenge120-ranking-v2"></script>
  <style>
   *{box-sizing:border-box}body{margin:0;background:#f3f7fc;color:#253b50;font:17px system-ui,'Yu Gothic',sans-serif}main{max-width:900px;margin:0 auto;padding:28px 20px 44px}.mqlink{position:fixed;right:12px;top:8px;width:190px;height:54px}.mqlink img{width:100%;height:100%;object-fit:contain}a{color:#315d8c}h1{font-size:clamp(22px,4vw,30px);margin:20px 0 8px}.note{line-height:1.65;color:#536d83}.controls{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:18px 0}.controls a,.controls button,select{min-height:44px;padding:8px 14px;border:1px solid #9eb4c9;border-radius:10px;background:white;color:#254c70;font:inherit}select{min-width:min(300px,100%)}.panel{background:white;border:1px solid #dbe5ed;border-radius:16px;padding:16px}.table-wrap{overflow-x:auto}table{width:100%;border-collapse:collapse;text-align:left}th,td{padding:13px 9px;border-bottom:1px solid #e3eaf1}th{font-size:14px;color:#536d83}td:first-child{width:70px;font-weight:700}td small{display:block;color:#60778a}.first{background:#fff9e8}#status{min-height:1.5em}.empty{line-height:1.7;color:#536d83}
  </style>
@@ -20,7 +20,7 @@
   <a id="back" href="math-calculation.html">← ゲーム選択へ戻る</a>
   <h1 id="heading">2分間チャレンジ専用ランキング</h1>
   <p class="note">切り替え基準：2026年11月1日 0時（日本時間）。このランキングには、基準日時以降に新プログラムの2分間チャレンジで獲得した記録だけを掲載します。以前の共有ランキングからの移行・読み込みは行いません。</p>
-  <div class="controls"><label for="game">ゲーム</label><select id="game" aria-label="ゲームを選択"></select><a id="regular" href="ranking.html?game=keisan">通常ランキング</a><a id="play" href="games/keisan.html">ゲームで遊ぶ</a><button id="refresh" type="button">更新</button></div>
+  <div class="controls"><label for="game">ゲーム</label><select id="game" aria-label="ゲームを選択"></select><a id="play" href="games/keisan.html">ゲームで遊ぶ</a><button id="refresh" type="button">更新</button></div>
   <section class="panel" aria-live="polite"><p id="status" role="status">読み込み中…</p><div class="table-wrap"><table id="table" hidden><thead><tr><th scope="col">順位</th><th scope="col">名前・称号</th><th scope="col">チャレンジ最高連続</th></tr></thead><tbody id="rows"></tbody></table></div><p id="empty" class="empty" hidden></p></section>
  </main>
 </body>

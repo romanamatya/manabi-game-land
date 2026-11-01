@@ -5,7 +5,7 @@ import {visibilityState,renderGameState,bindGameAvailability} from '../shared-sr
 
 function card(){
  const play={disabled:true,textContent:'確認中…',attrs:{},setAttribute(name,value){this.attrs[name]=value}};
- const badge={hidden:true,textContent:''},ranking={href:'ranking.html?game=keisan',textContent:'ランキング'};
+ const badge={hidden:true,textContent:''},ranking={href:'challenge120-ranking.html?game=keisan',textContent:'ランキング'};
  return {dataset:{gameCard:'keisan'},play,badge,ranking,querySelector(selector){return selector==='[data-game-play]'?play:selector==='[data-game-status]'?badge:null}};
 }
 
@@ -44,7 +44,7 @@ test('preview selection pages keep every listed game and separate play from rank
   for(const [,id,body] of cards){
    assert.match(body,new RegExp('data-game-id="'+id+'"'),file+':'+id);
    assert.match(body,/data-game-play[^>]*disabled/,file+':disabled-until-state-known');
-   assert.match(body,/href="(?:ranking\.html\?game=[^"]+|summary-ranking\.html)"/,file+':ranking-link');
+   assert.match(body,/href="challenge120-ranking\.html\?game=[^"]+"/,file+':dedicated-ranking-link');
   }
  }
 });
@@ -55,16 +55,16 @@ test('production subject pages expose separate play and ranking controls',async(
   const html=await readFile(new URL('../'+file,import.meta.url),'utf8');
   const cards=[...html.matchAll(/<article class="card game-card" data-game-card="([^"]+)">([\s\S]*?)<\/article>/g)];
   assert.ok(cards.length>0,file);assert.match(html,/src="game-selection\.js\?v=game-picker-ui-1"/);
-  for(const [,id,body] of cards){assert.match(body,new RegExp('data-game-id="'+id+'"'));assert.match(body,/data-game-play[^>]*disabled/);assert.match(body,/data-game-ranking/);}
+  for(const [,id,body] of cards){assert.match(body,new RegExp('data-game-id="'+id+'"'));assert.match(body,/data-game-play[^>]*disabled/);assert.match(body,/data-game-ranking/);assert.match(body,new RegExp('href="challenge120-ranking\\.html\\?game='+id+'"'));}
  }
 });
 
 test('production 2-minute challenge keeps its ranking route and direct URL guard',async()=>{
  const navigation=await readFile(new URL('../math-navigation.js',import.meta.url),'utf8');
  assert.ok(navigation.includes("games:['keisan','distribution','distribution2','exchangeAssociation','multiplicationProperties','shapeExpressions','keisanSummary']"));
- assert.ok(navigation.includes("id==='keisanSummary'?'summary-ranking.html':'ranking.html?game='"));
+ assert.ok(navigation.includes("rank.href=testLink('challenge120-ranking.html?game='+id)"));
  assert.ok(navigation.includes("play.dataset.gameHref=testLink('games/'+id+'.html')"));
- assert.ok(navigation.includes("rank.href=testLink(id==='keisanSummary'?'summary-ranking.html':'ranking.html?game='+id)"))
+ assert.ok(navigation.includes("rank.href=testLink('challenge120-ranking.html?game='+id)"))
  const settings=await readFile(new URL('../shared-src/site/public-admin-settings.js',import.meta.url),'utf8');
  assert.ok(settings.includes('document.documentElement.inert=true'));assert.ok(settings.includes("read('gameSettings',gameId)"));assert.ok(settings.includes('subscribeGame(id,onValue,onError)'));
 });

@@ -13,7 +13,7 @@ for(const id of units[0].games){
  const badge=document.createElement('span');badge.className='game-status-badge';badge.dataset.gameStatus='';badge.setAttribute('role','status');badge.setAttribute('aria-live','polite');badge.hidden=true;
  const actions=document.createElement('div');actions.className='game-actions';
  const play=document.createElement('button');play.type='button';play.className='play-button';play.dataset.gamePlay='';play.dataset.gameId=id;play.dataset.gameHref=testLink('games/'+id+'.html');play.disabled=true;play.textContent='確認中…';actions.append(play);
- const rank=document.createElement('a');rank.className='rank-button';rank.dataset.gameRanking='';rank.href=testLink(id==='keisanSummary'?'summary-ranking.html':'ranking.html?game='+id);rank.textContent='ランキング';actions.append(rank);
+ const rank=document.createElement('a');rank.className='rank-button';rank.dataset.gameRanking='';rank.href=testLink('challenge120-ranking.html?game='+id);rank.textContent='ランキング';actions.append(rank);
  item.append(summary,badge,actions);root.append(item);
 }
 window.ManabiGameSelection?.initialize();
