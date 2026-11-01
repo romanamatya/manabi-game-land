@@ -4,6 +4,12 @@ on:
   pull_request:
     paths:
       - 'firebase/**'
+      - 'management-*.js'
+      - 'firebase-store.js'
+      - 'spark-auth.js'
+      - 'control-room.js'
+      - 'shared-src/site/**'
+      - 'tests/production-simple-admin.test.mjs'
       - 'tests/rules/**'
       - 'package.json'
       - 'environment.js'
@@ -29,4 +35,6 @@ jobs:
       - run: npm install --no-audit --no-fund
       - run: node --test tests/economy-replay.test.mjs tests/production-ranking-api.test.mjs tests/production-challenge120.test.mjs tests/kotowaza-production.cjs tests/storage-contract.test.mjs
       - run: npm run test:rules:admin-stage2
+      - run: npm run test:simple-admin
+      - run: npm run test:rules:simple-admin
 
