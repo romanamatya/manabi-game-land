@@ -1,4 +1,4 @@
-import {GAME_IDS,checkedInput,visibilityStatus} from './management-model.js?v=admin-simple-1';
+import {GAME_IDS,checkedInput,visibilityStatus} from './management-model.js?v=availability-read-fix-20261102';
 import {contractFor} from './data-contract.js?v=adminprod-20261030';
 
 export function createManagementStore(mode,F,db){
@@ -53,7 +53,7 @@ export function createManagementStore(mode,F,db){
     try{const result=await writeOne(user,action,target,input.reason,(previous,at,auditId,backupId)=>{
      const stamp=Date.now();
      if(input.enabled&&previous?.campaign?.enabled===true&&Number(previous.campaign.endAt)>stamp)throw Error('campaign-already-scheduled');
-     return {status:previous?.status||'published',...previous,campaign:{id:input.enabled?campaignId:(previous?.campaign?.id||null),enabled:input.enabled,startAt:input.startAt,endAt:input.endAt,actor:user.uid},updatedAt:at,lastAudit:auditId,lastBackup:backupId};
+     return {...previous,campaign:{id:input.enabled?campaignId:(previous?.campaign?.id||null),enabled:input.enabled,startAt:input.startAt,endAt:input.endAt,actor:user.uid},updatedAt:at,lastAudit:auditId,lastBackup:backupId};
     });results.push({...result,game,campaignId});}catch(error){if(results.length){const partial=new Error(`一部のゲームだけ更新しました（${results.map(r=>r.game).join('、')}）。状態を確認して再操作してください。 ${error.message||''}`);partial.code='campaign-partial';throw partial;}throw error;}
    }
    return {ok:true,campaignId,results};

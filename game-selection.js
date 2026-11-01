@@ -1,4 +1,4 @@
-import {bindGameAvailability} from './game-selection-model.js?v=game-picker-ui-1';
+import {bindGameAvailability} from './game-selection-model.js?v=availability-read-fix-20261102';
 const initialized=new WeakSet();
 function initialize(){
  for(const card of document.querySelectorAll('[data-game-card]')){

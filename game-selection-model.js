@@ -1,9 +1,10 @@
 const labels=Object.freeze({published:'',preparing:'公開準備中',hidden:'非公開',checking:'公開状態を確認中',unknown:'公開状態を確認できません'});
 export function visibilityState(setting,{fromCache=false,error=false}={}){
- if(error)return 'unknown';if(fromCache)return 'checking';if(!setting)return 'published';
+ if(error)return 'unknown';if(fromCache)return 'checking';if(!setting)return 'unknown';
  if(['published','preparing','hidden'].includes(setting.status))return setting.status;
  if(setting.published===false)return 'hidden';
- return setting.status==null||setting.status===''?'published':'unknown';
+ if(setting.published===true)return 'published';
+ return 'unknown';
 }
 export function renderGameState(card,state){
  const play=card.querySelector('[data-game-play]'),badge=card.querySelector('[data-game-status]');
