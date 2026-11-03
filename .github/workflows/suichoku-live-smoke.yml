@@ -3,6 +3,10 @@ name: Suichoku browser smoke
 on:
   pull_request:
     paths:
+      - 'celebration-effects.js'
+      - 'shared-src/site/celebration-effects.js'
+      - 'games/**'
+      - 'tests/celebration-effects.test.mjs'
       - 'games/suichoku.html'
       - 'suichoku-game.js'
       - 'profile-ui.js'
@@ -27,6 +31,10 @@ on:
   push:
     branches: [main]
     paths:
+      - 'celebration-effects.js'
+      - 'shared-src/site/celebration-effects.js'
+      - 'games/**'
+      - 'tests/celebration-effects.test.mjs'
       - 'games/suichoku.html'
       - 'suichoku-game.js'
       - 'profile-ui.js'

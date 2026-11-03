@@ -1,5 +1,5 @@
 {
-  "buildId": "5ff05b071a35",
+  "buildId": "f1e1f02060b0",
   "environment": "preview",
   "projectId": "manabi-game-landcheck",
   "runtimeBlocked": false,
@@ -78,7 +78,7 @@
     {
       "path": "admin.html",
       "sourceSHA256": "920ce26c468d80001f781dbbd8f09e29a9536745ef89569d6ce5f0bcf35681e0",
-      "outputSHA256": "e69587ad2af1beeb8e3eedd62d65538166988af717154888095833ca2b62258c"
+      "outputSHA256": "bd45069a0969754eeb60f75f40e44a7029a57189b4709d799a3c12daba4eb26c"
     },
     {
       "path": "alphabet-audio.js",
@@ -121,14 +121,19 @@
       "outputSHA256": "7edb1c5f3fabb36fec8c30d79f5afb3ef5d8a38efd97178ffa5577ccd446c9e4"
     },
     {
+      "path": "celebration-effects.js",
+      "sourceSHA256": "d966467f4aab6f924bd25f4fd6e371d3feb1c87aa0b60df757adab7485dc9919",
+      "outputSHA256": "d966467f4aab6f924bd25f4fd6e371d3feb1c87aa0b60df757adab7485dc9919"
+    },
+    {
       "path": "challenge120-core.js",
       "sourceSHA256": "69d42bf52116b7d29e49cf781a32623714bac0f147524cc912074c828fd8a24e",
       "outputSHA256": "69d42bf52116b7d29e49cf781a32623714bac0f147524cc912074c828fd8a24e"
     },
     {
       "path": "challenge120-runtime.js",
-      "sourceSHA256": "16ffa76c2f950f2fdf815cfff8956675248f262382fbf104cdc5ae1ecf3b3513",
-      "outputSHA256": "16ffa76c2f950f2fdf815cfff8956675248f262382fbf104cdc5ae1ecf3b3513"
+      "sourceSHA256": "5401235d14621dc0a84068920df5eb0affc7e8afa0a90c713e6642ad359cae9c",
+      "outputSHA256": "5401235d14621dc0a84068920df5eb0affc7e8afa0a90c713e6642ad359cae9c"
     },
     {
       "path": "challenge120-season-store.js",
@@ -158,12 +163,12 @@
     {
       "path": "control-room.html",
       "sourceSHA256": "c3a7f372e2e63d39b47a8f4ba19933d89ef3ac49e9bec3b5a05c85ae7f0a4615",
-      "outputSHA256": "f56efe7f025d2fce8148dbf059f251a56fb8f725f1e86c0fa7b9b3b4cad8e7e1"
+      "outputSHA256": "593a08e4e3cc17d21745afbf32e3f4e02ccd26e84a204f269b0c4f54c2f033b2"
     },
     {
       "path": "control-room.js",
       "sourceSHA256": "00f0923630182aa625785200242a796b1fd93835e746074b78fab2302f5764a7",
-      "outputSHA256": "96395d13e6c78bba38dfafd420f947b1461770d01b7d5aba5e5930b71505c0cc"
+      "outputSHA256": "77702751637d7c6e6b0fd1a437c9a223dcc4890ae20f0b0690663af95471cf44"
     },
     {
       "path": "data-contract.js",
@@ -183,7 +188,7 @@
     {
       "path": "distribution-review.html",
       "sourceSHA256": "c3cb32f60a42d93f5784bf4ca7aeadd3ddc9e850b02108c7b3dad71df5672fc0",
-      "outputSHA256": "9a4b43b2fc4123756916dea59ef81e0405e0f67bf64db8e13dc0bed977b5440d"
+      "outputSHA256": "5e0c3fe39d6a382f8b740a268f0f0e36144f435dfac1d557e2e8f213278dbfea"
     },
     {
       "path": "distribution.css",
@@ -203,7 +208,7 @@
     {
       "path": "environment-runtime.js",
       "sourceSHA256": "0e4bb3723e116a89c1f685cc76450f53072473484cab5567b5b6b17cacc924c6",
-      "outputSHA256": "afa661ad62d1aafaedbb17d165ef6717a17cfe5c03b0e4f60e4da9f98918d27f"
+      "outputSHA256": "0fdad8b96bad6a26dd9b282434ac427db5f996b6edeb85e82119b04cd9123aab"
     },
     {
       "path": "environment.js",
@@ -213,7 +218,7 @@
     {
       "path": "firebase-store.js",
       "sourceSHA256": "3e95813479cc04baefbfefc18383d5800ba36e426efee78f9aaae6b39e24ad00",
-      "outputSHA256": "69fd8c20f5550c5f4673688c3bc9c4b5bfcd631bc3f1eeb8d5e631cb1bfa2a6b"
+      "outputSHA256": "9f65c096fb050a66785d89f8273454e294f0eca2022ba45f9731ababdb269558"
     },
     {
       "path": "game-selection-model.js",
@@ -223,72 +228,72 @@
     {
       "path": "game-selection.js",
       "sourceSHA256": "5b6b3227d5c3a88e6c9b94a396456716f659f3bcba714204e40c57ba955340c2",
-      "outputSHA256": "01182215f41cc2e8b3e377002c0ea5e19216606cbefd83e942a0f4daf80ef37a"
+      "outputSHA256": "d3a0b8882b66a28a027d8fdf43c1eb7c36d7b5b27c4a568c93520577f07095a1"
     },
     {
       "path": "games/alphabet.html",
-      "sourceSHA256": "893d723ab5c12a1501e9670d8d04c37d85cb1f5f1ad31f5e3137cb52a8c6d704",
-      "outputSHA256": "2f23c8b72ca51c7aecb6c2ffd06bfbc6ed34a74545281b3d561189d84134d7f7"
+      "sourceSHA256": "6028a2e230ef5be30b88d69ac3984c399c84cc823c179a8da58b53acc01c2eeb",
+      "outputSHA256": "8d9cb6c91c619a2f0f1bc6a159b18d86d9b2373a4d19c692f537854d1d2a4ab3"
     },
     {
       "path": "games/distribution.html",
-      "sourceSHA256": "738ff68785d4df04083fd8c8cf0dfd421a1cbc7586f9ea39d076fe8f40740527",
-      "outputSHA256": "50da7ae36d3386d1ebee0c98269705b893d8a04076b251d59494a7d1d9c74763"
+      "sourceSHA256": "7b01f63fd9d4a42603a7d21eceeca0ec6abc9337be9906ed085d5cf339ade008",
+      "outputSHA256": "047f90e901c1f1a1044b202737ca0f0b8ae80e9bd51a5817be5930457e40b0ff"
     },
     {
       "path": "games/distribution2.html",
-      "sourceSHA256": "08e09e42b34c15a59edc32b104a4bdcfc4a709debb71539a774295ce506ecb70",
-      "outputSHA256": "685dd6424e968e9cff74efdfe341343546e798c9dee0bcbb79f7392185a47f9a"
+      "sourceSHA256": "07e3b56d2f9bb3b198e6309c7fc7008e409caac0c245d0fa59ab9ddec40cbd64",
+      "outputSHA256": "ce0bb106064bc1aabf8e6bc785f0ea47724e4a7fa8cd5a3af2594d497d5d9945"
     },
     {
       "path": "games/exchangeAssociation.html",
-      "sourceSHA256": "b1f8404635ac4b9831c55997086243b9f4189ceeab98a7574fa5c59437b27751",
-      "outputSHA256": "c405d8ba2c687920caf57462c6a4983200f84a7a2ead5859ffd71fbe1126a23d"
+      "sourceSHA256": "69dc43c2824d7c0c761c2d601739bf73431688f63c92651838d70eea89b1a025",
+      "outputSHA256": "8931345e106dec05db6aae5022c71f5876173bbadd4b1fd82e91bfa68d786a9e"
     },
     {
       "path": "games/keisan.html",
-      "sourceSHA256": "f8066c9feaaaae8227da5a86b23426ae5662fa6d9d501e0a917800f8df3dd21e",
-      "outputSHA256": "5f223b526faf62b679b3884b5956eed3caf1fa04c34ca68d019a282f02dd1ab9"
+      "sourceSHA256": "da43f1a3f1d71a6fc768e5c44b40458b6a57e730ed36c7f0de125cca26fe893d",
+      "outputSHA256": "014aaa2bf0b728c0ae294ad6733e1f6e083fa7b844fe6cc76bfbacf196ad4258"
     },
     {
       "path": "games/kotowaza.html",
       "sourceSHA256": "eb8a4061e0c0c9c3b4be98f9a2fc3e77eb77f7fa1bd798a48df031e2d9830e06",
-      "outputSHA256": "0144d44ef354606d3fb0d89232e1bf89e46a73749e01613d14ed808d1dfb9391"
+      "outputSHA256": "7521334f374b3c03610a662cdf0a03dfe1cea71f3e0a8bf5a759f079b71eb119"
     },
     {
       "path": "games/multiplicationProperties.html",
       "sourceSHA256": "3281c4196e0236791ae5452afef8903ca28d1f51b335b93ba730dc11dbfa03cb",
-      "outputSHA256": "785bb301f587c55b1e60bd537083b06f80ec2c8756fa8a6169697922a5f68262"
+      "outputSHA256": "c7d518b60754a1ed9e31694131b1100a0ec56333f438aa061112a223d40b14b1"
     },
     {
       "path": "games/pref-name.html",
-      "sourceSHA256": "45842e9b9e3f235e0768e6fbe03192ee70ed77465d0ee4a939be527136abd443",
-      "outputSHA256": "9e9c1d847fc76f771867d65ff54c2b27d64d5f7e720918cde61ff7adad566a78"
+      "sourceSHA256": "38fc4fa903424446fa475b99a9ef1e928a75a470c1520ad2586eb4ae2d0e4ae5",
+      "outputSHA256": "6f72db4c2826fd8e699455b9f07251998b0f530765ec770ae672dd7b028ba351"
     },
     {
       "path": "games/pref-place.html",
-      "sourceSHA256": "de51e1bc99566e3c9ded034d47b901ab9f6fea31ba25e9ccfeefdfcc5116a969",
-      "outputSHA256": "25c48e6a6ec9e8d5e8a4d520508722dcacb6a078face2dbee694f2a534e775d5"
+      "sourceSHA256": "2b3decefa892e6eaa5ad86f1dc6265cfd52e73d8c68cd257853da4154a6132f4",
+      "outputSHA256": "70595d48e6523c8ee98cfb8cf3fc660618e435b4facd8871ca2c2c510391ff5d"
     },
     {
       "path": "games/shapeExpressions.html",
       "sourceSHA256": "2bb124ba701989b7c0688e00b1ec348314d2a31125ad91789d152a0f141dc2b9",
-      "outputSHA256": "00337be522a017ea7615eb07ad799d26a1c533fb7dcac4c5117ac784d0a85f69"
+      "outputSHA256": "fcedbde9072b92982ba2448dadca4b527c5772e97f383c38c7c04a0811f7a23d"
     },
     {
       "path": "games/suichoku.html",
-      "sourceSHA256": "d85c4c2ca3a36ce5ef23a616de6833602195382a8ada3158ce18f63e7108497f",
-      "outputSHA256": "bcd08ed390aaa3339b6fdb0c5fe73160ec7d3f7314ecf0ff9af6b490b85c232f"
+      "sourceSHA256": "084b7afd4664f54d0b1949ccccc94d0cba76ee931c6dee0130caef57a38c1792",
+      "outputSHA256": "bc9c4f9118045cb69f45709ad753d3c83883270d36c0f62cbf6bc4a9b4c08af8"
     },
     {
       "path": "home-data.js",
       "sourceSHA256": "8ca8cb05c70e2fcac7b01352a0df3cfbf5d36b21c7d9a65d07b694711db4bcf3",
-      "outputSHA256": "bff9b7080783cf5bfedb4c4a1ca4f38970556c255118d1ef1b04c11e0839dc52"
+      "outputSHA256": "e04df6198ff6370304e0745aaa3af3310af797646bb303dd59b0980badc94697"
     },
     {
       "path": "icon-review.html",
       "sourceSHA256": "0cd74333f4d0750acbe1a50395f87402636676dba585db9343a762d3aa3a9dad",
-      "outputSHA256": "b334ff1ad9ac1327556ca0ccc8bb446f019672872b9e880d26d3ede7aeaf111b"
+      "outputSHA256": "3e5a1a8d8fd078eac26256e031f6a39c20ca25094659aae13380816e5af94079"
     },
     {
       "path": "identity-view.js",
@@ -298,12 +303,12 @@
     {
       "path": "index.html",
       "sourceSHA256": "8220f99f845d227f3f4c4e1e5b7a64e047a9252c0d800d0e5e2a8d2d6cd85b6c",
-      "outputSHA256": "4000fa8f589b1f46f3107b6d40e5f4c1dca117456e513b965122884e75800ad4"
+      "outputSHA256": "67f9a5269df9adfcbe6072d41a577a9b496badce77bf734e977eed45cee6dc24"
     },
     {
       "path": "japanese.html",
       "sourceSHA256": "6a068cfcaec47bc524df94afcab24766613f0049e89171610e68616febad6733",
-      "outputSHA256": "6b92ba8ede443bccf76cf47af9b433f01e018bb1f3f1a2a3c36a46abc2f554df"
+      "outputSHA256": "d5ef3bf39b6930239e7aa56e0a946961bafad7c522828309eb4394f8df0860ad"
     },
     {
       "path": "kotowaza-data.js",
@@ -328,7 +333,7 @@
     {
       "path": "kotowaza-review.html",
       "sourceSHA256": "1033b72242fe62dc0f6944a9de02a01221e682567acda4db38d01166193f747f",
-      "outputSHA256": "afc7741728b610dace742e71dc357650fbaeeaf202965da7128ab49e27c4e27a"
+      "outputSHA256": "ca10f51c6010d184aec0e25d5cbbbd328a7a8ec4119894a96add37a213907ec3"
     },
     {
       "path": "kotowaza.css",
@@ -338,7 +343,7 @@
     {
       "path": "language.html",
       "sourceSHA256": "7f0e13e6603e30d395c5339afa0fd2fe633c9e488aa4f4cbf5baa2b5ae8f8fe3",
-      "outputSHA256": "dcf8e921b300c8a440cdb6a4750e95974d08cc3cf2b0816493f7ab6ab912f17c"
+      "outputSHA256": "ba74482d2145078dbaeb7d06b9df0e8a637374b3452784d5c5e62b406a4a60c6"
     },
     {
       "path": "leaderboard.js",
@@ -348,7 +353,7 @@
     {
       "path": "legacy-player-client.js",
       "sourceSHA256": "c3bfd947916b475e289b6a827e7ba3a90b87aa08297d72d3c6fa4c175bc7fa94",
-      "outputSHA256": "822aa0703a3deef573fb6ee37886386a2aade4826634eec88927c73adee6996f"
+      "outputSHA256": "32903496cca6d09dfa522697cfa9fd937989120376950acc6c19ed76ca905542"
     },
     {
       "path": "management-model.js",
@@ -358,7 +363,7 @@
     {
       "path": "management-store.js",
       "sourceSHA256": "5417a485790684c7d729943df0c7bb7a4885d947681226413ea8c072d1bd30ab",
-      "outputSHA256": "db022dd3ae5bd262f09beb757278e6a196628723ba3fc83336aa45a86a12cbc0"
+      "outputSHA256": "21b7b1663d1b4389f820c3882e086819c052a3b61d437fa36741b59d3deaf33f"
     },
     {
       "path": "math-concepts-game.js",
@@ -388,7 +393,7 @@
     {
       "path": "math.html",
       "sourceSHA256": "c0cf8006c14a73a11d1fb3c0ae47d030d2622207b541f791847bdcd7c612139a",
-      "outputSHA256": "d14eb7bd1e4372da50e48429cb74959697f10bc1fc5d444862fc26334b64d378"
+      "outputSHA256": "9a18726339f8e9e4b816464c1d5a99c2fc1e95b149c7270e211cf64c296169d3"
     },
     {
       "path": "multiplication-properties-game.js",
@@ -413,7 +418,7 @@
     {
       "path": "player-sync-api.js",
       "sourceSHA256": "38bb787426779aaadec15f78b2590ea94c6e6ec8eaefa09f5b5028a5a7b45474",
-      "outputSHA256": "cf81a5e41f4023a21ac94b53eb34e84df2af5aaf716ba736334e655f2bf4000a"
+      "outputSHA256": "af9a4291201f7341a8f828600bcd135fe2c37f978fa1dab21e6d5e2749536dee"
     },
     {
       "path": "player-sync-model.js",
@@ -423,11 +428,11 @@
     {
       "path": "player-sync.js",
       "sourceSHA256": "3bf82875f05ab07a9c8a20d89cb8155f48a383d905433991616bbd59085513b0",
-      "outputSHA256": "48774eff308a6ec19efab22c53fdf3e79b9a269a66f5c85be60f54eedf7e01ff"
+      "outputSHA256": "9c63d97e8580d7fb3d2e2865d4d93da060c44eb7dad1c7888a14bb63bb110702"
     },
     {
       "path": "profile-catalog.js",
-      "sourceSHA256": "dd3b082d6edce4d60df6002f15a611276a9fbeb6920b82e1fd1324a854bc3611",
+      "sourceSHA256": "21b6792378eacaf2c6aae824d6b30fb8d28eea347b24691bff6c8179bca08aaa",
       "outputSHA256": "5f8bbc031c412eb4227e1ee421ad6d29516df49c85091d2ed5975c0705f05524"
     },
     {
@@ -478,17 +483,17 @@
     {
       "path": "ranking-page.js",
       "sourceSHA256": "dc9159bc4e05ef3a3901cdc17682ff42397ee40516408aa8fa103065de86ca9e",
-      "outputSHA256": "8b156c2bef544b6b6a0ca1ff5331cbeb1199fb640fff93ec2de7bd86e7505910"
+      "outputSHA256": "0263d4776623c47480224db011a492bfa0349ed51e0302b5858c74e38d9d3745"
     },
     {
       "path": "ranking.html",
       "sourceSHA256": "65e5812cfc262d6afdcded9769160f7017c8fb37693a13b9e774d9b44198b1a6",
-      "outputSHA256": "e7f95236b3df282a21b5b8aa2b7faabe0dcaa8b235839ab8663d429679965027"
+      "outputSHA256": "c086546a0079376f9fa5577ef11b7aa1d386e3d4f39a91392b9ccd6267ed1966"
     },
     {
       "path": "science.html",
       "sourceSHA256": "2d77f8521db0a8cafb7d1a482faa2800ad6063380c9a57ba431b878ea8844c57",
-      "outputSHA256": "e983a3132c457bf002b09ee27641dab4613e284b62383334cf17d8a005c1bb44"
+      "outputSHA256": "65197be2791dd7c9c5f66a8c62b9210c47b9e2c6a8878a93b324ffb26462bac3"
     },
     {
       "path": "shop.css",
@@ -498,7 +503,7 @@
     {
       "path": "shop.html",
       "sourceSHA256": "944ea5acb36b619a6b1416b05d8379a9527ef928c40d62f75b5d4ecef0ac33f6",
-      "outputSHA256": "9c836d13bf2a12de3ca0a013944c7fc05b52b43de32ab7485fb451d220a4fca4"
+      "outputSHA256": "7704dccd0da1b1bdf40877d7856afc43252f1964a2df0ee8a289b11d0df4ad5a"
     },
     {
       "path": "shop.js",
@@ -508,17 +513,17 @@
     {
       "path": "social-score-sync.js",
       "sourceSHA256": "6f84237958005b6350f918e22c0c1bc901f3c1507f878c9e2d8098769348a004",
-      "outputSHA256": "9f19cdf610c2289441b6175b5fc47f4fb004b409245f215224a292eaf24e2b15"
+      "outputSHA256": "162af491940ab84665790591ba4948d26540af34ab81885c8cee229b261fb22a"
     },
     {
       "path": "social.html",
       "sourceSHA256": "7f04d523f0b8fb138bee20da82022475c63bce4ac1fcda03ee6c3b290d27753b",
-      "outputSHA256": "090099fb7e9cc55a7226673e13bbf0a168c88de02189a3b47842630ee65a9858"
+      "outputSHA256": "80216b9b1b58559c42921babd9512c2c546c316644e0abad37fe045b41bbd3a1"
     },
     {
       "path": "spark-auth.js",
       "sourceSHA256": "5f4b4f4a596a6e9673df9e5a4cb08d887bf77d453d14054c1006d1b72515729d",
-      "outputSHA256": "21d8c4d89314ca107dc649f4619558b4fdbafb38d10ef2422caf54d7393c619a"
+      "outputSHA256": "97d830e44a1a543e02f5bc0c84ca2b85e52e5fc07fa0fa5f38fba1179e892b18"
     },
     {
       "path": "spark-config.js",
@@ -537,13 +542,13 @@
     },
     {
       "path": "suichoku-model.js",
-      "sourceSHA256": "ec98c48b88badbee77c97c45e242920702e00146c9fea951a8e151aacde152db",
-      "outputSHA256": "ec98c48b88badbee77c97c45e242920702e00146c9fea951a8e151aacde152db"
+      "sourceSHA256": "8f0855ac17ce6e093f38358e6be81ff3db3798583cdd9ade42067868a20f1be5",
+      "outputSHA256": "8f0855ac17ce6e093f38358e6be81ff3db3798583cdd9ade42067868a20f1be5"
     },
     {
       "path": "suichoku.css",
-      "sourceSHA256": "ddb322b8f68ee96eeeaeda90fac3d4d41dc0671cff1bdeaa99c7a623e0d493ff",
-      "outputSHA256": "ddb322b8f68ee96eeeaeda90fac3d4d41dc0671cff1bdeaa99c7a623e0d493ff"
+      "sourceSHA256": "e366cf0e0a5bd67d9eaf0fa2ad3ec7e297e81325e0379474a3ca0f897cce26b2",
+      "outputSHA256": "e366cf0e0a5bd67d9eaf0fa2ad3ec7e297e81325e0379474a3ca0f897cce26b2"
     },
     {
       "path": "upgrade-shared.js",

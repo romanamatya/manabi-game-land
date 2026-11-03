@@ -1,5 +1,5 @@
-import {legacyPlayerClient} from './legacy-player-client.js?v=5ff05b071a35';
-import {publishedChampionGames} from './champion-visibility.js?v=5ff05b071a35';
+import {legacyPlayerClient} from './legacy-player-client.js?v=f1e1f02060b0';
+import {publishedChampionGames} from './champion-visibility.js?v=f1e1f02060b0';
 export async function startProductionHome(storage){
  const $=id=>document.getElementById(id);let nick=storage.getItem('mgl_nickname')||'',client=null,records=[];
  const games=window.ManabiLeaderboard.games,statuses=new Map();
