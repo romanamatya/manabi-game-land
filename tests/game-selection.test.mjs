@@ -87,3 +87,12 @@ test('production 2-minute challenge keeps its ranking route and direct URL guard
  assert.ok(!settings.includes('document.documentElement.inert=true'));assert.ok(settings.includes("read('gameSettings',gameId)"));assert.ok(settings.includes('subscribeGame(id,onValue,onError)'));
  assert.ok(gate.includes("const EXEMPT='a[href],header,nav,aside,#challenge120Gate,#challenge120Status,#publicGameAccessStatus"));
 });
+
+test('math navigation renders the two parallel units and keeps vertical only in geometry',async()=>{
+ const source=await readFile(new URL('../math-navigation.js',import.meta.url),'utf8');
+ function render(unitId){class Element{constructor(tag){this.tagName=tag;this.children=[];this.dataset={};this.className='';this.href='';this.textContent='';this.classList={add:name=>{this.className+=' '+name}}}append(...nodes){this.children.push(...nodes)}setAttribute(k,v){this[k]=v}}const root=new Element('section'),document={body:{dataset:{unit:unitId}},getElementById:()=>root,createElement:tag=>new Element(tag),querySelectorAll:()=>[]},location={href:'https://example.test/math.html'},window={ManabiProfileCatalog:[],ManabiGameSelection:{initialize(){}}};const vmContext={document,location,window,URL,URLSearchParams,Object,Array};return import('node:vm').then(({runInNewContext})=>{runInNewContext(source,vmContext);return root})}
+ const chooser=await render('');assert.equal(chooser.children.length,2);assert.deepEqual(chooser.children.map(x=>x.children[0].href),['math-calculation.html','math-geometry.html']);assert.deepEqual(chooser.children.map(x=>x.children[0].children[0].textContent),['計算のきまり','四角形・垂直と平行']);
+ const calculation=await render('calculation');assert.ok(!calculation.children.some(x=>x.dataset.gameCard==='suichoku'));
+ const geometry=await render('geometry');assert.equal(geometry.children.filter(x=>x.dataset.gameCard==='suichoku').length,1);assert.equal(geometry.children[0].children[0].children[0].textContent,'垂直を見つけよう！');
+ const calcPage=await readFile(new URL('../math-calculation.html',import.meta.url),'utf8'),geometryPage=await readFile(new URL('../math-geometry.html',import.meta.url),'utf8');assert.match(calcPage,/data-unit="calculation"/);assert.match(geometryPage,/data-unit="geometry"/);
+});
