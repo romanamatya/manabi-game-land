@@ -49,6 +49,7 @@ test('shared celebration uses fireworks for a normal answer and only the title c
  for(let streak=1;streak<=5;streak++){
   await tapCandidate(page,await perpendicularChoice(page));await expect(page.locator('#verdict')).toHaveText('正解！');
   const effect=page.locator('.mgl-celebration');
+  await expect(page.locator('#feedback')).toBeVisible();
   if(streak===1){await expect(effect).toHaveClass(/mgl-celebration--correct/);await expect(effect).toContainText('正解！');await expect(effect.locator('.mgl-celebration__particle')).toHaveCount(38);const box=await effect.boundingBox();expect(box.x).toBeGreaterThanOrEqual(0);expect(box.y).toBeGreaterThanOrEqual(0);expect(box.x+box.width).toBeLessThanOrEqual(1194);expect(box.y+box.height).toBeLessThanOrEqual(834);expect(await page.evaluate(()=>document.documentElement.scrollHeight<=innerHeight)).toBe(true);await expect(effect).toBeHidden({timeout:1500});}
   if(streak===5){await expect(effect).toHaveClass(/mgl-celebration--title/);await expect(effect).toContainText('新しい称号を獲得！');await expect(effect).toContainText('垂直みつけ隊');await expect(effect.locator('.mgl-celebration__title-card')).toHaveCount(1);await expect(effect.locator('.mgl-celebration__text')).toHaveCount(0);await expect(effect.locator('.mgl-celebration__art img, .mgl-celebration__art svg')).toHaveCount(1);await expect(effect).toBeHidden({timeout:1800});}
   if(streak<5)await expect(page.locator('#feedback')).toBeHidden({timeout:1500});
@@ -69,7 +70,7 @@ test('shared effect module loads on each game in the current production code lis
 
 test('shared celebration leaves the active 120-second challenge timer and answer record running',async({page})=>{
  await blockFirebaseApi(page);
- await page.addInitScript(()=>{const now=Date.now();localStorage.setItem('mgl_suichoku',JSON.stringify({best:25,streak:25,history:[]}));localStorage.setItem('mgl_challenge120_v1:suichoku',JSON.stringify({protocol:2,game:'suichoku',phase:'running',unlocked:true,practiceStreak:25,attemptId:'smoke-attempt',season:'production-120-v1',startedAt:now-1000,deadline:now+120000,lastWall:now-1000,streak:25,attemptBest:25,bests:{},sequence:0,claimed:[]}));});
+ await page.addInitScript(()=>{const now=Date.now(),prefix='manabi_preview_test:';localStorage.setItem(prefix+'mgl_suichoku',JSON.stringify({best:25,streak:25,history:[]}));localStorage.setItem(prefix+'mgl_challenge120_v1:suichoku',JSON.stringify({protocol:2,game:'suichoku',phase:'running',unlocked:true,practiceStreak:25,attemptId:'smoke-attempt',season:'production-120-v1',startedAt:now-1000,deadline:now+120000,lastWall:now-1000,streak:25,attemptBest:25,bests:{},sequence:0,claimed:[]}));});
  await page.goto(pageURL('games/suichoku.html?adminTest=1'));await expect(page.locator('#challenge120Status')).toContainText('2分間');
  const timerBefore=await page.locator('#challenge120Status strong').textContent();await page.waitForTimeout(1200);const timerAfter=await page.locator('#challenge120Status strong').textContent();expect(timerAfter).not.toBe(timerBefore);
  await tapCandidate(page,await perpendicularChoice(page));await expect(page.locator('#challenge120Status')).toContainText('連続 26 / 今回最高 26');await expect(page.locator('.mgl-celebration--correct')).toBeVisible();

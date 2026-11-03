@@ -5,7 +5,7 @@ if(!economy||typeof economy.answer!=='function'||!core?.correct||window.ManabiCe
 const reduceMotion=window.matchMedia?.('(prefers-reduced-motion: reduce)');
 const testMode=new URL(location.href).searchParams.has('adminTest');
 const assetBase=new URL('.',document.currentScript?.src||location.href);
-let lastGesture=0,active=null,sequence=0;
+let lastGesture=0,active=null,effectSequence=0,answerSequence=0;
 const bestSeen=new Map();
 const titles=window.ManabiProfileCatalog||[];
 const style=document.createElement('style');
@@ -39,7 +39,7 @@ function titleFor(game,before,after){const catalog=titles.find(row=>row.id===gam
 function artFor(item){const art=document.createElement('div');art.className='mgl-celebration__art';let badge=null;try{badge=window.ManabiIdentity?.badge(item.id,150)}catch{}if(badge){art.append(badge);return art}const image=document.createElement('img');image.alt='';image.src=new URL(item.image||'assets/badges/title-badges-v1.png',assetBase).href;art.append(image);return art}
 function addParticles(count){for(let i=0;i<count;i++){const star=i%4===0,particle=document.createElement('span');particle.className='mgl-celebration__particle'+(star?' mgl-celebration__particle--star':'');const side=i%2===0?'8%':'92%',angle=Math.random()*110-55,direction=side==='8%'?1:-1,distance=22+Math.random()*44;particle.style.setProperty('--x',side);particle.style.setProperty('--y',(35+Math.random()*30)+'%');particle.style.setProperty('--dx',direction*Math.cos(angle*Math.PI/180)*distance+'vw');particle.style.setProperty('--dy',(Math.sin(angle*Math.PI/180)*distance-15)+'vh');particle.style.setProperty('--rot',(Math.random()*720-360)+'deg');particle.style.setProperty('--size',(star?16+Math.random()*22:7+Math.random()*11)+'px');particle.style.setProperty('--color',colors[i%colors.length]);particle.style.setProperty('--shape',star?'50%':i%3===0?'50%':'2px');particle.style.setProperty('--delay',(Math.random()*.07)+'s');particle.style.setProperty('--duration',(reduceMotion?.matches?0:.36+Math.random()*.18)+'s');if(star)particle.textContent=i%8===0?'✦':'✧';layer.append(particle)}}
 function clear(){if(active)clearTimeout(active);active=null;layer.replaceChildren(glow,rays);layer.className='mgl-celebration';layer.hidden=true}
-function show(correctTitle){clear();const token=++sequence;layer.hidden=false;layer.classList.add(correctTitle?'mgl-celebration--title':'mgl-celebration--correct');addParticles(correctTitle?66:38);const left=document.createElement('span'),right=document.createElement('span');left.className='mgl-celebration__burst mgl-celebration__burst--left';right.className='mgl-celebration__burst mgl-celebration__burst--right';layer.append(left,right);
+function show(correctTitle){clear();const token=++effectSequence;layer.hidden=false;layer.classList.add(correctTitle?'mgl-celebration--title':'mgl-celebration--correct');addParticles(correctTitle?66:38);const left=document.createElement('span'),right=document.createElement('span');left.className='mgl-celebration__burst mgl-celebration__burst--left';right.className='mgl-celebration__burst mgl-celebration__burst--right';layer.append(left,right);
  if(correctTitle){const card=document.createElement('section');card.className='mgl-celebration__title-card';card.append(artFor(correctTitle));const copy=document.createElement('div');copy.className='mgl-celebration__title-copy';const lead=document.createElement('strong');lead.textContent='新しい称号を獲得！';const name=document.createElement('h2');name.textContent=correctTitle.displayName||correctTitle.name;const sub=document.createElement('p');sub.textContent=correctTitle.at+'問連続正解';copy.append(lead,name,sub);card.append(copy);layer.append(card)}else{const text=document.createElement('p');text.className='mgl-celebration__text';text.textContent='正解！';layer.append(text)}
  active=setTimeout(()=>{if(token===sequence)clear()},correctTitle?1000:470)}
 function hasPlayableAccess(){return testMode||window.MANABI_BACKEND_CONFIG?.accountAccessEnabled!==true||window.ManabiPlayerAccess?.canPlay?.()===true}
@@ -49,7 +49,7 @@ economy.answer=function(context,value){
  let game='',correct=false,before=0,eligible=false;
  if(context&&!context.__mglCelebrationHandled&&hasPlayableAccess())try{game=context.game;const prompt=core.canonicalPrompt(game,context.prompt);correct=core.correct(game,prompt,value)===true;if(correct){context.__mglCelebrationHandled=true;before=bestSeen.has(game)?bestSeen.get(game):readBest(game);eligible=testMode||Date.now()-lastGesture<2500;}}catch{}
  const result=original.apply(this,arguments);
- if(correct&&eligible){const token=++sequence;requestAnimationFrame(()=>requestAnimationFrame(()=>{if(token!==sequence)return;const after=readBest(game),previous=Math.max(0,before),title=titleFor(game,previous,after);bestSeen.set(game,Math.max(previous,after));show(title)}))}
+ if(correct&&eligible){const token=++answerSequence;requestAnimationFrame(()=>requestAnimationFrame(()=>{if(token!==answerSequence)return;const after=readBest(game),previous=Math.max(0,before),title=titleFor(game,previous,after);bestSeen.set(game,Math.max(previous,after));show(title)}))}
  return result
 };
 window.ManabiCelebrations=Object.freeze({showCorrect(){show(null)},active:()=>!layer.hidden});
