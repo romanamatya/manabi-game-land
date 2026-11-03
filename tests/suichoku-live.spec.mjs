@@ -7,7 +7,7 @@ const blockFirebaseApi=page=>page.route(/https:\/\/(identitytoolkit|securetoken|
 async function waitForLiveBuild(){
  if(process.env.MGL_EXPECT_LIVE!=='1')return;
  for(let attempt=0;attempt<36;attempt++){
-  try{const response=await fetch(pageURL(`games/suichoku.html?release-check=${Date.now()}`));const html=response.ok?await response.text():'';if(html.includes('suichoku-live-fix-20261103')&&html.includes('celebration-effects.js?v=shared-celebration-1'))return}catch{}
+  try{const response=await fetch(pageURL(`games/suichoku.html?release-check=${Date.now()}`));const html=response.ok?await response.text():'';if(html.includes('suichoku-live-fix-20261103')&&html.includes('celebration-effects.js?v=legacy-correct-label-v1'))return}catch{}
   await new Promise(resolve=>setTimeout(resolve,10000));
  }
  throw Error('GitHub Pages has not published the expected vertical-game revision');
