@@ -1,8 +1,8 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {createProductionRankingClient} from '../ranking-sync-api.js';
+import {createProductionRankingClient,bestForSharedRanking} from '../ranking-sync-api.js';
 
-const config={mode:'production',expectedProjectId:'manabi-game-land',rankingSyncEnabled:true,rankingGameIds:['keisan','distribution','keisanSummary'],firebase:{projectId:'manabi-game-land'}};
+const config={mode:'production',expectedProjectId:'manabi-game-land',rankingSyncEnabled:true,rankingGameIds:['keisan','distribution','keisanSummary','suichoku'],firebase:{projectId:'manabi-game-land'}};
 const docs=new Map(),apps=[],authByName=new Map();
 const App={getApps:()=>apps,initializeApp:(options,name)=>{const app={name,options};apps.push(app);return app;}};
 const A={getAuth:app=>{if(!authByName.has(app.name))authByName.set(app.name,{currentUser:null,authStateReady:async()=>{}});return authByName.get(app.name);},setPersistence:async()=>{},browserLocalPersistence:{},signInAnonymously:async auth=>{auth.currentUser={uid:'student-a',isAnonymous:true};return {user:auth.currentUser};}};
@@ -25,6 +25,7 @@ test('uses a production-only path and shares sanitized rankings across identitie
  const a=await createProductionRankingClient(config,sdk);
  assert.equal(a.uid,'student-a');
  await a.publishRanking(profile('keisan',24));
+ await a.publishRanking(profile('suichoku',25,'そら'));
  authByName.get('manabi-production-ranking-v1').currentUser={uid:'student-b',isAnonymous:true};
  const b=await createProductionRankingClient(config,sdk);
  await b.publishRanking(profile('keisan',18,'あおい'));
@@ -34,6 +35,11 @@ test('uses a production-only path and shares sanitized rankings across identitie
  assert.deepEqual(Object.keys(rows[0]).sort(),['uid','game','nickname','bestStreak','icon','frame','title','badge','updatedAt'].sort());
  assert.equal(Object.hasOwn(rows[0],'points'),false);
  assert.ok([...docs.keys()].every(path=>path.startsWith('productionRankings/v1/games/')));
+ const vertical=await b.rankings('suichoku');assert.deepEqual(vertical.map(x=>x.uid),['student-a']);assert.equal(vertical[0].bestStreak,25);assert.ok([...docs.keys()].some(path=>path==='productionRankings/v1/games/suichoku/players/student-a'));assert.ok(![...docs.keys()].some(path=>path.includes('suichoku')&&path.includes('keisan')));
+});
+test('regular Suichoku ranking never mixes its separate 120-second challenge records',()=>{
+ assert.equal(bestForSharedRanking('suichoku',{best:8},{bests:{season:27},attemptBest:30}),8);
+ assert.equal(bestForSharedRanking('keisan',{best:8},{bests:{season:27},attemptBest:30}),30);
 });
 test('keeps best score monotonic while allowing display metadata to change',async()=>{
  docs.clear();authByName.clear();apps.length=0;

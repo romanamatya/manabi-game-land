@@ -50,3 +50,9 @@ test('math unit chooser places vertical only under geometry and opens the playab
  const play=page.locator('[data-game-card="suichoku"] [data-game-play]');await expect(play).toBeEnabled({timeout:10000});await play.click();await expect(page).toHaveURL(/games\/suichoku\.html/);await expect(page.locator('#choices button')).toHaveCount(5);
  await page.goto(pageURL('math-calculation.html?adminTest=1'));await expect(page.locator('[data-game-card="suichoku"]')).toHaveCount(0);
 });
+
+test('iPad landscape geometry card stays compact and opens the shared ranking',async({page})=>{
+ await page.setViewportSize({width:1194,height:834});await page.goto(pageURL('math-geometry.html?adminTest=1'));
+ const card=page.locator('[data-game-card="suichoku"]'),rank=card.locator('[data-game-ranking]');await expect(card).toBeVisible();await expect(rank).toHaveAttribute('href',/ranking\.html\?game=suichoku/);
+ const size=await card.boundingBox();expect(size.height).toBeLessThan(220);expect(await page.evaluate(()=>document.documentElement.scrollHeight<=window.innerHeight)).toBe(true);
+});

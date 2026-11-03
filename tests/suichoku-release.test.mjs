@@ -10,7 +10,7 @@ test('explicit static local game release is published without Firebase reads or 
  const config=backendConfig(validateEnvironment(production));
  assert.deepEqual(config.staticLocalGameIds,['suichoku']);
  assert.ok(!config.gameIds.includes('suichoku'));
- assert.ok(!config.rankingGameIds.includes('suichoku'));
+ assert.ok(config.rankingGameIds.includes('suichoku'));
  const root=read('../environment.js');assert.match(root,/staticLocalGameIds.*suichoku/);
  let firebaseOpens=0,availabilityChecks=0;const window={MANABI_BACKEND_CONFIG:{...config,environment:'productionAdmin/v1',availabilityEnabled:true,announcementsEnabled:true},ManabiFirebaseSession:{open:async()=>{firebaseOpens++;throw Error('must not connect')}},ManabiGameAvailability:{create(){availabilityChecks++;throw Error('static game must bypass Firestore gate')}}};
  const document={readyState:'complete',querySelectorAll:()=>[],getElementById:()=>null,addEventListener(){}};

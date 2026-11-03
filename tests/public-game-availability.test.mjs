@@ -50,7 +50,8 @@ test('all 11 root game pages load the safe availability guard before settings; p
   if(!filename.endsWith('.html'))continue;
   const html=await readFile(new URL(`../shared-src/site/games/${filename}`,import.meta.url),'utf8');
   if(filename==='suichoku.html'){
-   assert.doesNotMatch(html,/public-firebase-session\.js|public-game-availability\.js|economy\.js|social-score-sync\.js/,'early-release game is local-only and uses the static release allowlist');
+   assert.doesNotMatch(html,/public-firebase-session\.js|public-game-availability\.js|social-score-sync\.js/,'early-release game remains outside managed-game availability and campaign sync');
+   assert.ok(html.indexOf('economy-core.js')>=0&&html.indexOf('economy.js')>html.indexOf('economy-core.js'),'early-release game uses the shared point wallet');
    assert.match(html,/data-local-challenge-only="true"/);continue;
   }
   const session=html.indexOf('public-firebase-session.js?v=shared-firebase-session-v1'),guard=html.indexOf('public-game-availability.js?v=firebase-session-recovery-v1'),settings=html.indexOf('public-admin-settings.js?v=firebase-session-recovery-v1');

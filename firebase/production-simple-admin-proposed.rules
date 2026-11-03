@@ -39,7 +39,7 @@ service cloud.firestore {
     }
     function validRankingGame(game) {
       return game in ['keisan','pref-name','pref-place','alphabet','distribution','distribution2',
-        'exchangeAssociation','kotowaza','multiplicationProperties','shapeExpressions','keisanSummary'];
+        'exchangeAssociation','kotowaza','multiplicationProperties','shapeExpressions','keisanSummary','suichoku'];
     }
     function identityLinkPath(rankingUid) {
       return /databases/$(database)/documents/productionRankings/v1/identityLinks/$(rankingUid);
