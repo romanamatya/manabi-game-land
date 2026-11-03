@@ -43,8 +43,9 @@ const fullCatalog = catalogContext.window.ManabiProfileCatalog;
 const catalogById = new Map(fullCatalog.map(game => [game.id, game]));
 if (catalogById.size !== fullCatalog.length) throw Error('duplicate-game-id-in-catalog');
 for (const id of config.gameIds) if (!catalogById.has(id)) throw Error(`unknown-game-id:${id}`);
+const catalogGameIds = [...new Set([...config.gameIds, ...(config.staticLocalGameIds || [])])];
 for (const id of config.rankingGameIds) {
-  if (!config.gameIds.includes(id)) throw Error(`ranking-game-not-published:${id}`);
+  if (!catalogGameIds.includes(id)) throw Error(`ranking-game-not-published:${id}`);
 }
 const releaseCatalog = config.gameIds.map(id => {
   const game = catalogById.get(id);
@@ -65,7 +66,7 @@ for (const rel of sourceFiles) {
   let text = original;
   if (rel === 'environment.js') text = environmentScript(config);
   if (rel === 'profile-catalog.js') {
-    const games = config.gameIds.map(id => ({...catalogById.get(id), rankingEnabled: config.rankingGameIds.includes(id)}));
+    const games = catalogGameIds.map(id => ({...catalogById.get(id), rankingEnabled: config.rankingGameIds.includes(id)}));
     text = `window.ManabiProfileCatalog=${JSON.stringify(games)};\n`;
   }
   if (rel.endsWith('.html')) {

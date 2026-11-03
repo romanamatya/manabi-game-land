@@ -134,6 +134,21 @@ serialTest('published game ranking still works; preparing and hidden games rejec
  await assertSucceeds(F.setDoc(F.doc(student,'productionRankings/v1/games/keisan/players/rank-new'),row('rank-new','keisan',1,'にじ',F.serverTimestamp())));
 });
 
+serialTest('linked Suichoku profile UID can publish only its own monotonic shared record without changing management scope',async()=>{
+ const student=child('rank-a').firestore(),rank=F.doc(student,'productionRankings/v1/games/suichoku/players/rank-a');
+ const profileBefore=(await assertSucceeds(F.getDoc(F.doc(student,'players/profile-a')))).data();
+ await assertSucceeds(F.setDoc(rank,row('rank-a','suichoku',25,'そら',F.serverTimestamp())));
+ await assertSucceeds(F.updateDoc(rank,row('rank-a','suichoku',29,'そら',F.serverTimestamp())));
+ await assertFails(F.updateDoc(rank,row('rank-a','suichoku',20,'そら',F.serverTimestamp())));
+ const other=child('rank-b').firestore();await assertFails(F.updateDoc(F.doc(other,'productionRankings/v1/games/suichoku/players/rank-a'),row('rank-a','suichoku',40,'そら',F.serverTimestamp())));
+ const rows=await assertSucceeds(F.getDocs(F.collection(other,'productionRankings/v1/games/suichoku/players')));assert.equal(rows.size,1);assert.equal(rows.docs[0].data().bestStreak,29);
+ await assertFails(F.setDoc(F.doc(student,'productionAdmin/v1/gameSettings/suichoku'),{status:'hidden'}));
+ await env.withSecurityRulesDisabled(c=>F.setDoc(F.doc(c.firestore(),'productionAdmin/v1/gameSettings/suichoku'),{status:'hidden'}));
+ await assertFails(F.updateDoc(rank,row('rank-a','suichoku',30,'そら',F.serverTimestamp())));
+ assert.equal((await assertSucceeds(F.getDoc(rank))).data().bestStreak,29);
+ const profileAfter=(await assertSucceeds(F.getDoc(F.doc(student,'players/profile-a')))).data();assert.equal(profileAfter.points,profileBefore.points);assert.equal(profileAfter.bestStreak,profileBefore.bestStreak);assert.equal(profileAfter.rankingUid,'rank-a');
+});
+
 serialTest('an existing unlinked profile can keep its separate ranking UID and continue the shared ranking',async()=>{
  const profileUid='legacy-profile',rankingUid='legacy-ranker';
  await env.withSecurityRulesDisabled(async c=>{const db=c.firestore();

@@ -1,6 +1,14 @@
-const GAME_IDS=Object.freeze(['keisan','pref-name','pref-place','alphabet','distribution','distribution2','exchangeAssociation','kotowaza','multiplicationProperties','shapeExpressions','keisanSummary']);
+// Suichoku is deliberately ranking-only: it is not part of the management batch.
+const GAME_IDS=Object.freeze(['keisan','pref-name','pref-place','alphabet','distribution','distribution2','exchangeAssociation','kotowaza','multiplicationProperties','shapeExpressions','keisanSummary','suichoku']);
 const err=code=>Object.assign(new Error(code),{code});
 const validLabel=value=>typeof value==='string'&&value.length<=80;
+export function bestForSharedRanking(game,record,challenge){
+ let best=Math.max(0,Number(record?.best)||0);
+ if(game==='suichoku')return best;
+ for(const value of Object.values(challenge?.bests||{}))if(Number.isSafeInteger(value))best=Math.max(best,value);
+ if(Number.isSafeInteger(challenge?.attemptBest))best=Math.max(best,challenge.attemptBest);
+ return best;
+}
 function assertConfig(c){
  if(!c||c.mode!=='production'||c.expectedProjectId!=='manabi-game-land'||c.rankingSyncEnabled!==true||c.firebase?.projectId!=='manabi-game-land')throw err('production-ranking-config-rejected');
  if(typeof window!=='undefined'&&(window.MANABI_ENV?.preview!==false||window.MANABI_ENV?.expectedProjectId!=='manabi-game-land'))throw err('production-environment-mismatch');

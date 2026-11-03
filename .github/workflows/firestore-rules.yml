@@ -40,7 +40,7 @@ jobs:
       - run: node tools/build-site.mjs preview
       - run: node tools/build-site.mjs production
       - run: node tools/check-site.mjs
-      - run: node --test tests/economy-replay.test.mjs tests/production-ranking-api.test.mjs tests/production-challenge120.test.mjs tests/kotowaza-production.cjs tests/storage-contract.test.mjs tests/suichoku.test.mjs tests/suichoku-release.test.mjs tests/game-selection.test.mjs tests/public-game-availability.test.mjs tests/build-output.test.mjs tests/foundation.test.mjs
+      - run: node --test tests/economy-replay.test.mjs tests/production-ranking-api.test.mjs tests/production-challenge120.test.mjs tests/kotowaza-production.cjs tests/storage-contract.test.mjs tests/suichoku.test.mjs tests/suichoku-economy.test.mjs tests/suichoku-release.test.mjs tests/game-selection.test.mjs tests/public-game-availability.test.mjs tests/build-output.test.mjs tests/foundation.test.mjs
       - run: npm run test:rules:admin-stage2
       - run: npm run test:simple-admin
       - run: npm run test:rules:simple-admin

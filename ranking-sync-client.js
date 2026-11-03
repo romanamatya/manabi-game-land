@@ -1,13 +1,15 @@
-import {client} from './ranking-sync-api.js?v=prod-admin-stage2-rename-1';
+import {client,bestForSharedRanking} from './ranking-sync-api.js?v=prod-admin-stage2-rename-1';
 const storage=window.manabiStorage,config=window.MANABI_BACKEND_CONFIG;
-const games=['keisan','pref-name','pref-place','alphabet','distribution','distribution2','exchangeAssociation','kotowaza','multiplicationProperties','shapeExpressions','keisanSummary'];
+// Keep the perpendicular game's regular record in its own shared ranking.
+// Its 120-second challenge board remains separate and local to that challenge.
+const games=['keisan','pref-name','pref-place','alphabet','distribution','distribution2','exchangeAssociation','kotowaza','multiplicationProperties','shapeExpressions','keisanSummary','suichoku'];
 const baseline=new Map(),published=new Map();let started=false,work=Promise.resolve(),startupPromise=null,profileUnsubscribe=null,identityReady=config?.playerNameSyncEnabled!==true;
 const PENDING='mgl_production_rank_pending_v1';
 function profileRow(game){return window.ManabiProfile?.records(storage).find(x=>x.id===game)||null}
 function localBest(game){
- const record=profileRow(game);let best=Math.max(0,Number(record?.best)||0);
- try{const s=JSON.parse(storage.getItem('mgl_challenge120_v1:'+game)||'null');for(const n of Object.values(s?.bests||{}))if(Number.isSafeInteger(n))best=Math.max(best,n);if(Number.isSafeInteger(s?.attemptBest))best=Math.max(best,s.attemptBest)}catch{}
- return best;
+ const record=profileRow(game);let challenge=null;
+ try{challenge=JSON.parse(storage.getItem('mgl_challenge120_v1:'+game)||'null')}catch{}
+ return bestForSharedRanking(game,record,challenge);
 }
 function projection(game,best){
  const catalog=window.ManabiProfileCatalog?.find(x=>x.id===game),rows=window.ManabiProfile?.records(storage)||[];
