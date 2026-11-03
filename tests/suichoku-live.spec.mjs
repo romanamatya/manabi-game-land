@@ -18,6 +18,10 @@ async function perpendicularChoice(page){
   return [...svg.querySelectorAll('.candidate')].map(group=>{const line=group.querySelector('.candidate-line'),dx=Number(line.getAttribute('x2'))-Number(line.getAttribute('x1')),dy=Number(line.getAttribute('y2'))-Number(line.getAttribute('y1'));return {choice:Number(group.dataset.choice),dot:Math.abs(rx*dx+ry*dy)}}).sort((a,b)=>a.dot-b.dot)[0].choice;
  });
 }
+async function tapCandidate(page,choice){
+ const point=await page.locator('#diagram svg').evaluate((svg,index)=>{const line=svg.querySelector(`.candidate[data-choice="${index}"] .candidate-line`),x=(Number(line.getAttribute('x1'))+Number(line.getAttribute('x2')))/2,y=(Number(line.getAttribute('y1'))+Number(line.getAttribute('y2')))/2,p=new DOMPoint(x,y).matrixTransform(line.getScreenCTM());return {x:p.x,y:p.y}},choice);
+ await page.mouse.click(point.x,point.y);
+}
 
 test('public page renders titles and completes ten correct answers, including reload persistence',async({page})=>{
  await waitForLiveBuild();await page.goto(pageURL('games/suichoku.html?adminTest=1'));
@@ -25,7 +29,7 @@ test('public page renders titles and completes ten correct answers, including re
  const expected=['title_25.png','title_20.png','title_15.png','title_10.png','title_05.png'];await expect(page.locator('#tower > li')).toHaveCount(5);
  for(let i=0;i<5;i++){const row=page.locator('#tower > li').nth(i);await expect(row.locator('img')).toHaveCount(1);await expect(row.locator('img')).toHaveAttribute('src',new RegExp(expected[i]+'$'))}
  for(let streak=1;streak<=10;streak++){
-  const choice=await perpendicularChoice(page);await page.locator(`#diagram .candidate[data-choice="${choice}"] .candidate-hit`).click();await expect(page.locator('#verdict')).toHaveText('正解！');await expect(page.locator('#streak')).toHaveText(String(streak));
+  const choice=await perpendicularChoice(page);await tapCandidate(page,choice);await expect(page.locator('#verdict')).toHaveText('正解！');await expect(page.locator('#streak')).toHaveText(String(streak));
   if(streak<10)await expect(page.locator('#feedback')).toBeHidden({timeout:3000});
  }
  await expect.poll(()=>page.evaluate(()=>JSON.parse(window.manabiStorage.getItem('mgl_suichoku')).best)).toBe(10);
@@ -34,8 +38,8 @@ test('public page renders titles and completes ten correct answers, including re
 
 test('wrong answer is shown once and the next-question control recovers play',async({page})=>{
  await waitForLiveBuild();await page.goto(pageURL('games/suichoku.html?adminTest=1'));await expect(page.locator('#choices button')).toHaveCount(5);
- const correct=await perpendicularChoice(page),wrong=(correct+1)%5,button=page.locator(`#diagram .candidate[data-choice="${wrong}"] .candidate-hit`);await button.click();await expect(page.locator('#verdict')).toHaveText('不正解');await expect(page.locator('#next')).toBeVisible();
- await button.click();await expect.poll(()=>page.evaluate(()=>JSON.parse(window.manabiStorage.getItem('mgl_suichoku')).history.length)).toBe(1);
+ const correct=await perpendicularChoice(page),wrong=(correct+1)%5;await tapCandidate(page,wrong);await expect(page.locator('#verdict')).toHaveText('不正解');await expect(page.locator('#next')).toBeVisible();
+ await tapCandidate(page,wrong);await expect.poll(()=>page.evaluate(()=>JSON.parse(window.manabiStorage.getItem('mgl_suichoku')).history.length)).toBe(1);
  await page.locator('#next').click();await expect(page.locator('#choices button')).toHaveCount(5);await expect(page.locator('#feedback')).toBeHidden();
 });
 
