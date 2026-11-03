@@ -75,7 +75,7 @@ test('production subject pages expose separate play and ranking controls',async(
 
 test('production 2-minute challenge keeps its ranking route and direct URL guard',async()=>{
  const navigation=await readFile(new URL('../math-navigation.js',import.meta.url),'utf8');
- assert.ok(navigation.includes("games:['keisan','distribution','distribution2','exchangeAssociation','multiplicationProperties','shapeExpressions','keisanSummary']"));
+ assert.ok(navigation.includes("games:['keisan','distribution','distribution2','exchangeAssociation','multiplicationProperties','shapeExpressions','keisanSummary','suichoku']"));
  assert.ok(navigation.includes("id==='keisanSummary'?'summary-ranking.html':'ranking.html?game='"));
  assert.ok(navigation.includes("play.dataset.gameHref=testLink('games/'+id+'.html')"));
  assert.ok(navigation.includes("rank.href=testLink(id==='keisanSummary'?'summary-ranking.html':'ranking.html?game='+id)"))

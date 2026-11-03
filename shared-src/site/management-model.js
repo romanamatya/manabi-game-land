@@ -1,5 +1,5 @@
 // Small client-side contract for the four supported admin features.
-export const GAME_IDS=Object.freeze(['keisan','pref-name','pref-place','alphabet','distribution','distribution2','exchangeAssociation','kotowaza','multiplicationProperties','shapeExpressions','keisanSummary']);
+export const GAME_IDS=Object.freeze(['keisan','pref-name','pref-place','alphabet','distribution','distribution2','exchangeAssociation','kotowaza','multiplicationProperties','shapeExpressions','keisanSummary','suichoku']);
 export const AUDIT_REASON='管理室からの操作';
 export const normalPolicy=()=>({multiplier:1,cap:50,campaignId:null});
 export function visibilityStatus(setting){
