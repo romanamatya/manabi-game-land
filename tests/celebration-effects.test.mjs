@@ -8,7 +8,7 @@ const publicConfig=JSON.parse(await readFile(new URL('../environments/production
 const publishedIds=[...new Set([...publicConfig.gameIds,...(publicConfig.staticLocalGameIds||[])])];
 
 class Node{
- constructor(tag){this.tagName=tag.toUpperCase();this.children=[];this.parentNode=null;this.attributes={};this.style={values:{},setProperty(k,v){this.values[k]=String(v)}};this.className='';this.hidden=false;this._text='';this.isConnected=false;this.classList={add:(...names)=>{const s=new Set(this.className.split(/\s+/).filter(Boolean));names.forEach(n=>s.add(n));this.className=[...s].join(' ')},contains:name=>this.className.split(/\s+/).includes(name)}}
+ constructor(tag){this.tagName=tag.toUpperCase();this.children=[];this.parentNode=null;this.attributes={};this.style={values:{},setProperty(k,v){this.values[k]=String(v)}};this.className='';this.hidden=false;this._text='';this.isConnected=false;this.classList={add:(...names)=>{const s=new Set(this.className.split(/\s+/).filter(Boolean));names.forEach(n=>s.add(n));this.className=[...s].join(' ')},toggle:(name,force)=>{const s=new Set(this.className.split(/\s+/).filter(Boolean));if(force)s.add(name);else s.delete(name);this.className=[...s].join(' ');return s.has(name)},contains:name=>this.className.split(/\s+/).includes(name)}}
  set textContent(value){this._text=String(value);this.children=[]}
  get textContent(){return this._text+this.children.map(c=>c.textContent).join('')}
  append(...nodes){for(const node of nodes){node.parentNode?.remove(node);node.parentNode=this;node.isConnected=this.isConnected;this.children.push(node)}return nodes.at(-1)}
@@ -18,15 +18,18 @@ class Node{
  querySelectorAll(selector){const all=[];const visit=node=>{for(const c of node.children){if(selector.startsWith('.')&&c.classList.contains(selector.slice(1)))all.push(c);visit(c)}};visit(this);return all}
 }
 function harness({game='keisan',before=0,threshold=5,reduce=false}={}){
- const listeners=new Map(),frames=[],timers=[],body=new Node('body'),head=new Node('head'),document={body,head,documentElement:new Node('html'),currentScript:{src:'https://local.test/celebration-effects.js'},createElement:t=>new Node(t),addEventListener(type,fn){const list=listeners.get(type)||[];list.push(fn);listeners.set(type,list)},querySelector:()=>null};body.isConnected=true;head.isConnected=true;
+ const listeners=new Map(),frames=[],timers=[],observers=[],body=new Node('body'),head=new Node('head'),documentElement=new Node('html'),verdict=new Node('h2'),resultOverlay=new Node('div'),resultHeading=new Node('strong'),feedback=new Node('div');
+ verdict.id='verdict';resultOverlay.id='resultOverlay';feedback.id='feedback';resultOverlay.append(resultHeading);
+ const document={body,head,documentElement,currentScript:{src:'https://local.test/celebration-effects.js'},createElement:t=>new Node(t),addEventListener(type,fn){const list=listeners.get(type)||[];list.push(fn);listeners.set(type,list)},querySelector:selector=>selector==='#feedback'?feedback:null,querySelectorAll:selector=>selector==='#verdict, #resultOverlay, #resultOverlay strong'?[verdict,resultOverlay,resultHeading]:[]};body.isConnected=true;head.isConnected=true;
  const state={best:before},catalog=[{id:game,name:'test game',titles:[{id:game+':'+threshold,at:threshold,name:'テスト称号',displayName:'テスト称号',image:'assets/badge.png',standalone:true}]}];
  const context={game,prompt:{correct:'right'},answered:false};
  const economy={answer(ctx,value){ctx.answered=true;if(value==='right')state.best=Math.max(state.best,state.best+1);return Promise.resolve(true)}};
  const window={ManabiEconomy:economy,ManabiEconomyCore:{canonicalPrompt:(_g,p)=>p,correct:(_g,p,a)=>p.correct===a},ManabiProfileCatalog:catalog,ManabiProfile:{records:()=>[{id:game,best:state.best}]},ManabiIdentity:{badge(){return new Node('img')}},manabiStorage:{},matchMedia:()=>({matches:reduce}),MANABI_BACKEND_CONFIG:{accountAccessEnabled:false}};
  const location={href:'https://local.test/game.html?adminTest=1'};
- const sandbox={window,document,location,URL,Math,Date,requestAnimationFrame:fn=>frames.push(fn),setTimeout:(fn,ms)=>{const timer={fn,ms,cancelled:false};timers.push(timer);return timer},clearTimeout:timer=>{if(timer)timer.cancelled=true}};
+ class TestMutationObserver{constructor(callback){this.callback=callback;observers.push(this)}observe(){}}
+ const sandbox={window,document,location,URL,Math,Date,MutationObserver:TestMutationObserver,requestAnimationFrame:fn=>frames.push(fn),setTimeout:(fn,ms)=>{const timer={fn,ms,cancelled:false};timers.push(timer);return timer},clearTimeout:timer=>{if(timer)timer.cancelled=true}};
  vm.runInNewContext(moduleSource,sandbox,{filename:'celebration-effects.js'});
- return {window,document,body,economy,context,state,frames,timers,listeners,dispatch(type){for(const fn of listeners.get(type)||[])fn({type})},flushFrames(){while(frames.length)frames.shift()()}};
+ return {window,document,body,economy,context,state,frames,timers,listeners,verdict,resultOverlay,resultHeading,feedback,refreshLegacy(){for(const observer of observers)observer.callback()},dispatch(type){for(const fn of listeners.get(type)||[])fn({type})},flushFrames(){while(frames.length)frames.shift()()}};
 }
 
 test('all currently configured public game pages load the shared effect after identity and before game code',async()=>{
@@ -58,6 +61,13 @@ test('a newly crossed title shows the title art and title-only overlay',()=>{
  const h=harness({game:'alphabet',before:0,threshold:1});h.dispatch('click');h.economy.answer(h.context,'right');h.flushFrames();
  const layer=h.body.children.find(n=>n.classList.contains('mgl-celebration'));
  assert.ok(layer.classList.contains('mgl-celebration--title'));assert.match(layer.textContent,/新しい称号を獲得！テスト称号/);assert.equal(layer.querySelectorAll('.mgl-celebration__title-card').length,1);assert.equal(layer.querySelectorAll('.mgl-celebration__text').length,0);assert.ok(h.timers.some(t=>t.ms===1000));
+});
+
+test('legacy correct labels are concealed without hiding wrong feedback or the next-question cue',()=>{
+ const h=harness();h.verdict.textContent='正解！';h.resultHeading.textContent='⭕ 正解！';h.feedback.textContent='正解！ · 0.5秒後に次の問題へ';h.refreshLegacy();
+ assert.ok(h.verdict.classList.contains('mgl-legacy-correct-hidden'));assert.ok(h.resultHeading.classList.contains('mgl-legacy-correct-hidden'));assert.ok(h.resultOverlay.classList.contains('mgl-legacy-correct-hidden'));assert.equal(h.feedback.textContent,'0.5秒後に次の問題へ');
+ h.verdict.textContent='不正解！';h.resultHeading.textContent='❌ 不正解';h.feedback.textContent='正解は A。もう一度考えよう。';h.refreshLegacy();
+ assert.ok(!h.verdict.classList.contains('mgl-legacy-correct-hidden'));assert.ok(!h.resultHeading.classList.contains('mgl-legacy-correct-hidden'));assert.ok(!h.resultOverlay.classList.contains('mgl-legacy-correct-hidden'));assert.equal(h.feedback.textContent,'正解は A。もう一度考えよう。');
 });
 
 test('wrong and repeated answers do not add celebrations or duplicate overlays',()=>{
