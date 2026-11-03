@@ -36,7 +36,7 @@ permissions:
 
 jobs:
   browser-smoke:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     env:
       MGL_BASE_URL: ${{ github.event_name == 'push' && 'https://romanamatya.github.io/manabi-game-land/' || 'http://127.0.0.1:4173/' }}
