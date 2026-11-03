@@ -1,4 +1,4 @@
-import {bindGameAvailability} from './game-selection-model.js?v=e8faf7cc1994';
+import {bindGameAvailability} from './game-selection-model.js?v=8049f582c728';
 const initialized=new WeakSet();
 function initialize(){
  for(const card of document.querySelectorAll('[data-game-card]')){
