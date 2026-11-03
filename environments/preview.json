@@ -24,7 +24,8 @@
     "exchangeAssociation",
     "kotowaza",
     "multiplicationProperties",
-    "shapeExpressions"
+    "shapeExpressions",
+    "suichoku"
   ],
   "rankingGameIds": [
     "keisan",
@@ -37,5 +38,8 @@
     "exchangeAssociation",
     "multiplicationProperties",
     "shapeExpressions"
+  ],
+  "staticLocalGameIds": [
+    "suichoku"
   ]
 }

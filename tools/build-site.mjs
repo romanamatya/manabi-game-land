@@ -53,7 +53,15 @@ const releaseCatalog = config.gameIds.map(id => {
 
 const entries = [];
 for (const rel of sourceFiles) {
-  const original = await fs.readFile(path.join(source, rel), 'utf8');
+  const input = await fs.readFile(path.join(source, rel));
+  if (input.includes(0)) {
+    const outputPath = path.join(out, rel);
+    await fs.mkdir(path.dirname(outputPath), {recursive: true});
+    await fs.writeFile(outputPath, input);
+    entries.push({path: rel, sourceSHA256: sourceDigests.get(rel), outputSHA256: crypto.createHash('sha256').update(input).digest('hex')});
+    continue;
+  }
+  const original = input.toString('utf8');
   let text = original;
   if (rel === 'environment.js') text = environmentScript(config);
   if (rel === 'profile-catalog.js') {

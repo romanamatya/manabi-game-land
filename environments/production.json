@@ -32,6 +32,9 @@
     "distribution2",
     "exchangeAssociation"
   ],
+  "staticLocalGameIds": [
+    "suichoku"
+  ],
   "rankingGameIds": [
     "keisan",
     "pref-name",

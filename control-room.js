@@ -1,6 +1,6 @@
 import {client,errorText} from './spark-auth.js?v=availability-read-fix-20261102';
 const cfg=window.MANABI_SPARK_CONFIG,renameEnabled=cfg?.adminFeatures?.playerRename===true,managementEnabled=cfg?.managementEnabled===true;
-const $=id=>document.getElementById(id),names=window.ManabiUpgradeShared?.names||{},catalog=window.ManabiProfileCatalog||[];
+const $=id=>document.getElementById(id),names=window.ManabiUpgradeShared?.names||{},catalog=(window.ManabiProfileCatalog||[]).filter(g=>g.id!=='suichoku');
 const statusLabels={published:'公開中',preparing:'公開準備中',hidden:'非公開',unknown:'未確認'};
 let api,data,active='players',pending=null,busy=false;
 const node=(tag,text)=>{const n=document.createElement(tag);if(text!==undefined)n.textContent=String(text);return n};
