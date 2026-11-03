@@ -1,6 +1,6 @@
-import {createManagementStore} from './management-store.js?v=7ea7c73dc157';
-import {validateBackend,contractFor} from './data-contract.js?v=7ea7c73dc157';
-import {createFirestoreStore} from './firebase-store.js?v=7ea7c73dc157';
+import {createManagementStore} from './management-store.js?v=b54d891a3dd9';
+import {validateBackend,contractFor} from './data-contract.js?v=b54d891a3dd9';
+import {createFirestoreStore} from './firebase-store.js?v=b54d891a3dd9';
 const config = window.MANABI_SPARK_CONFIG;
 const error = code => Object.assign(new Error(code), {code});
 const validName = value => typeof value === 'string' && value === value.trim() && value.length >= 1 && value.length <= 12 && !/[<>\r\n]/.test(value);
