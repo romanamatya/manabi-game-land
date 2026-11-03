@@ -44,7 +44,8 @@ test('preview selection pages keep every listed game and separate play from rank
   for(const [,id,body] of cards){
    assert.match(body,new RegExp('data-game-id="'+id+'"'),file+':'+id);
    assert.match(body,/data-game-play[^>]*disabled/,file+':disabled-until-state-known');
-   assert.match(body,/href="(?:ranking\.html\?game=[^"]+|summary-ranking\.html)"/,file+':ranking-link');
+   if(id==='suichoku')assert.match(body,/共有ランキングは後日追加します/,file+':ranking-deferred');
+   else assert.match(body,/href="(?:ranking\.html\?game=[^"]+|summary-ranking\.html)"/,file+':ranking-link');
   }
  }
 });

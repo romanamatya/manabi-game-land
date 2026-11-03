@@ -4,6 +4,9 @@
  const cfg=window.MANABI_BACKEND_CONFIG;if(!cfg)return;
  const games=['keisan','pref-name','pref-place','alphabet','distribution','distribution2','exchangeAssociation','kotowaza','multiplicationProperties','shapeExpressions','keisanSummary','suichoku'];
  const settingsRoot=cfg.environment==='productionAdmin/v1'?'productionAdmin/v1':cfg.environment==='previewSpark/v1'?'previewSpark/v1':null;
+ const staticLocalGames=new Set(cfg.staticLocalGameIds||[]);
+ const staticPublished=id=>staticLocalGames.has(id);
+ const staticSnapshot={exists:()=>true,data:()=>({status:'published'}),metadata:{fromCache:false}};
  function gameAvailabilityStatus(setting){
   if(!setting)return 'unknown';
   if(['published','preparing','hidden'].includes(setting.status))return setting.status;
@@ -31,10 +34,11 @@
   reset:resetDb,
   subscribeGame(id,onValue,onError){
    if(!settingsRoot||!games.includes(id))return Promise.reject(Error('game-settings-unavailable'));
+   if(staticPublished(id)){onValue(staticSnapshot);return Promise.resolve(()=>{});}
    return db().then(({F,db})=>F.onSnapshot(F.doc(db,settingsRoot+'/gameSettings/'+id),{includeMetadataChanges:true},onValue,onError));
   }
  });
- const gameId=location.pathname.match(/(?:^|\/)games\/([^/]+)\.html$/)?.[1],gated=cfg.availabilityEnabled===true&&games.includes(gameId);
+ const gameId=location.pathname.match(/(?:^|\/)games\/([^/]+)\.html$/)?.[1],gated=cfg.availabilityEnabled===true&&games.includes(gameId)&&!staticPublished(gameId);
  if(gated){
   const readGameSetting=()=>read('gameSettings',gameId);
   if(window.ManabiGameAvailability?.create){const reset=()=>window.ManabiPublicSettings?.reset?.();void window.ManabiGameAvailability.create(document).check(readGameSetting,{onTimeout:reset,onError:reset});}
@@ -50,19 +54,21 @@
    const gameOf=a=>new URL(a.href,location.href).pathname.match(/(?:^|\/)games\/([^/]+)\.html$/)?.[1];
    const anchors=[...document.querySelectorAll('a[href]')].filter(a=>games.includes(gameOf(a)));
    if(!anchors.length)return;
-   const ids=[...new Set(anchors.map(gameOf))],statuses=new Map(ids.map(id=>[id,'checking']));
+   const ids=[...new Set(anchors.map(gameOf))],statuses=new Map(ids.map(id=>[id,staticPublished(id)?'published':'checking']));
    document.addEventListener('click',e=>{
     const a=e.target.closest?.('a[href]');if(!a)return;const id=gameOf(a);
     const status=statuses.get(id);
     if(games.includes(id)&&status!=='published'){e.preventDefault();e.stopImmediatePropagation();if(status!=='checking')alert(status==='hidden'?'このゲームは現在非公開です。':status==='preparing'?'このゲームは公開準備中です。':'公開状態を確認できないため、このゲームは開始できません。');}
    },true);
    const mark=(id,status)=>{statuses.set(id,status);if(status!=='published')for(const a of anchors.filter(item=>gameOf(item)===id)){a.setAttribute('aria-disabled','true');a.classList.add('game-unavailable');}};
-   for(const id of ids)void read('gameSettings',id).then(setting=>mark(id,gameAvailabilityStatus(setting)),()=>mark(id,'unknown'));
+   for(const id of ids)if(!staticPublished(id))void read('gameSettings',id).then(setting=>mark(id,gameAvailabilityStatus(setting)),()=>mark(id,'unknown'));
   };
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',guardLinks,{once:true});else guardLinks();
  }
- if(cfg.announcementsEnabled===true)void read('notices','current').then(s=>{
-  const host=document.getElementById('homeAnnouncement');if(!host)return;
+ if(cfg.announcementsEnabled===true)void Promise.resolve().then(()=>{
+  const host=document.getElementById('homeAnnouncement');if(!host)return null;
+  return read('notices','current').then(s=>({host,s}));
+ }).then(result=>{if(!result)return;const {host,s}=result;
   if(!s?.published||s.deleted){host.hidden=true;return}
   host.hidden=false;const title=document.createElement('h2'),body=document.createElement('p');title.textContent=s.title||'お知らせ';body.textContent=s.body||'';host.replaceChildren(title,body);
  }).catch(()=>{});

@@ -49,6 +49,10 @@ test('all 11 root game pages load the safe availability guard before settings; p
  for(const filename of await readdir(new URL('../shared-src/site/games/',import.meta.url))){
   if(!filename.endsWith('.html'))continue;
   const html=await readFile(new URL(`../shared-src/site/games/${filename}`,import.meta.url),'utf8');
+  if(filename==='suichoku.html'){
+   assert.doesNotMatch(html,/public-firebase-session\.js|public-game-availability\.js|economy\.js|social-score-sync\.js/,'early-release game is local-only and uses the static release allowlist');
+   assert.match(html,/data-local-challenge-only="true"/);continue;
+  }
   const session=html.indexOf('public-firebase-session.js?v=shared-firebase-session-v1'),guard=html.indexOf('public-game-availability.js?v=firebase-session-recovery-v1'),settings=html.indexOf('public-admin-settings.js?v=firebase-session-recovery-v1');
   assert.ok(session>=0,`${filename}: shared site includes the Firebase session broker`);assert.ok(guard>session,`${filename}: shared site loads the broker before the guard`);assert.ok(settings>guard,`${filename}: shared site loads the guard first`);
  }
