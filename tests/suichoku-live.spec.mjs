@@ -46,12 +46,13 @@ test('wrong answer is shown once and the next-question control recovers play',as
 
 test('shared celebration uses fireworks for a normal answer and only the title card at a milestone',async({page})=>{
  await waitForLiveBuild();await page.setViewportSize({width:1194,height:834});await page.goto(pageURL('games/suichoku.html?adminTest=1'));await expect(page.locator('#choices button')).toHaveCount(5);
+ await page.evaluate(()=>{const layer=document.querySelector('.mgl-celebration'),events=[];window.__celebrationEvents=events;new MutationObserver(()=>events.push({at:Math.round(performance.now()),hidden:layer.hidden,cls:layer.className,visibility:getComputedStyle(layer).visibility,animation:getComputedStyle(layer).animationName})).observe(layer,{attributes:true,attributeFilter:['hidden','class'],childList:true})});
  for(let streak=1;streak<=5;streak++){
   await tapCandidate(page,await perpendicularChoice(page));await expect(page.locator('#verdict')).toHaveText('正解！');
   const effect=page.locator('.mgl-celebration');
   await expect(page.locator('#feedback')).toBeVisible();
   if(streak===1){await expect(effect).toHaveClass(/mgl-celebration--correct/);await expect(effect).toContainText('正解！');await expect(effect.locator('.mgl-celebration__particle')).toHaveCount(38);const box=await effect.boundingBox();expect(box.x).toBeGreaterThanOrEqual(0);expect(box.y).toBeGreaterThanOrEqual(0);expect(box.x+box.width).toBeLessThanOrEqual(1194);expect(box.y+box.height).toBeLessThanOrEqual(834);expect(await page.evaluate(()=>document.documentElement.scrollHeight<=innerHeight)).toBe(true);await expect(effect).toBeHidden({timeout:1500});}
-  if(streak===5){await expect(effect).toHaveClass(/mgl-celebration--title/);await expect(effect).toContainText('新しい称号を獲得！');await expect(effect).toContainText('垂直みつけ隊');await expect(effect.locator('.mgl-celebration__title-card')).toHaveCount(1);await expect(effect.locator('.mgl-celebration__text')).toHaveCount(0);await expect(effect.locator('.mgl-celebration__art img, .mgl-celebration__art svg')).toHaveCount(1);await expect(effect).toBeHidden({timeout:1800});}
+  if(streak===5){await expect(effect).toHaveClass(/mgl-celebration--title/);await expect(effect).toContainText('新しい称号を獲得！');await expect(effect).toContainText('垂直みつけ隊');await expect(effect.locator('.mgl-celebration__title-card')).toHaveCount(1);await expect(effect.locator('.mgl-celebration__text')).toHaveCount(0);await expect(effect.locator('.mgl-celebration__art img, .mgl-celebration__art svg')).toHaveCount(1);await page.waitForTimeout(1100);console.log('CELEBRATION_TIMELINE',JSON.stringify(await page.evaluate(()=>window.__celebrationEvents)));await expect(effect).toBeHidden({timeout:700});}
   if(streak<5)await expect(page.locator('#feedback')).toBeHidden({timeout:1500});
  }
  expect(await page.locator('audio').count()).toBe(0);
