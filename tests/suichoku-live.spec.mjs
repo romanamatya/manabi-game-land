@@ -7,7 +7,7 @@ const blockFirebaseApi=page=>page.route(/https:\/\/(identitytoolkit|securetoken|
 async function waitForLiveBuild(){
  if(process.env.MGL_EXPECT_LIVE!=='1')return;
  for(let attempt=0;attempt<36;attempt++){
-  try{const response=await fetch(pageURL(`games/suichoku.html?release-check=${Date.now()}`));const html=response.ok?await response.text():'';if(html.includes('suichoku-live-fix-20261103')&&html.includes('celebration-effects.js?v=legacy-correct-label-v1'))return}catch{}
+  try{const response=await fetch(pageURL(`games/suichoku.html?release-check=${Date.now()}`));const html=response.ok?await response.text():'';if(html.includes('suichoku-live-fix-20261103')&&html.includes('celebration-effects.js?v=legacy-feedback-state-v2'))return}catch{}
   await new Promise(resolve=>setTimeout(resolve,10000));
  }
  throw Error('GitHub Pages has not published the expected vertical-game revision');
@@ -30,7 +30,7 @@ test('public page renders titles and completes ten correct answers, including re
  const expected=['title_25.png','title_20.png','title_15.png','title_10.png','title_05.png'];await expect(page.locator('#tower > li')).toHaveCount(5);
  for(let i=0;i<5;i++){const row=page.locator('#tower > li').nth(i);await expect(row.locator('img')).toHaveCount(1);await expect(row.locator('img')).toHaveAttribute('src',new RegExp(expected[i]+'$'))}
  for(let streak=1;streak<=10;streak++){
-  const choice=await perpendicularChoice(page);await tapCandidate(page,choice);await expect(page.locator('#verdict')).toHaveText('正解！');await expect(page.locator('#streak')).toHaveText(String(streak));
+  const choice=await perpendicularChoice(page);await tapCandidate(page,choice);await expect(page.locator('#verdict')).toHaveText('正解！');await expect(page.locator('#streak')).toHaveText(String(streak));if(streak<10)await expect(page.locator('#choices button').first()).toBeEnabled({timeout:1800});
   if(streak<10)await expect(page.locator('#feedback')).toBeHidden({timeout:3000});
  }
  await expect.poll(()=>page.evaluate(()=>JSON.parse(window.manabiStorage.getItem('mgl_suichoku')).best)).toBe(10);
@@ -50,10 +50,10 @@ test('shared celebration uses fireworks for a normal answer and only the title c
  for(let streak=1;streak<=5;streak++){
   await tapCandidate(page,await perpendicularChoice(page));await expect(page.locator('#verdict')).toHaveText('正解！');
   const effect=page.locator('.mgl-celebration');
-  await expect(page.locator('#feedback')).toBeVisible();
+  await expect(page.locator('#feedback')).toBeHidden();
   if(streak===1){await expect(effect).toHaveClass(/mgl-celebration--correct/);await expect(effect).toContainText('正解！');await expect(effect.locator('.mgl-celebration__particle')).toHaveCount(38);const box=await effect.boundingBox();expect(box.x).toBeGreaterThanOrEqual(0);expect(box.y).toBeGreaterThanOrEqual(0);expect(box.x+box.width).toBeLessThanOrEqual(1194);expect(box.y+box.height).toBeLessThanOrEqual(834);expect(await page.evaluate(()=>document.documentElement.scrollHeight<=innerHeight)).toBe(true);await expect(effect).toBeHidden({timeout:1500});}
   if(streak===5){await expect(effect).toHaveClass(/mgl-celebration--title/);await expect(effect).toContainText('新しい称号を獲得！');await expect(effect.locator('.mgl-celebration__title-card')).toHaveCount(1);await expect(effect.locator('.mgl-celebration__text')).toHaveCount(0);await expect(effect.locator('.mgl-celebration__art img, .mgl-celebration__art svg')).toHaveCount(1);await page.waitForFunction(()=>document.querySelector('.mgl-celebration')?.hidden===true,null,{timeout:1600});const {shown,hidden}=await page.evaluate(()=>{const events=window.__celebrationEvents,shown=events.find(e=>!e.hidden&&e.cls.includes('mgl-celebration--title')),hidden=events.find(e=>shown&&e.hidden&&e.at>shown.at);return {shown,hidden}});expect(hidden.at-shown.at).toBeGreaterThanOrEqual(950);expect(hidden.at-shown.at).toBeLessThanOrEqual(1300);await expect(effect).toBeHidden();}
-  if(streak<5)await expect(page.locator('#feedback')).toBeHidden({timeout:1500});
+  if(streak<5){await expect(page.locator('#feedback')).toBeHidden({timeout:1500});await expect(page.locator('#choices button').first()).toBeEnabled({timeout:1800});}
  }
  expect(await page.locator('audio').count()).toBe(0);
 });
@@ -66,6 +66,46 @@ test('shared effect module loads on each game in the current production code lis
   await expect.poll(()=>page.evaluate(()=>typeof window.ManabiCelebrations?.showCorrect)).toBe('function');
   await page.evaluate(()=>window.ManabiCelebrations.showCorrect());
   const effect=page.locator('.mgl-celebration');await expect(effect).toBeVisible();await expect(effect).toContainText('正解！');await expect(effect).toBeHidden({timeout:1500});
+ }
+});
+
+test('legacy success boxes disappear and red wrong feedback is visible in all eight celebration games',async({page})=>{
+ const gameIds=['keisan','pref-name','pref-place','alphabet','distribution','distribution2','exchangeAssociation','suichoku'];
+ await blockFirebaseApi(page);
+ for(const id of gameIds){
+  await page.goto(pageURL(`games/${id}.html?adminTest=1`),{waitUntil:'domcontentloaded'});
+  await expect.poll(()=>page.evaluate(()=>typeof window.ManabiCelebrations?.showCorrect)).toBe('function');
+  const setup=await page.evaluate(()=>{
+   const target=document.querySelector('#resultOverlay')||document.querySelector('#feedback');
+   if(!target)throw Error('No legacy result container found');
+   const targets=[target];for(const root of targets){
+    root.hidden=false;
+    if(root.id==='feedback'){
+     root.className=root.classList.contains('sq-feedback')?'sq-feedback':'feedback good';
+     if(root.matches('.sq-feedback'))root.classList.add('good');
+     const verdict=root.querySelector('#verdict');if(verdict)verdict.textContent='正解！';else root.textContent='正解！ · 次の問題へ';
+    }else{
+     root.className='overlay good';root.replaceChildren();const label=document.createElement('strong');label.textContent='⭕ 正解！';root.append(label);
+    }
+   }
+   window.ManabiCelebrations.showCorrect();
+   return targets.map(root=>root.id);
+  });
+  expect(setup.length,`${id}: result container present`).toBeGreaterThan(0);
+  const correctState=await page.evaluate(async()=>{await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));const root=document.querySelector('#resultOverlay')||document.querySelector('#feedback');return [{id:root.id,display:getComputedStyle(root).display,hiddenClass:root.classList.contains('mgl-legacy-correct-hidden')}]});
+  for(const state of correctState){expect(state.display,`${id} ${state.id}: no old green frame`).toBe('none');expect(state.hiddenClass).toBe(true)}
+  await page.evaluate(async()=>{
+   const target=document.querySelector('#resultOverlay')||document.querySelector('#feedback');const targets=[target];
+   for(const root of targets){
+    root.hidden=false;
+    if(root.id==='feedback'){
+     const small=root.classList.contains('sq-feedback');root.className=small?'sq-feedback wrong':'feedback bad';const verdict=root.querySelector('#verdict');if(verdict)verdict.textContent='不正解！';else root.textContent='不正解！';
+    }else{root.className='overlay bad';root.replaceChildren();const label=document.createElement('strong');label.textContent='❌ 不正解！';root.append(label)}
+   }
+   await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
+  });
+  const wrongState=await page.evaluate(()=>{const root=document.querySelector('#resultOverlay')||document.querySelector('#feedback'),style=getComputedStyle(root),red=value=>{const m=value.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);return !!m&&Number(m[1])>Number(m[2])*1.2&&Number(m[1])>Number(m[3])*1.2};return [{id:root.id,text:root.textContent,display:style.display,hiddenClass:root.classList.contains('mgl-legacy-correct-hidden'),badClass:root.classList.contains('bad')||root.classList.contains('wrong'),redVisible:[style.color,style.backgroundColor,style.borderColor].some(red)}]});
+  for(const state of wrongState){expect(state.display,`${id} ${state.id}: wrong result visible`).not.toBe('none');expect(state.hiddenClass).toBe(false);expect(state.badClass).toBe(true);expect(state.text).toContain('不正解');expect(state.redVisible,`${id} ${state.id}: red styling is visible`).toBe(true)}
  }
 });
 
