@@ -15,12 +15,13 @@ class Node{
  replaceChildren(...nodes){for(const child of this.children){child.parentNode=null;child.isConnected=false}this.children=[];this._text='';this.append(...nodes)}
  setAttribute(name,value){this.attributes[name]=String(value)}
  remove(node){this.children=this.children.filter(c=>c!==node);node.parentNode=null;node.isConnected=false}
- querySelectorAll(selector){const all=[];const visit=node=>{for(const c of node.children){if(selector.startsWith('.')&&c.classList.contains(selector.slice(1)))all.push(c);visit(c)}};visit(this);return all}
+ querySelectorAll(selector){const all=[];const visit=node=>{for(const c of node.children){if(selector.startsWith('.')&&c.classList.contains(selector.slice(1))||selector.startsWith('#')&&c.id===selector.slice(1)||!selector.startsWith('.')&&!selector.startsWith('#')&&c.tagName.toLowerCase()===selector.toLowerCase())all.push(c);visit(c)}};visit(this);return all}
+ querySelector(selector){return this.querySelectorAll(selector)[0]||null}
 }
 function harness({game='keisan',before=0,threshold=5,reduce=false}={}){
  const listeners=new Map(),frames=[],timers=[],observers=[],body=new Node('body'),head=new Node('head'),documentElement=new Node('html'),verdict=new Node('h2'),resultOverlay=new Node('div'),resultHeading=new Node('strong'),feedback=new Node('div');
- verdict.id='verdict';resultOverlay.id='resultOverlay';feedback.id='feedback';resultOverlay.append(resultHeading);
- const document={body,head,documentElement,currentScript:{src:'https://local.test/celebration-effects.js'},createElement:t=>new Node(t),addEventListener(type,fn){const list=listeners.get(type)||[];list.push(fn);listeners.set(type,list)},querySelector:selector=>selector==='#feedback'?feedback:null,querySelectorAll:selector=>selector==='#verdict, #resultOverlay, #resultOverlay strong'?[verdict,resultOverlay,resultHeading]:[]};body.isConnected=true;head.isConnected=true;
+ verdict.id='verdict';resultOverlay.id='resultOverlay';feedback.id='feedback';feedback.append(verdict);resultOverlay.append(resultHeading);
+ const document={body,head,documentElement,currentScript:{src:'https://local.test/celebration-effects.js'},createElement:t=>new Node(t),addEventListener(type,fn){const list=listeners.get(type)||[];list.push(fn);listeners.set(type,list)},querySelector:selector=>({'#feedback':feedback,'#verdict':verdict,'#resultOverlay':resultOverlay}[selector]||null),querySelectorAll:selector=>selector==='#verdict, #feedback, #resultOverlay'?[verdict,feedback,resultOverlay]:[]};body.isConnected=true;head.isConnected=true;
  const state={best:before},catalog=[{id:game,name:'test game',titles:[{id:game+':'+threshold,at:threshold,name:'テスト称号',displayName:'テスト称号',image:'assets/badge.png',standalone:true}]}];
  const context={game,prompt:{correct:'right'},answered:false};
  const economy={answer(ctx,value){ctx.answered=true;if(value==='right')state.best=Math.max(state.best,state.best+1);return Promise.resolve(true)}};
@@ -63,11 +64,23 @@ test('a newly crossed title shows the title art and title-only overlay',()=>{
  assert.ok(layer.classList.contains('mgl-celebration--title'));assert.match(layer.textContent,/新しい称号を獲得！テスト称号/);assert.equal(layer.querySelectorAll('.mgl-celebration__title-card').length,1);assert.equal(layer.querySelectorAll('.mgl-celebration__text').length,0);assert.ok(h.timers.some(t=>t.ms===1000));
 });
 
-test('legacy correct labels are concealed without hiding wrong feedback or the next-question cue',()=>{
- const h=harness();h.verdict.textContent='正解！';h.resultHeading.textContent='⭕ 正解！';h.feedback.textContent='正解！ · 0.5秒後に次の問題へ';h.refreshLegacy();
- assert.ok(h.verdict.classList.contains('mgl-legacy-correct-hidden'));assert.ok(h.resultHeading.classList.contains('mgl-legacy-correct-hidden'));assert.ok(h.resultOverlay.classList.contains('mgl-legacy-correct-hidden'));assert.equal(h.feedback.textContent,'0.5秒後に次の問題へ');
- h.verdict.textContent='不正解！';h.resultHeading.textContent='❌ 不正解';h.feedback.textContent='正解は A。もう一度考えよう。';h.refreshLegacy();
- assert.ok(!h.verdict.classList.contains('mgl-legacy-correct-hidden'));assert.ok(!h.resultHeading.classList.contains('mgl-legacy-correct-hidden'));assert.ok(!h.resultOverlay.classList.contains('mgl-legacy-correct-hidden'));assert.equal(h.feedback.textContent,'正解は A。もう一度考えよう。');
+test('legacy success containers are hidden only during celebration and wrong feedback is restored',()=>{
+ const h=harness();h.verdict.textContent='正解！';h.resultHeading.textContent='⭕ 正解！';h.feedback.className='feedback good';h.resultOverlay.className='overlay good';h.window.ManabiCelebrations.showCorrect();h.refreshLegacy();
+ assert.ok(h.feedback.classList.contains('mgl-legacy-correct-hidden'),'the complete green feedback box is hidden');assert.ok(h.resultOverlay.classList.contains('mgl-legacy-correct-hidden'),'the complete green overlay is hidden');
+ h.economy.answer(h.context,'wrong');
+ h.feedback.className='feedback bad';h.verdict.textContent='不正解！';h.resultOverlay.className='overlay bad';h.resultHeading.textContent='❌ 不正解！';h.refreshLegacy();
+ assert.ok(!h.feedback.classList.contains('mgl-legacy-correct-hidden'));assert.ok(!h.resultOverlay.classList.contains('mgl-legacy-correct-hidden'));assert.ok(h.feedback.classList.contains('bad'));assert.ok(h.resultOverlay.classList.contains('bad'));assert.equal(h.verdict.textContent,'不正解！');
+ h.feedback.className='feedback good';h.verdict.textContent='正解！';h.resultOverlay.className='overlay good';h.resultHeading.textContent='⭕ 正解！';h.window.ManabiCelebrations.showCorrect();h.refreshLegacy();assert.ok(h.feedback.classList.contains('mgl-legacy-correct-hidden'));assert.ok(h.resultOverlay.classList.contains('mgl-legacy-correct-hidden'));
+ h.verdict.textContent='';h.resultHeading.textContent='';h.feedback.className='feedback';h.resultOverlay.className='overlay';h.refreshLegacy();assert.ok(!h.feedback.classList.contains('mgl-legacy-correct-hidden'));assert.ok(!h.resultOverlay.classList.contains('mgl-legacy-correct-hidden'));
+});
+
+test('intermediate positive feedback is retained until a completed answer triggers the celebration',()=>{
+ const h=harness();h.feedback.className='feedback good';h.verdict.textContent='正解！';h.refreshLegacy();assert.ok(!h.feedback.classList.contains('mgl-legacy-correct-hidden'));
+});
+
+test('math feedback controller keeps the explicit incorrect label in root and shared copies',async()=>{
+ const root=await readFile(new URL('../math-new-game.js',import.meta.url),'utf8'),shared=await readFile(new URL('../shared-src/site/math-new-game.js',import.meta.url),'utf8');
+ assert.equal(root,shared);assert.ok(root.includes("ok?'正解！':'不正解！ もう一回がんばろう！'"));
 });
 
 test('wrong and repeated answers do not add celebrations or duplicate overlays',()=>{
