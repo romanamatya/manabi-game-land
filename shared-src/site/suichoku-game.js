@@ -2,7 +2,7 @@
 const model=window.ManabiSuichoku,storage=window.manabiStorage,game='suichoku',$=id=>document.getElementById(id),key='mgl_suichoku';
 if(!model||!storage)return;
 // Early release is local-only: no point, campaign, profile, or ranking writes.
-if(!window.ManabiEconomy&&window.ManabiEconomyCore){const core=window.ManabiEconomyCore;window.ManabiEconomy={core,begin:(id,prompt)=>({id:prompt.id,game:id,prompt}),answer:async(context,value)=>{const prompt=core.canonicalPrompt(context.game,context.prompt);return core.correct(context.game,prompt,value)},balance:()=>0,snapshot:()=>({owned:[],limitedOwned:[],limitedFramesOwned:[]})};}
+if(!window.ManabiEconomy&&window.ManabiEconomyCore){const core=window.ManabiEconomyCore;const localCore={...core,canonicalPrompt:(id,prompt)=>id===game?prompt:core.canonicalPrompt(id,prompt),correct:(id,prompt,value)=>id===game?value?.choice===prompt.correctIndex:core.correct(id,prompt,value)};window.ManabiEconomy={core:localCore,begin:(id,prompt)=>({id:prompt.id,game:id,prompt}),answer:async(context,value)=>localCore.correct(context.game,context.prompt,value),balance:()=>0,snapshot:()=>({owned:[],limitedOwned:[],limitedFramesOwned:[]})};}
 if(!window.ManabiEconomy)return;
 let state={best:0,streak:0,history:[]};try{state={...state,...JSON.parse(storage.getItem(key)||'{}')}}catch{}if(!Array.isArray(state.history))state.history=[];
 let question,context,phase='ask',selected=-1,feedbackTimer=null,serial=0;
