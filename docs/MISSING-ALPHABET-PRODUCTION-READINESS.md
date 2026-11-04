@@ -24,13 +24,4 @@ Status: proposal only. This file does not enable production behavior.
 
 ## Rules candidate
 
-`firebase/production-console-backup-20261104.rules` is an exact copy of the Rules text supplied for this review (SHA-256 `892038a6b25f2aa61fc754e0c40ea485bf304252ffaeef84a69232aefe9ea8c5`). `firebase/production-missing-alphabet-candidate.rules` adds only:
-
-- `missingAlphabet` to the existing ranking game allowlist.
-- `missingAlphabetBestStreak` to the player create/update allowlists.
-- A nonnegative integer validator for the new profile best streak.
-- A monotonic update check for the new profile best streak.
-
-The existing ranking schema already validates the ranking score, nickname, title, icon/frame/badge, UID, canonical name, timestamp, published-state gate, monotonic score, and deletion prohibition. These checks and all administrator rules remain unchanged. No per-answer history or learning analytics is introduced.
-
-The candidate is for Emulator testing only. It is not a deploy target and has not been approved for production publication.
+`firebase/production-console-backup-20261104.rules` is an exact copy of the Rules text supplied for this review (SHA-256 `892038a6b25f2aa61fc754e0c40ea485bf304252ffaef84a69232aefe9ea8c5b`).
