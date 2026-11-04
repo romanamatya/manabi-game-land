@@ -1,6 +1,6 @@
-import {createManagementStore} from './management-store.js?v=f1e1f02060b0';
-import {validateBackend,contractFor} from './data-contract.js?v=f1e1f02060b0';
-import {createFirestoreStore} from './firebase-store.js?v=f1e1f02060b0';
+import {createManagementStore} from './management-store.js?v=8ec87f5ee3b9';
+import {validateBackend,contractFor} from './data-contract.js?v=8ec87f5ee3b9';
+import {createFirestoreStore} from './firebase-store.js?v=8ec87f5ee3b9';
 const config = window.MANABI_SPARK_CONFIG;
 const error = code => Object.assign(new Error(code), {code});
 const validName = value => typeof value === 'string' && value === value.trim() && value.length >= 1 && value.length <= 12 && !/[<>\r\n]/.test(value);
@@ -154,3 +154,4 @@ export function createAdminOperations(c,{auth,db},A,F) {
     }
   };
 }
+

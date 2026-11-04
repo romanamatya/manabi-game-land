@@ -1,5 +1,5 @@
-import {validateConfig} from './spark-auth.js?v=f1e1f02060b0';
-import {SUBJECTS,zero,number,union,mergePlayer,error} from './player-sync-model.js?v=f1e1f02060b0';
+import {validateConfig} from './spark-auth.js?v=8ec87f5ee3b9';
+import {SUBJECTS,zero,number,union,mergePlayer,error} from './player-sync-model.js?v=8ec87f5ee3b9';
 export async function createPlayerClient(config,[App,A,F],{testScope=false}={}){
  validateConfig(config);
  const name=testScope?'manabi-preview-player-test':'manabi-preview-player-v2';
@@ -65,4 +65,5 @@ export async function createPlayerClient(config,[App,A,F],{testScope=false}={}){
  return {uid,auth,db,push,pull,buy,watch:callback=>F.onSnapshot(playerRef,{includeMetadataChanges:false},s=>{if(!s.metadata.fromCache)callback(null)},e=>callback(e))};
 }
 export async function browserClient(config){const sdks=await Promise.all(['app','auth','firestore'].map(n=>import('https://www.gstatic.com/firebasejs/13.1.0/firebase-'+n+'.js')));return createPlayerClient(config,sdks);}
+
 

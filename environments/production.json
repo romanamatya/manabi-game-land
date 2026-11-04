@@ -14,6 +14,8 @@
   "productionAuthVerified": false,
   "productionRulesApproved": false,
   "legacyScoreSyncEnabled": false,
+  "rankingSyncEnabled": false,
+  "playerNameSyncEnabled": false,
   "accountAccessEnabled": false,
   "adminFeatures": {
     "playerRename": true,
@@ -44,4 +46,5 @@
     "suichoku"
   ]
 }
+
 

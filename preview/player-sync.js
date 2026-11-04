@@ -1,6 +1,6 @@
-import './spark-config.js?v=f1e1f02060b0';
-import {browserClient} from './player-sync-api.js?v=f1e1f02060b0';
-import {capture,read,zero,number,localBalances,union,GAMES,error,observeBalances} from './player-sync-model.js?v=f1e1f02060b0';
+import './spark-config.js?v=8ec87f5ee3b9';
+import {browserClient} from './player-sync-api.js?v=8ec87f5ee3b9';
+import {capture,read,zero,number,localBalances,union,GAMES,error,observeBalances} from './player-sync-model.js?v=8ec87f5ee3b9';
 const META='mgl_sync_v2',BACKUP='mgl_sync_original_v2';
 const watched=new Set(['mgl_nickname','mgl_economy_v1','mgl_profile','mgl_best','mq_pref_name','mq_pref_place',...GAMES.map(g=>'mgl_'+g),'mgl_limited_icons_v1','mgl_limited_frames_v1']);
 export async function start(){
@@ -60,4 +60,5 @@ export async function start(){
  status(testGate?'テスト用プレイヤーを確認用Firebaseへ同期中。ランキングには記録しない。':'確認用Firebaseへ接続中。端末の記録は保持中。');flush().catch(()=>{});
  return publicApi;
 }
+
 

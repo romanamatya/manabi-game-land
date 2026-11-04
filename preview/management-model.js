@@ -1,5 +1,6 @@
 // Small client-side contract for the four supported admin features.
-export const GAME_IDS=Object.freeze(['keisan','pref-name','pref-place','alphabet','distribution','distribution2','exchangeAssociation','kotowaza','multiplicationProperties','shapeExpressions','keisanSummary']);
+export const GAME_IDS=Object.freeze(['keisan','pref-name','pref-place','alphabet','missingAlphabet','distribution','distribution2','exchangeAssociation','kotowaza','multiplicationProperties','shapeExpressions','keisanSummary']);
+export const BATCH_GAME_IDS=Object.freeze(GAME_IDS.filter(id=>id!=='missingAlphabet'));
 export const AUDIT_REASON='管理室からの操作';
 export const normalPolicy=()=>({multiplier:1,cap:50,campaignId:null});
 export function visibilityStatus(setting){
@@ -22,7 +23,8 @@ export function checkedInput(action,input){
   if(typeof input.enabled!=='boolean')throw Error('invalid-campaign');
  }
  if(action==='visibility'&&(!GAME_IDS.includes(input.game)||!['published','preparing','hidden'].includes(input.status)))throw Error('invalid-visibility');
- if(action==='visibilityBatch'&&(!Array.isArray(input.games)||!input.games.length||input.games.length>GAME_IDS.length||input.games.some(g=>!GAME_IDS.includes(g))||new Set(input.games).size!==input.games.length||!['published','preparing','hidden'].includes(input.status)))throw Error('invalid-visibility-batch');
+ if(action==='visibilityBatch'&&(!Array.isArray(input.games)||!input.games.length||input.games.length>BATCH_GAME_IDS.length||input.games.some(g=>!BATCH_GAME_IDS.includes(g))||new Set(input.games).size!==input.games.length||!['published','preparing','hidden'].includes(input.status)))throw Error('invalid-visibility-batch');
  if(action==='notice'&&(typeof input.title!=='string'||input.title.length>80||typeof input.body!=='string'||input.body.length>3000||typeof input.published!=='boolean'||input.published&&!input.title.trim()))throw Error('invalid-notice');
  return input;
 }
+

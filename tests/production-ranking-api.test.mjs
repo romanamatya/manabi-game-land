@@ -2,7 +2,7 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {createProductionRankingClient,bestForSharedRanking} from '../ranking-sync-api.js';
 
-const config={mode:'production',expectedProjectId:'manabi-game-land',rankingSyncEnabled:true,rankingGameIds:['keisan','distribution','keisanSummary','suichoku'],firebase:{projectId:'manabi-game-land'}};
+const config={mode:'production',expectedProjectId:'manabi-game-land',rankingSyncEnabled:true,rankingGameIds:['keisan','distribution','keisanSummary','suichoku','missingAlphabet'],firebase:{projectId:'manabi-game-land'}};
 const docs=new Map(),apps=[],authByName=new Map();
 const App={getApps:()=>apps,initializeApp:(options,name)=>{const app={name,options};apps.push(app);return app;}};
 const A={getAuth:app=>{if(!authByName.has(app.name))authByName.set(app.name,{currentUser:null,authStateReady:async()=>{}});return authByName.get(app.name);},setPersistence:async()=>{},browserLocalPersistence:{},signInAnonymously:async auth=>{auth.currentUser={uid:'student-a',isAnonymous:true};return {user:auth.currentUser};}};
@@ -41,6 +41,18 @@ test('regular Suichoku ranking never mixes its separate 120-second challenge rec
  assert.equal(bestForSharedRanking('suichoku',{best:8},{bests:{season:27},attemptBest:30}),8);
  assert.equal(bestForSharedRanking('keisan',{best:8},{bests:{season:27},attemptBest:30}),30);
 });
+test('missing alphabet combines practice and 120-second bests in one isolated shared row',async()=>{
+ docs.clear();authByName.clear();apps.length=0;
+ const a=await createProductionRankingClient(config,sdk);
+ const practice=bestForSharedRanking('missingAlphabet',{best:20},{bests:{},attemptBest:0});
+ await a.publishRanking(profile('missingAlphabet',practice,'そら'));
+ const challenge=bestForSharedRanking('missingAlphabet',{best:20},{bests:{season:22},attemptBest:24});
+ await a.publishRanking(profile('missingAlphabet',challenge,'そら'));
+ const rows=await a.rankings('missingAlphabet');
+ assert.equal(rows.length,1);assert.equal(rows[0].bestStreak,24);assert.equal(rows[0].game,'missingAlphabet');
+ assert.deepEqual(Object.keys(rows[0]).sort(),['uid','game','nickname','bestStreak','icon','frame','title','badge','updatedAt'].sort());
+ assert.ok([...docs.keys()].every(path=>path.endsWith('/players/student-a')));
+});
 test('keeps best score monotonic while allowing display metadata to change',async()=>{
  docs.clear();authByName.clear();apps.length=0;
  const a=await createProductionRankingClient(config,sdk);
@@ -58,3 +70,4 @@ test('rejects invalid game IDs, names, and private data',async()=>{
  await assert.rejects(a.publishRanking({...profile('keisan',20),nickname:'<bad>'}),/invalid-ranking/);
  await assert.rejects(a.publishRanking({...profile('keisan',20),points:999}),/invalid-ranking/);
 });
+

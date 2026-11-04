@@ -2,7 +2,7 @@ import {validatePlayerBackend,GAME_FIELDS} from './data-contract.js?v=4fa9564408
 import {createFirestoreStore} from './firebase-store.js?v=4fa9564408fb';
 const config=window.MANABI_SPARK_CONFIG,game=document.body?.dataset.scoreGame;
 // Preview synchronization and production's existing ranking service are independent switches.
-if(config?.mode==='production'&&config.legacyScoreSyncEnabled===true&&!new URL(location.href).searchParams.has('adminTest')&&config.rankingGameIds?.includes(game)&&GAME_FIELDS[game]){
+if(game!=='missingAlphabet'&&config?.mode==='production'&&config.legacyScoreSyncEnabled===true&&!new URL(location.href).searchParams.has('adminTest')&&config.rankingGameIds?.includes(game)&&GAME_FIELDS[game]){
  validatePlayerBackend(config);
  const {legacyPlayerClient}=await import('./legacy-player-client.js?v=4fa9564408fb');const client=await legacyPlayerClient(config),store=client.store;
  const storage=window.manabiStorage,uid=client.uid;let running=false,dirty=false;const status=document.createElement('p');status.id='rankingSyncStatus';status.setAttribute('role','status');document.body.append(status);
@@ -10,3 +10,4 @@ if(config?.mode==='production'&&config.legacyScoreSyncEnabled===true&&!new URL(l
  client.watchName(name=>{if(name!==storage.getItem('mgl_nickname')){storage.setItem('mgl_nickname',name);const el=document.getElementById('playerName');if(el)el.textContent=name;document.dispatchEvent(new Event('manabi-nickname-sync'));window.dispatchEvent(new Event('manabi-profile-change'));}});
  window.mglSaveGameScore=flush;window.mglSaveScore=flush;window.addEventListener('online',flush);window.addEventListener('manabi-profile-change',flush);document.addEventListener('visibilitychange',()=>{if(!document.hidden)flush()});setInterval(()=>{if(dirty)flush()},15000);flush();
 }
+

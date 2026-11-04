@@ -1,7 +1,7 @@
 (function(root,factory){if(typeof module==='object'&&module.exports)module.exports=factory();else root.ManabiChallenge120Core=factory()})(typeof globalThis!=='undefined'?globalThis:this,()=>{
 'use strict';
 const DURATION_MS=120000,PROTOCOL=2;
-const highest=Object.freeze({keisan:20,'pref-name':47,'pref-place':47,alphabet:26,distribution:25,distribution2:25,exchangeAssociation:25,kotowaza:20,multiplicationProperties:25,shapeExpressions:25,suichoku:25});
+const highest=Object.freeze({keisan:20,'pref-name':47,'pref-place':47,alphabet:26,missingAlphabet:20,distribution:25,distribution2:25,exchangeAssociation:25,kotowaza:20,multiplicationProperties:25,shapeExpressions:25,suichoku:25});
 function fresh(game,unlocked=false){if(!highest[game])throw Error('unknown-game');return {protocol:PROTOCOL,game,phase:unlocked?'waiting':'training',unlocked,practiceStreak:0,attemptId:null,season:null,startedAt:null,deadline:null,lastWall:0,streak:0,attemptBest:0,bests:{},sequence:0,claimed:[]};}
 function clock(state,wall,monoElapsed=0,anchorWall=wall){if(state.phase!=='running')return {now:wall,rollback:false};const rollback=wall+2000<state.lastWall;return {now:Math.max(wall,state.lastWall,anchorWall+Math.max(0,monoElapsed)),rollback};}
 function settle(s,now,rollback=false){s=structuredClone(s);if(s.phase==='running'&&(rollback||now>=s.deadline)){s.phase='ended';s.endReason=rollback?'clock-change':'timeout';s.endedAt=now;s.bests[s.season]=Math.max(s.bests[s.season]||0,s.attemptBest);}s.lastWall=Math.max(s.lastWall||0,now);return s;}
@@ -12,3 +12,4 @@ function answer(s,t,correct,now){s=settle(s,now);if(!t||t.protocol!==PROTOCOL||t
 function format(ms){const n=Math.max(0,Math.ceil(ms/1000));return Math.floor(n/60)+':'+String(n%60).padStart(2,'0');}
 return {DURATION_MS,PROTOCOL,highest,fresh,clock,settle,unlock,start,issue,answer,format};
 });
+

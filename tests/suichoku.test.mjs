@@ -87,7 +87,7 @@ test('wrong answers show feedback once and allow the next question without chang
 });
 
 test('the tower has one approved image for each title and the shared profile UI leaves this tower untouched',()=>{
- const html=read('../shared-src/site/games/suichoku.html'),profile=read('../shared-src/site/profile-ui.js'),items=[...html.matchAll(/<li data-need="(\d+)"><img src="\.\.\/assets\/suichoku-titles\/(title_\d+\.png)"/g)];assert.deepEqual(items.map(x=>[Number(x[1]),x[2]]),[[25,'title_25.png'],[20,'title_20.png'],[15,'title_15.png'],[10,'title_10.png'],[5,'title_05.png']]);assert.match(profile,/if\(!gameId\|\|gameId==='suichoku'\)return/);
+ const html=read('../shared-src/site/games/suichoku.html'),profile=read('../shared-src/site/profile-ui.js'),items=[...html.matchAll(/<li data-need="(\d+)"><img src="\.\.\/assets\/suichoku-titles\/(title_\d+\.png)"/g)];assert.deepEqual(items.map(x=>[Number(x[1]),x[2]]),[[25,'title_25.png'],[20,'title_20.png'],[15,'title_15.png'],[10,'title_10.png'],[5,'title_05.png']]);assert.match(profile,/if\(!gameId\|\|gameId==='suichoku'\|\|gameId==='missingAlphabet'\)return/);
 });
 
 test('iPad landscape layout preserves diagram aspect ratio, touch size, and static publication',()=>{
@@ -95,3 +95,4 @@ test('iPad landscape layout preserves diagram aspect ratio, touch size, and stat
  assert.match(game,/preserveAspectRatio:'xMidYMid meet'/);assert.match(css,/@media\(max-height:580px\) and \(orientation:landscape\)/);assert.match(css,/min-height:48px/);assert.match(html,/public-admin-settings\.js/);assert.ok(html.indexOf('public-admin-settings.js')<html.indexOf('suichoku-game.js'));assert.match(html,/data-score-game="suichoku"/);assert.match(html,/economy\.js/);assert.match(html,/script-src[^>]+www\.gstatic\.com/);assert.match(admin,/staticPublished/);assert.ok(!env.gameIds.includes('suichoku'));assert.ok(env.rankingGameIds.includes('suichoku'));assert.deepEqual(env.staticLocalGameIds,['suichoku']);
  const navigation=read('../math-navigation.css');assert.match(navigation,/body\[data-unit="geometry"\] #mathCards\{flex:0 0 auto;grid-auto-rows:auto;align-content:start\}/);assert.match(read('../math-navigation.js'),/ranking\.html\?game='\+id/);
 });
+

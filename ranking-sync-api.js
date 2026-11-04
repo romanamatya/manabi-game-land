@@ -1,5 +1,5 @@
 // Suichoku is deliberately ranking-only: it is not part of the management batch.
-const GAME_IDS=Object.freeze(['keisan','pref-name','pref-place','alphabet','distribution','distribution2','exchangeAssociation','kotowaza','multiplicationProperties','shapeExpressions','keisanSummary','suichoku']);
+const GAME_IDS=Object.freeze(['keisan','pref-name','pref-place','alphabet','missingAlphabet','distribution','distribution2','exchangeAssociation','kotowaza','multiplicationProperties','shapeExpressions','keisanSummary','suichoku']);
 const err=code=>Object.assign(new Error(code),{code});
 const validLabel=value=>typeof value==='string'&&value.length<=80;
 export function bestForSharedRanking(game,record,challenge){
@@ -108,3 +108,4 @@ export function client(){
   .then(sdks=>createProductionRankingClient(window.MANABI_BACKEND_CONFIG,sdks)).catch(e=>{pending=null;throw e});
  return pending;
 }
+
