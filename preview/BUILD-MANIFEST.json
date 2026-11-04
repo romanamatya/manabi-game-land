@@ -1,5 +1,5 @@
 {
-  "buildId": "8ec87f5ee3b9",
+  "buildId": "b7a9184898cf",
   "environment": "preview",
   "projectId": "manabi-game-landcheck",
   "runtimeBlocked": false,
@@ -294,7 +294,7 @@
     {
       "path": "games/missingAlphabet.html",
       "sourceSHA256": "72758428881c52329362a42a189717086300bcede2a754be3f59e0583cac6189",
-      "outputSHA256": "de5bd50b7f8e8d0f5a418d35b5dab91f2b54e04fd0109d3e98a2e5ad87fea416"
+      "outputSHA256": "c1e92d2377dea47a8a521fe6898c06fbc1998c0b88e5008864ea346b81e0cfdf"
     },
     {
       "path": "games/multiplicationProperties.html",
@@ -323,8 +323,8 @@
     },
     {
       "path": "home-data.js",
-      "sourceSHA256": "76e2510fdad2156da426770f94f355bba848e858f9d07c663c99e5feb34035c4",
-      "outputSHA256": "15ac4da47b04f2ea042ff0a40e572746619740dbce89fdd117dc7bc023cf9a55"
+      "sourceSHA256": "69ce706ca2eaaed90e1809f9bccaeb699dbbe6e2c74e852cc25b9fcc29478d63",
+      "outputSHA256": "1c68b67d9a8a1d2460a855767eae529cb16467286cdad8970cd403f198da6794"
     },
     {
       "path": "icon-review.html",
@@ -339,7 +339,7 @@
     {
       "path": "index.html",
       "sourceSHA256": "8220f99f845d227f3f4c4e1e5b7a64e047a9252c0d800d0e5e2a8d2d6cd85b6c",
-      "outputSHA256": "d60d222eae2ff3070566acfb716a7ad1c9d8a775fb0d57d1e61897b11800f917"
+      "outputSHA256": "ae08892b009375638d806765afe066d75aa74f0a2561c8c010162ae12f35acef"
     },
     {
       "path": "japanese.html",
@@ -453,8 +453,8 @@
     },
     {
       "path": "missing-alphabet-ranking-sync.js",
-      "sourceSHA256": "4a4fe4be5b6cba625b42d900e5f61097727ed6ba850317e49dbc9ce98ed31123",
-      "outputSHA256": "b246d5a4ec359b4f6bbc28f86ff1db628396e1573466c4f168d666726e7cc8ad"
+      "sourceSHA256": "e7a9e2f7956ab8157b8586aaba5af27bd5129c472f174f27c717d7ae9cd2afce",
+      "outputSHA256": "8d92b592ce526ce734b2d04b4d098ee3383bb8dc5719889612fbe740c37cd2bc"
     },
     {
       "path": "multiplication-properties-game.js",
@@ -543,18 +543,18 @@
     },
     {
       "path": "ranking-page.js",
-      "sourceSHA256": "e5b5ad61bfd56f71ff915c3182c7c9591b8fd4ecb899d65fd6b5d61d5043e64b",
-      "outputSHA256": "509b802ea0ac82a64aa4b326dcac3882c87d5e9d6f8809bb682d227e807e04a0"
+      "sourceSHA256": "048050acf56d6b76b6c33dcaee52c4c66c39c7bcf3a415bebdd7cdcd8382affd",
+      "outputSHA256": "521701c2ea0610108a1151a5146c929b47a6b79c53f5fd63de0705d573f6eee1"
     },
     {
       "path": "ranking-sync-api.js",
-      "sourceSHA256": "d8276e5d67a081fa03c91bb05760f3cbdfd91a166712a7b3375ad3baf12dda10",
-      "outputSHA256": "d8276e5d67a081fa03c91bb05760f3cbdfd91a166712a7b3375ad3baf12dda10"
+      "sourceSHA256": "84f80aee0be4d0906116a84199aec98d09e3925410dcdc52329b29681f544083",
+      "outputSHA256": "84f80aee0be4d0906116a84199aec98d09e3925410dcdc52329b29681f544083"
     },
     {
       "path": "ranking.html",
       "sourceSHA256": "65e5812cfc262d6afdcded9769160f7017c8fb37693a13b9e774d9b44198b1a6",
-      "outputSHA256": "5f812bb929b34bfe522c3c428ffd6fe309465aa4ab3bb5a8952bc0b8650a18e6"
+      "outputSHA256": "d8e98252f2ab750cf8bd631fc62b1f52e0b83934d7d5787ee968ec16f7e4a79f"
     },
     {
       "path": "science.html",
@@ -623,4 +623,3 @@
     }
   ]
 }
-

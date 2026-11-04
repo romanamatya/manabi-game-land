@@ -26,6 +26,17 @@ on:
       - 'suichoku.css'
       - 'assets/suichoku-titles/**'
       - 'tests/suichoku-live.spec.mjs'
+      - 'tests/missing-alphabet-live.spec.mjs'
+      - 'tests/production-ranking-api.test.mjs'
+      - 'tests/missing-alphabet-integration.test.mjs'
+      - 'shared-src/site/games/missingAlphabet.html'
+      - 'shared-src/site/missing-alphabet-ranking-sync.js'
+      - 'shared-src/site/ranking-sync-api.js'
+      - 'shared-src/site/ranking-page.js'
+      - 'shared-src/site/home-data.js'
+      - 'tools/site-environment.mjs'
+      - 'environments/production.json'
+      - 'preview/games/missingAlphabet.html'
       - 'tools/suichoku-smoke-server.mjs'
       - '.github/workflows/suichoku-live-smoke.yml'
   push:
@@ -54,6 +65,17 @@ on:
       - 'suichoku.css'
       - 'assets/suichoku-titles/**'
       - 'tests/suichoku-live.spec.mjs'
+      - 'tests/missing-alphabet-live.spec.mjs'
+      - 'tests/production-ranking-api.test.mjs'
+      - 'tests/missing-alphabet-integration.test.mjs'
+      - 'shared-src/site/games/missingAlphabet.html'
+      - 'shared-src/site/missing-alphabet-ranking-sync.js'
+      - 'shared-src/site/ranking-sync-api.js'
+      - 'shared-src/site/ranking-page.js'
+      - 'shared-src/site/home-data.js'
+      - 'tools/site-environment.mjs'
+      - 'environments/production.json'
+      - 'preview/games/missingAlphabet.html'
       - 'tools/suichoku-smoke-server.mjs'
       - '.github/workflows/suichoku-live-smoke.yml'
 
@@ -77,4 +99,4 @@ jobs:
       - name: Serve the candidate pages for pull request tests
         if: github.event_name == 'pull_request'
         run: node tools/suichoku-smoke-server.mjs > /tmp/suichoku-smoke.log 2>&1 &
-      - run: npx playwright test tests/suichoku-live.spec.mjs
+      - run: npx playwright test tests/suichoku-live.spec.mjs tests/missing-alphabet-live.spec.mjs

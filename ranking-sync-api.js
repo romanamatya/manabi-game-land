@@ -10,7 +10,9 @@ export function bestForSharedRanking(game,record,challenge){
  return best;
 }
 function assertConfig(c){
- if(!c||c.mode!=='production'||c.expectedProjectId!=='manabi-game-land'||c.rankingSyncEnabled!==true||c.firebase?.projectId!=='manabi-game-land')throw err('production-ranking-config-rejected');
+ const scopedMissingAlphabet=c?.missingAlphabetRankingSyncEnabled===true;
+ if(!c||c.mode!=='production'||c.expectedProjectId!=='manabi-game-land'||(c.rankingSyncEnabled!==true&&!scopedMissingAlphabet)||c.firebase?.projectId!=='manabi-game-land')throw err('production-ranking-config-rejected');
+ if(scopedMissingAlphabet&&(c.rankingSyncEnabled===true||c.playerNameSyncEnabled===true))throw err('global-ranking-sync-must-remain-disabled');
  if(typeof window!=='undefined'&&(window.MANABI_ENV?.preview!==false||window.MANABI_ENV?.expectedProjectId!=='manabi-game-land'))throw err('production-environment-mismatch');
 }
 export async function createProductionRankingClient(c,[App,A,F]){
@@ -22,9 +24,10 @@ export async function createProductionRankingClient(c,[App,A,F]){
  await A.setPersistence(auth,A.browserLocalPersistence);await auth.authStateReady();
  if(!auth.currentUser)await A.signInAnonymously(auth);
  if(!auth.currentUser?.isAnonymous)throw err('anonymous-player-required');
- const uid=auth.currentUser.uid,allowed=new Set((c.rankingGameIds||GAME_IDS).filter(x=>GAME_IDS.includes(x)));
+ const uid=auth.currentUser.uid,scopedMissingAlphabet=c.missingAlphabetRankingSyncEnabled===true&&c.rankingSyncEnabled!==true;
+ const allowed=new Set(scopedMissingAlphabet?['missingAlphabet']:(c.rankingGameIds||GAME_IDS).filter(x=>GAME_IDS.includes(x)));
  let profileUid=null,profileDb=null;
- if(c.playerNameSyncEnabled===true){
+ if(c.playerNameSyncEnabled===true||scopedMissingAlphabet){
   const profileApp=App.getApps().find(x=>x.name==='[DEFAULT]')||App.initializeApp(c.firebase);
   if(profileApp.options.projectId!=='manabi-game-land')throw err('production-project-rejected');
   const profileAuth=A.getAuth(profileApp);await A.setPersistence(profileAuth,A.browserLocalPersistence);await profileAuth.authStateReady();
@@ -108,4 +111,3 @@ export function client(){
   .then(sdks=>createProductionRankingClient(window.MANABI_BACKEND_CONFIG,sdks)).catch(e=>{pending=null;throw e});
  return pending;
 }
-

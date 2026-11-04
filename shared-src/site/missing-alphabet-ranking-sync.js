@@ -1,7 +1,7 @@
-import {client,bestForSharedRanking} from './ranking-sync-api.js?v=missing-alphabet-ranking-v1';
+import {client,bestForSharedRanking} from './ranking-sync-api.js?v=missing-alphabet-ranking-v2';
 
 const GAME='missingAlphabet',config=window.MANABI_BACKEND_CONFIG,storage=window.manabiStorage;
-if(config?.mode==='production'&&config.rankingSyncEnabled===true&&config.playerNameSyncEnabled===true&&config.rankingGameIds?.includes(GAME)&&storage){
+if(config?.mode==='production'&&config.missingAlphabetRankingSyncEnabled===true&&config.rankingGameIds?.includes(GAME)&&storage){
 
 const pendingKey='mgl_missingAlphabet_ranking_pending_v1';
 const gameInfo=(window.ManabiProfileCatalog||[]).find(item=>item.id===GAME);
@@ -50,4 +50,3 @@ window.addEventListener('manabi-profile-change',()=>{if(pendingBest)void flush()
 window.addEventListener('online',()=>{if(pendingBest)void flush()});
 if(pendingBest)void flush();
 }
-

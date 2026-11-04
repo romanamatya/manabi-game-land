@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import {GAME_IDS,BATCH_GAME_IDS,checkedInput,policyFor} from '../shared-src/site/management-model.js';
 import {GAME_FIELDS} from '../shared-src/site/data-contract.js';
+import {backendConfig,validateEnvironment} from '../tools/site-environment.mjs';
 
 const text=path=>fs.readFileSync(new URL(path,import.meta.url),'utf8');
 
@@ -29,7 +30,27 @@ test('production does not list or enable the new game before an approved release
  assert.equal(production.productionReleaseApproved,false);
  assert.equal(production.rankingSyncEnabled,false);
  assert.equal(production.playerNameSyncEnabled,false);
+ assert.notEqual(production.missingAlphabetRankingSyncEnabled,true);
  assert.ok(!production.gameIds.includes('missingAlphabet'));
  assert.ok(!production.rankingGameIds.includes('missingAlphabet'));
 });
 
+test('the approved missing-alphabet sync gate is isolated from global ranking and player-name sync',()=>{
+ const production=JSON.parse(text('../environments/production.json'));
+ const scoped={...production,productionReleaseApproved:true,productionAuthVerified:true,productionRulesApproved:true,gameIds:[...production.gameIds,'missingAlphabet'],rankingGameIds:[...production.rankingGameIds,'missingAlphabet'],missingAlphabetRankingSyncEnabled:true};
+ const backend=backendConfig(validateEnvironment(scoped));
+ assert.equal(backend.missingAlphabetRankingSyncEnabled,true);
+ assert.equal(backend.rankingSyncEnabled,false);assert.equal(backend.playerNameSyncEnabled,false);assert.equal(backend.playerSyncEnabled,false);
+ assert.throws(()=>validateEnvironment({...scoped,rankingSyncEnabled:true}),/missing-alphabet-ranking-not-allowed/);
+ assert.throws(()=>validateEnvironment({...scoped,playerNameSyncEnabled:true}),/missing-alphabet-ranking-not-allowed/);
+ assert.throws(()=>validateEnvironment({...scoped,rankingGameIds:production.rankingGameIds}),/missing-alphabet-ranking-not-allowed/);
+ assert.throws(()=>validateEnvironment({...scoped,environment:'preview',projectId:'manabi-game-landcheck',firebase:{...scoped.firebase,projectId:'manabi-game-landcheck',authDomain:'manabi-game-landcheck.firebaseapp.com'}}),/missing-alphabet-ranking-not-allowed/);
+ const generic= text('../ranking-sync-client.js');
+ assert.ok(generic.includes('config?.rankingSyncEnabled!==true'));
+ assert.doesNotMatch(generic,/missingAlphabet/);
+ const dedicated=text('../shared-src/site/missing-alphabet-ranking-sync.js');
+ assert.ok(dedicated.includes("config?.mode==='production'&&config.missingAlphabetRankingSyncEnabled===true"));
+ assert.doesNotMatch(dedicated,/config\.rankingSyncEnabled===true|config\.playerNameSyncEnabled===true/);
+ assert.ok(text('../shared-src/site/ranking-page.js').includes('config?.missingAlphabetRankingSyncEnabled!==true'));
+ assert.ok(text('../shared-src/site/home-data.js').includes('MANABI_BACKEND_CONFIG?.missingAlphabetRankingSyncEnabled===true'));
+});
