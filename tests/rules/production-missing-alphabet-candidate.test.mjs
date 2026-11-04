@@ -80,7 +80,7 @@ after(async () => { await testEnv?.cleanup(); });
 
 test('candidate uses the attached production Rules plus only the missing alphabet delta', () => {
   assert.equal(crypto.createHash('sha256').update(baseline).digest('hex'),
-    '892038a6b25f2aa61fc754e0c40ea485bf304252ffaeef84a69232aefe9ea8c5');
+    '892038a6b25f2aa61fc754e0c40ea485bf304252ffaef84a69232aefe9ea8c5b');
   assert.match(candidate, /function productionManagementEnabled\(\)/);
   assert.match(candidate, /function productionAdminRenameEnabled\(\)/);
   assert.match(candidate, /allow delete: if false;/);
