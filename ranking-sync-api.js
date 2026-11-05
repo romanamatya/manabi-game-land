@@ -1,5 +1,5 @@
 // Suichoku is deliberately ranking-only: it is not part of the management batch.
-const GAME_IDS=Object.freeze(['keisan','pref-name','pref-place','alphabet','distribution','distribution2','exchangeAssociation','kotowaza','multiplicationProperties','shapeExpressions','keisanSummary','suichoku']);
+const GAME_IDS=Object.freeze(['keisan','pref-name','pref-place','alphabet','distribution','distribution2','exchangeAssociation','kotowaza','multiplicationProperties','shapeExpressions','keisanSummary','suichoku','parallelPair']);
 const err=code=>Object.assign(new Error(code),{code});
 const validLabel=value=>typeof value==='string'&&value.length<=80;
 export function bestForSharedRanking(game,record,challenge){
@@ -22,7 +22,7 @@ export async function createProductionRankingClient(c,[App,A,F]){
  await A.setPersistence(auth,A.browserLocalPersistence);await auth.authStateReady();
  if(!auth.currentUser)await A.signInAnonymously(auth);
  if(!auth.currentUser?.isAnonymous)throw err('anonymous-player-required');
- const uid=auth.currentUser.uid,allowed=new Set((c.rankingGameIds||GAME_IDS).filter(x=>GAME_IDS.includes(x)));
+ const uid=auth.currentUser.uid,allowed=new Set((c.rankingGameIds||GAME_IDS.filter(x=>x!=='parallelPair')).filter(x=>GAME_IDS.includes(x)&&(x!=='parallelPair'||c.parallelPairRankingEnabled===true)));
  let profileUid=null,profileDb=null;
  if(c.playerNameSyncEnabled===true){
   const profileApp=App.getApps().find(x=>x.name==='[DEFAULT]')||App.initializeApp(c.firebase);

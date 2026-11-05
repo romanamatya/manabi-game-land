@@ -14,12 +14,12 @@ function harness(){
   closest(){return this}
   querySelector(){return this.children[0]}
  }
- const ids=Object.fromEntries(['points','streak','best','daily','level','storage-status','tower','diagram','confirm','feedback','hint','verdict','explanation','selection-count'].map(id=>[id,new Node()]));
- const document={getElementById:id=>ids[id],createElement:t=>new Node(t),createElementNS:(_ns,t)=>new Node(t),querySelectorAll:()=>ids.diagram.children[0]?.children||[]};
+ const ids=Object.fromEntries(['points','streak','best','daily','level','storage-status','tower','diagram','confirm','feedback','hint','verdict','explanation','selection-count','challenge-clock','challenge-gate','challenge-heading','challenge-message','challenge-start'].map(id=>[id,new Node()]));
+ const document={addEventListener(){},getElementById:id=>ids[id],createElement:t=>new Node(t),createElementNS:(_ns,t)=>new Node(t),querySelectorAll:()=>ids.diagram.children[0]?.children||[]};
  const values=new Map(),timers=[],events={},effects=[];
  const window={crypto:{randomUUID:()=>String(Math.random())},addEventListener:(k,fn)=>events[k]=fn,ManabiCelebrations:{showCorrect:()=>effects.push(null),showTitle:t=>effects.push(t.at)}};
- const ctx=vm.createContext({window,globalThis:window,document,Math,Date,JSON,Number,Map,Set,structuredClone,navigator:{},console,localStorage:{getItem:k=>values.get(k)||null,setItem:(k,v)=>values.set(k,v)},setTimeout:(fn,ms)=>{const t={fn,ms};timers.push(t);return t},clearTimeout:t=>{if(t)t.cancelled=true}});
- for(const name of ['parallel-model.js','economy-core.js','parallel-local.js','parallel-game.js'])vm.runInContext(fs.readFileSync(new URL('../shared-src/site/'+name,import.meta.url),'utf8'),ctx);
+ const ctx=vm.createContext({window,globalThis:window,document,Math,Date,JSON,Number,Map,Set,structuredClone,navigator:{},console,localStorage:{getItem:k=>values.get(k)||null,setItem:(k,v)=>values.set(k,v)},setInterval:()=>0,setTimeout:(fn,ms)=>{const t={fn,ms};timers.push(t);return t},clearTimeout:t=>{if(t)t.cancelled=true}});
+ for(const name of ['parallel-model.js','economy-core.js','challenge120-core.js','parallel-local.js','parallel-game.js'])vm.runInContext(fs.readFileSync(new URL('../shared-src/site/'+name,import.meta.url),'utf8'),ctx);
  const lines=()=>ids.diagram.children[0].children.map(g=>{const l=g.children[0].attrs;return {start:{x:+l.x1,y:+l.y1},end:{x:+l.x2,y:+l.y2}}});
  const key=i=>ids.diagram.listeners.keydown({target:ids.diagram.children[0].children[i],key:'Enter',preventDefault(){}});
  return {ids,window,values,timers,effects,events,key,lines};
@@ -30,7 +30,7 @@ test('page controller: 27 consecutive answers, title delays, selection/retry and
  let pair=M.inspect(h.lines()).pairs[0];h.key(pair[0]);assert.equal(ids.confirm.disabled,true);h.key(pair[0]);assert.equal(ids['selection-count'].textContent,'0 / 2本');
  const wrong=[0,1,2,3,4,5,6].find(i=>!pair.includes(i));h.key(pair[0]);h.key(wrong);h.key(pair[1]);assert.equal(ids['selection-count'].textContent,'2 / 2本');
  const before=JSON.stringify(h.lines());await ids.confirm.onclick();assert.equal(JSON.stringify(h.lines()),before);assert.equal(ids.streak.textContent,0);assert.equal(ids.confirm.disabled,true);assert.equal(ids.feedback.hidden,false);
- for(let n=1;n<=27;n++){
+ for(let n=1;n<=27;n++){if(n===26){assert.equal(ids['challenge-gate'].hidden,false);await ids['challenge-start'].onclick();assert.equal(ids['challenge-gate'].hidden,true)}
   assert.equal(h.lines().length,7);pair=M.inspect(h.lines()).pairs[0];h.key(pair[0]);h.key(pair[1]);assert.equal(ids.confirm.disabled,false);
   await ids.confirm.onclick();assert.equal(ids.streak.textContent,n);assert.equal(ids.confirm.disabled,true);
   const isTitle=[3,5,10,15,25].includes(n),timer=h.timers.at(-1);assert.equal(timer.ms,isTitle?1000:500);assert.equal(h.effects.at(-1),isTitle?n:null);

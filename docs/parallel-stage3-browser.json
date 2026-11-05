@@ -1,0 +1,233 @@
+{
+  "normalPlay": [
+    {
+      "n": 1,
+      "streak": "1"
+    },
+    {
+      "n": 2,
+      "streak": "2"
+    },
+    {
+      "n": 3,
+      "streak": "3"
+    },
+    {
+      "n": 4,
+      "streak": "4"
+    },
+    {
+      "n": 5,
+      "streak": "5"
+    },
+    {
+      "n": 6,
+      "streak": "6"
+    },
+    {
+      "n": 7,
+      "streak": "7"
+    },
+    {
+      "n": 8,
+      "streak": "8"
+    },
+    {
+      "n": 9,
+      "streak": "9"
+    },
+    {
+      "n": 10,
+      "streak": "10"
+    },
+    {
+      "n": 11,
+      "streak": "11"
+    },
+    {
+      "n": 12,
+      "streak": "12"
+    },
+    {
+      "n": 13,
+      "streak": "13"
+    },
+    {
+      "n": 14,
+      "streak": "14"
+    },
+    {
+      "n": 15,
+      "streak": "15"
+    },
+    {
+      "n": 16,
+      "streak": "16"
+    },
+    {
+      "n": 17,
+      "streak": "17"
+    },
+    {
+      "n": 18,
+      "streak": "18"
+    },
+    {
+      "n": 19,
+      "streak": "19"
+    },
+    {
+      "n": 20,
+      "streak": "20"
+    },
+    {
+      "n": 21,
+      "streak": "21"
+    },
+    {
+      "n": 22,
+      "streak": "22"
+    },
+    {
+      "n": 23,
+      "streak": "23"
+    },
+    {
+      "n": 24,
+      "streak": "24"
+    },
+    {
+      "n": 25,
+      "streak": "25"
+    }
+  ],
+  "timeoutObserved": true,
+  "endedAfterWrong": {
+    "best": "27",
+    "earned": 5,
+    "gate": true,
+    "points": "27",
+    "reason": "もう一度ちょうせんしよう。 今回の最高 27問・自己ベスト 27問",
+    "streak": "0"
+  },
+  "elapsedAtFirstReopenMs": 129739,
+  "layout": [
+    {
+      "type": "layout",
+      "viewport": [
+        1024,
+        768
+      ],
+      "scroll": [
+        1024,
+        768
+      ],
+      "lines": 7,
+      "confirm": {
+        "x": 529.765625,
+        "y": 694,
+        "width": 220,
+        "height": 54,
+        "right": 749.765625,
+        "bottom": 748
+      },
+      "tower": {
+        "x": 22,
+        "y": 371,
+        "width": 140,
+        "height": 168,
+        "right": 162,
+        "bottom": 539
+      },
+      "title": null,
+      "card": null,
+      "image": null,
+      "imageLoaded": false
+    },
+    {
+      "type": "layout",
+      "viewport": [
+        1180,
+        820
+      ],
+      "scroll": [
+        1180,
+        820
+      ],
+      "lines": 7,
+      "confirm": {
+        "x": 620.25,
+        "y": 746,
+        "width": 220,
+        "height": 54,
+        "right": 840.25,
+        "bottom": 800
+      },
+      "tower": {
+        "x": 22,
+        "y": 392,
+        "width": 164.953125,
+        "height": 183,
+        "right": 186.953125,
+        "bottom": 575
+      },
+      "title": null,
+      "card": null,
+      "image": null,
+      "imageLoaded": false
+    },
+    {
+      "type": "layout",
+      "viewport": [
+        1024,
+        600
+      ],
+      "scroll": [
+        1024,
+        600
+      ],
+      "lines": 7,
+      "confirm": {
+        "x": 529.765625,
+        "y": 526,
+        "width": 220,
+        "height": 54,
+        "right": 749.765625,
+        "bottom": 580
+      },
+      "tower": {
+        "x": 22,
+        "y": 305,
+        "width": 140,
+        "height": 128,
+        "right": 162,
+        "bottom": 433
+      },
+      "title": null,
+      "card": null,
+      "image": null,
+      "imageLoaded": false
+    }
+  ],
+  "tests": {
+    "current": {
+      "total": 154,
+      "passed": 151,
+      "failed": 3
+    },
+    "rulesEmulator": {
+      "passed": 3,
+      "failed": 0
+    },
+    "failures": [
+      "preview game wires storage adapter before economy runtime and keeps production game isolated",
+      "released question model and controller are identical to validated preview",
+      "summary ranking uses one local game-best streak board for practice and challenge"
+    ]
+  },
+  "finalCelebrationTrace": [
+    "correct",
+    "correct",
+    "title"
+  ]
+}
