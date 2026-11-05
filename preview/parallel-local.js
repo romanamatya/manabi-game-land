@@ -5,8 +5,8 @@ const core=window.ManabiEconomyCore,model=window.ManabiParallel,game='parallelPa
 // No legacy/profile/production wallet key, outbox, Firebase SDK or shared ranking is used.
 core.games[game]='math';
 const key='manabi_parallel_stage1:v1',memory=new Map();let storageWarning=false;
-// image:null explicitly means the approved artwork is missing; never use a substitute.
-const titles=Object.freeze([[3,'平行みならい'],[5,'平行ハンター'],[10,'平行マスター'],[15,'平行の達人'],[25,'平行の王者']].map(([at,name])=>Object.freeze({id:'parallelPair:'+at,at,name,image:null})));
+// Approved transparent artwork, supplied for these five title ranks.
+const titles=Object.freeze([[3,'平行みならい','assets/parallel-titles/01_heiko_minarai_512.png'],[5,'平行ハンター','assets/parallel-titles/02_heiko_hunter_512.png'],[10,'平行マスター','assets/parallel-titles/03_heiko_master_512.png'],[15,'平行の達人','assets/parallel-titles/04_heiko_tatsujin_512.png'],[25,'平行の王者','assets/parallel-titles/05_heiko_ouja_512.png']].map(([at,name,image])=>Object.freeze({id:'parallelPair:'+at,at,name,image})));
 const earnedAt=best=>titles.filter(t=>best>=t.at).map(t=>t.id);
 function fresh(){return {version:1,streak:0,best:0,titles:[],wallet:core.initial(),claims:[]}}
 function read(){let raw;try{raw=localStorage.getItem(key)}catch{storageWarning=true}if(memory.has(key))raw=memory.get(key);try{const s=JSON.parse(raw);core.checkWallet(s.wallet);if(s.version!==1||![s.streak,s.best].every(n=>Number.isSafeInteger(n)&&n>=0)||s.best<s.streak||!Array.isArray(s.claims))throw Error('invalid-state');s.titles=earnedAt(s.best);return s}catch{return fresh()}}
