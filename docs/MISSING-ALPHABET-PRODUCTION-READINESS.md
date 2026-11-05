@@ -15,6 +15,8 @@ The production configuration keeps `productionReleaseApproved`, `productionAuthV
 | `rankingSyncEnabled` | Keep `false` | This is global. On existing production pages, `home-data.js` starts `ranking-sync-client.js`, whose writer can publish local records for the existing game list. |
 | `playerNameSyncEnabled` | Keep `false` | Also global. The new-game path uses the existing identity-link lookup only within its scoped client. |
 | `missingAlphabetRankingSyncEnabled` | `true` only after approval | New per-game gate. Its client allowlist is locked to `missingAlphabet`; it also requires that game in `gameIds` and `rankingGameIds`. |
+| `challenge120GameIds` | Add only `missingAlphabet` | Enables the 120-second challenge for this game alone while `challenge120Enabled` stays `false`; its storage key already includes the game ID. |
+| `challenge120Enabled` | Keep `false` | This is the legacy global challenge switch. Enabling it would affect other games. |
 | `productionAuthVerified` | `true` after verification | Release gate. |
 | `productionRulesApproved` | `true` after Rules approval | Release gate. |
 | `productionReleaseApproved` | `true` after all release checks | Activates the production build. |

@@ -1,7 +1,7 @@
 (()=>{
 'use strict';
-const initialGame=location.pathname.match(/\/games\/([^/]+)\.html$/)?.[1],preview=window.MANABI_ENV?.preview===true,localPreview=preview&&window.MANABI_BACKEND_CONFIG?.localChallengeGameIds?.includes(initialGame)===true;if(!(window.MANABI_ENV?.environment==='production'&&window.MANABI_BACKEND_CONFIG?.challenge120Enabled===true)&&!localPreview)return;
-const C=window.ManabiChallenge120Core,storage=window.manabiStorage,game=initialGame,test=new URL(location.href).searchParams.has('adminTest');if(!C||!storage||!C.highest[game])return;
+const initialGame=location.pathname.match(/\/games\/([^/]+)\.html$/)?.[1],preview=window.MANABI_ENV?.preview===true,config=window.MANABI_BACKEND_CONFIG,C=window.ManabiChallenge120Core,productionGame=C?.enabledForProductionGame?.(config,window.MANABI_ENV?.environment,initialGame)===true,localPreview=preview&&config?.localChallengeGameIds?.includes(initialGame)===true;if(!productionGame&&!localPreview)return;
+const storage=window.manabiStorage,game=initialGame,test=new URL(location.href).searchParams.has('adminTest');if(!C||!storage||!C.highest[game])return;
 const accessAllowed=()=>window.MANABI_BACKEND_CONFIG?.accountAccessEnabled!==true||window.ManabiPlayerAccess?.canPlay?.()===true;
 const key='mgl_challenge120_v1:'+game,season=localPreview?'preview-120-v1':'production-120-v1',lock='manabi-production-challenge120-'+game;
 let anchorWall=Date.now(),anchorMono=performance.now(),panel,overlay,working=false,serial=Promise.resolve(),challengePromptDelayUntil=0;
@@ -46,4 +46,3 @@ const init=()=>{let s=current();if(!storage.getItem(key)&&s.phase==='training'){
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
 window.addEventListener('storage',()=>paint());window.addEventListener('pageshow',tick);document.addEventListener('visibilitychange',tick);window.addEventListener('pagehide',()=>{const s=current();save(s);});
 })();
-

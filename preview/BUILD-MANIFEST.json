@@ -1,5 +1,5 @@
 {
-  "buildId": "b7a9184898cf",
+  "buildId": "c48c6159f78d",
   "environment": "preview",
   "projectId": "manabi-game-landcheck",
   "runtimeBlocked": false,
@@ -158,13 +158,13 @@
     },
     {
       "path": "challenge120-core.js",
-      "sourceSHA256": "5a760a5c1b93a22886670b9ebc616edb9a7af5f564a804086276fc3a4234311d",
-      "outputSHA256": "5a760a5c1b93a22886670b9ebc616edb9a7af5f564a804086276fc3a4234311d"
+      "sourceSHA256": "8b982cf24338b5b957f58cd3985b062ea132ebde37546754cf3c0d7d1e809c0d",
+      "outputSHA256": "8b982cf24338b5b957f58cd3985b062ea132ebde37546754cf3c0d7d1e809c0d"
     },
     {
       "path": "challenge120-runtime.js",
-      "sourceSHA256": "e79420ef7fe468630bf34247104354a57d51a56d1e4cac19eee234c3d0fa6765",
-      "outputSHA256": "e79420ef7fe468630bf34247104354a57d51a56d1e4cac19eee234c3d0fa6765"
+      "sourceSHA256": "535066668f2fe20afc0c30ee541fbab92fb8f38be08ecdc82ab757e51ae338ce",
+      "outputSHA256": "535066668f2fe20afc0c30ee541fbab92fb8f38be08ecdc82ab757e51ae338ce"
     },
     {
       "path": "challenge120-season-store.js",
@@ -294,7 +294,7 @@
     {
       "path": "games/missingAlphabet.html",
       "sourceSHA256": "72758428881c52329362a42a189717086300bcede2a754be3f59e0583cac6189",
-      "outputSHA256": "c1e92d2377dea47a8a521fe6898c06fbc1998c0b88e5008864ea346b81e0cfdf"
+      "outputSHA256": "3086825dc5616c09a3a45c0ac295d117662bfc72f52fa5c34625ca5c0d09ad41"
     },
     {
       "path": "games/multiplicationProperties.html",
