@@ -51,3 +51,30 @@ test('page is silent and stage 1 has no Firebase/challenge/ranking/profile depen
  const html=fs.readFileSync(new URL('../shared-src/site/games/parallelPair.html',import.meta.url),'utf8');assert.match(html,/connect-src 'none'/);assert.doesNotMatch(html,/firebase|challenge120|profile-ui|score-sync|public-admin-settings|environment-runtime|ranking/);
  for(const name of ['parallel-game.js','parallel-local.js','parallel-model.js'])assert.doesNotMatch(fs.readFileSync(new URL('../shared-src/site/'+name,import.meta.url),'utf8'),/new Audio|AudioContext|\.play\(/);
 });
+
+test('titles unlock exactly at 3/5/10/15/25, once in order, persist after wrong answers and reload',async()=>{
+ const h=localHarness(),q=M.buildQuestion({random:rng(66)}),pair=M.inspect(q.lines).pairs[0],events=[];
+ assert.deepEqual(Array.from(h.api.titles,t=>[t.at,t.name]),[[3,'平行みならい'],[5,'平行ハンター'],[10,'平行マスター'],[15,'平行の達人'],[25,'平行の王者']]);
+ for(let n=1;n<=27;n++){
+  const c=h.api.begin('parallelPair',q);await h.api.answer(c,{selection:pair});
+  assert.deepEqual(Array.from(c.earnedTitles,t=>t.at),[3,5,10,15,25].includes(n)?[n]:[]);
+  events.push(...c.earnedTitles.map(t=>t.at));await h.api.answer(c,{selection:pair});assert.equal(h.api.read().streak,n);
+ }
+ assert.deepEqual(events,[3,5,10,15,25]);
+ const ids=Array.from(h.api.titles,t=>t.id);assert.deepEqual(Array.from(h.api.read().titles),ids);
+ await h.api.answer(h.api.begin('parallelPair',q),{selection:[]});assert.equal(h.api.read().streak,0);assert.equal(h.api.read().best,27);assert.deepEqual(Array.from(h.api.read().titles),ids);
+ vm.runInContext(fs.readFileSync(new URL('../shared-src/site/parallel-local.js',import.meta.url),'utf8'),h.ctx);
+ for(let n=0;n<26;n++){const c=h.ctx.window.ManabiParallelLocal.begin('parallelPair',q);await h.ctx.window.ManabiParallelLocal.answer(c,{selection:pair});assert.equal(c.earnedTitles.length,0)}
+ const saved=JSON.parse(h.values.get('manabi_parallel_stage1:v1'));assert.deepEqual(saved.titles,ids);assert.equal(saved.history,undefined);
+});
+test('stage-1 records migrate using historical best without replaying awards or altering balances',async()=>{
+ const h=localHarness(),s=h.api.read();s.streak=2;s.best=16;delete s.titles;
+ h.values.set('manabi_parallel_stage1:v1',JSON.stringify(s));const wallet=JSON.stringify(s.wallet);
+ assert.deepEqual(Array.from(h.api.read().titles),['parallelPair:3','parallelPair:5','parallelPair:10','parallelPair:15']);assert.equal(JSON.stringify(h.api.read().wallet),wallet);
+ const q=M.buildQuestion({random:rng(69)}),c=h.api.begin('parallelPair',q);await h.api.answer(c,{selection:M.inspect(q.lines).pairs[0]});assert.equal(c.earnedTitles.length,0);assert.equal(h.api.read().best,16);
+});
+test('title unlock survives unavailable storage and lock serialisation prevents duplicate awards',async()=>{
+ const h=localHarness();h.ctx.localStorage.setItem=()=>{throw Error('quota')};let queue=Promise.resolve();h.ctx.navigator.locks={request:(_key,fn)=>{const result=queue.then(fn);queue=result;return result}};
+ const q=M.buildQuestion({random:rng(70)}),pair=M.inspect(q.lines).pairs[0],contexts=Array.from({length:26},()=>h.api.begin('parallelPair',q));
+ await Promise.all(contexts.map(c=>h.api.answer(c,{selection:pair})));assert.deepEqual(contexts.flatMap(c=>Array.from(c.earnedTitles,t=>t.at)),[3,5,10,15,25]);assert.equal(h.api.read().titles.length,5);assert.equal(h.api.read().streak,26);assert.equal(h.api.warning(),true);
+});
