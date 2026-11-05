@@ -49,6 +49,12 @@ test('all 11 root game pages load the safe availability guard before settings; p
  for(const filename of await readdir(new URL('../shared-src/site/games/',import.meta.url))){
   if(!filename.endsWith('.html'))continue;
   const html=await readFile(new URL(`../shared-src/site/games/${filename}`,import.meta.url),'utf8');
+  if(filename==='parallelPair.html'){
+   assert.match(html,/connect-src 'none'/,'stage 1 is a local-only prototype');
+   assert.match(html,/parallel-local\.js/);
+   assert.doesNotMatch(html,/public-firebase-session\.js|public-game-availability\.js|public-admin-settings\.js|economy\.js|challenge120/,'local prototype has no managed services or release gate');
+   continue;
+  }
   if(filename==='suichoku.html'){
    assert.doesNotMatch(html,/public-firebase-session\.js|public-game-availability\.js|social-score-sync\.js/,'early-release game remains outside managed-game availability and campaign sync');
    assert.ok(html.indexOf('economy-core.js')>=0&&html.indexOf('economy.js')>html.indexOf('economy-core.js'),'early-release game uses the shared point wallet');
