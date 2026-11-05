@@ -1,0 +1,152 @@
+{
+  "candidateOnly": true,
+  "deployReady": false,
+  "reason": "Live Rules and authenticated gameSettings have not been captured or reviewed.",
+  "game": "parallelPair",
+  "environmentBeforeSha256": "115441cd560d1e46a693e179fc9c3283747a0a56cb74e060b8f3000c2823dd54",
+  "configChanges": {
+    "gameIdsAdd": [
+      "parallelPair"
+    ],
+    "rankingGameIdsAdd": [
+      "parallelPair"
+    ],
+    "parallelPairRankingEnabled": true
+  },
+  "liveWrites": [],
+  "rulesIncluded": false,
+  "gameSetting": {
+    "path": "productionAdmin/v1/gameSettings/parallelPair",
+    "proposedStatus": "published",
+    "existingDocument": "UNKNOWN; read and back up before any write",
+    "method": "existing visibility operation with audit + backup, target parallelPair only"
+  },
+  "files": [
+    {
+      "path": "environment.js",
+      "source": "environment.js",
+      "sourceSha256": "115441cd560d1e46a693e179fc9c3283747a0a56cb74e060b8f3000c2823dd54",
+      "sha256": "52f9fd9c1f75a042222005b7fb475f3cebce963a2fb6874fed3ed83fe3007fb0"
+    },
+    {
+      "path": "parallel-model.js",
+      "source": "shared-src/site/parallel-model.js",
+      "sourceSha256": "a9f8f197c8eddd1cfa717a7fe2b3f3adf03131cd35ca5a7cd470b08ed462215e",
+      "sha256": "a9f8f197c8eddd1cfa717a7fe2b3f3adf03131cd35ca5a7cd470b08ed462215e"
+    },
+    {
+      "path": "parallel-local.js",
+      "source": "shared-src/site/parallel-local.js",
+      "sourceSha256": "026a33edabd4bd3cabbdcf224e5e7d9a3670cba2624d22786ce7b1bcd33957e9",
+      "sha256": "026a33edabd4bd3cabbdcf224e5e7d9a3670cba2624d22786ce7b1bcd33957e9"
+    },
+    {
+      "path": "parallel-game.js",
+      "source": "shared-src/site/parallel-game.js",
+      "sourceSha256": "4092921af14f5dc8f4a90157a4e94a1ff13fd50463a5e9aa5352ff1b1e75e7e0",
+      "sha256": "4092921af14f5dc8f4a90157a4e94a1ff13fd50463a5e9aa5352ff1b1e75e7e0"
+    },
+    {
+      "path": "parallel-ranking.js",
+      "source": "shared-src/site/parallel-ranking.js",
+      "sourceSha256": "cbdc0cb07b585ebebcee90db1b0726b642ae6dd3719db94b792b33f0aa16beb8",
+      "sha256": "cbdc0cb07b585ebebcee90db1b0726b642ae6dd3719db94b792b33f0aa16beb8"
+    },
+    {
+      "path": "parallel.css",
+      "source": "shared-src/site/parallel.css",
+      "sourceSha256": "0825487c7f6e1c320418cd4f567828d03f83d767b2d297d94546b793ed899aff",
+      "sha256": "0825487c7f6e1c320418cd4f567828d03f83d767b2d297d94546b793ed899aff"
+    },
+    {
+      "path": "assets/parallel-titles/01_heiko_minarai_512.png",
+      "source": "shared-src/site/assets/parallel-titles/01_heiko_minarai_512.png",
+      "sourceSha256": "578275bc81fbbd28a4ed7ca3cf6012467a9e51dfd8737a1384ed17a89deff210",
+      "sha256": "578275bc81fbbd28a4ed7ca3cf6012467a9e51dfd8737a1384ed17a89deff210"
+    },
+    {
+      "path": "assets/parallel-titles/02_heiko_hunter_512.png",
+      "source": "shared-src/site/assets/parallel-titles/02_heiko_hunter_512.png",
+      "sourceSha256": "1a43b17c5c182554365f29bfb102ca9eab836b671216f3af600a89feef58d88b",
+      "sha256": "1a43b17c5c182554365f29bfb102ca9eab836b671216f3af600a89feef58d88b"
+    },
+    {
+      "path": "assets/parallel-titles/03_heiko_master_512.png",
+      "source": "shared-src/site/assets/parallel-titles/03_heiko_master_512.png",
+      "sourceSha256": "b94c321edc9cade9ed19c3460231748034380ee53e7d0b9684c3d6d720b8fea6",
+      "sha256": "b94c321edc9cade9ed19c3460231748034380ee53e7d0b9684c3d6d720b8fea6"
+    },
+    {
+      "path": "assets/parallel-titles/04_heiko_tatsujin_512.png",
+      "source": "shared-src/site/assets/parallel-titles/04_heiko_tatsujin_512.png",
+      "sourceSha256": "35140e070cfddfbbf265f9fa6f1795a95fee5e2750fe9344a800882cda7972de",
+      "sha256": "35140e070cfddfbbf265f9fa6f1795a95fee5e2750fe9344a800882cda7972de"
+    },
+    {
+      "path": "assets/parallel-titles/05_heiko_ouja_512.png",
+      "source": "shared-src/site/assets/parallel-titles/05_heiko_ouja_512.png",
+      "sourceSha256": "ce44eb210c52010d28ab5592da85af7bdc632c897d495d639e49b4ce034802d6",
+      "sha256": "ce44eb210c52010d28ab5592da85af7bdc632c897d495d639e49b4ce034802d6"
+    },
+    {
+      "path": "assets/parallel-titles/README.txt",
+      "source": "shared-src/site/assets/parallel-titles/README.txt",
+      "sourceSha256": "9274e6a75c9714f85dda193826e0edd9afb86ea033343fbe30de6080e32b6ba7",
+      "sha256": "9274e6a75c9714f85dda193826e0edd9afb86ea033343fbe30de6080e32b6ba7"
+    },
+    {
+      "path": "games/parallelPair.html",
+      "source": "shared-src/site/games/parallelPair.html",
+      "sourceSha256": "43aeb92e2f6c9a254575c82d18bcccb95572ea4cd3d3c316bbe079c09365aafc",
+      "sha256": "b042d485f1fb3ef1c8f4f6a9185835f4820bec48a89fa078b90016f21c291b30"
+    },
+    {
+      "path": "celebration-effects.js",
+      "source": "celebration-effects.js",
+      "sourceSha256": "6593fb76a919c9e8a24e25a3e04929a27e0ffaf76444914f502006d73cd258c9",
+      "sha256": "6593fb76a919c9e8a24e25a3e04929a27e0ffaf76444914f502006d73cd258c9"
+    },
+    {
+      "path": "challenge120-core.js",
+      "source": "challenge120-core.js",
+      "sourceSha256": "8075d9f09d0bb67a300b285676f2be2510e641d18df21e31d02f6d3a444b3209",
+      "sha256": "8075d9f09d0bb67a300b285676f2be2510e641d18df21e31d02f6d3a444b3209"
+    },
+    {
+      "path": "economy-core.js",
+      "source": "economy-core.js",
+      "sourceSha256": "0b9d8ec41ac1a736f216abd1a77800f2d93b2de1b69dc1420433ea40db3ba03c",
+      "sha256": "0b9d8ec41ac1a736f216abd1a77800f2d93b2de1b69dc1420433ea40db3ba03c"
+    },
+    {
+      "path": "profile-catalog.js",
+      "source": "profile-catalog.js",
+      "sourceSha256": "817f92905f76710d6f6ce523dcbadafcc025df58d783f374af7ecf552b559fff",
+      "sha256": "817f92905f76710d6f6ce523dcbadafcc025df58d783f374af7ecf552b559fff"
+    },
+    {
+      "path": "ranking-sync-api.js",
+      "source": "ranking-sync-api.js",
+      "sourceSha256": "7e337c9afded62862abbdb81dc52e68f6b8c0763f2d2bd9bd3fb53006effb5cf",
+      "sha256": "7e337c9afded62862abbdb81dc52e68f6b8c0763f2d2bd9bd3fb53006effb5cf"
+    },
+    {
+      "path": "math-navigation.js",
+      "source": "math-navigation.js",
+      "sourceSha256": "447243a7d740cb77781e3b3694f1654f4223e61be2fdf00d3e4072e5d312543f",
+      "sha256": "18b9ae3eb2751dd44266063dfd8dbbc81174403a1f3d928c5e87774bfa7e653c"
+    },
+    {
+      "path": "public-admin-settings.js",
+      "source": "public-admin-settings.js",
+      "sourceSha256": "d9995dc31436b18120b1249f9b89380c05faf420be3394a11654c0954d50d94a",
+      "sha256": "c18c72276f81c57a28f57f414b9b8b32007aacb8543847eccbc3149fdaebf475"
+    },
+    {
+      "path": "management-model.js",
+      "source": "management-model.js",
+      "sourceSha256": "fa24e7a96d56085c266b43d157d95ec17fef1a582fc6a2ded45af91b574c06cd",
+      "sha256": "102a1a72acaabf6ed86783c53804a67adcd7087a6fba14b3126c9a5f24524eb2"
+    }
+  ]
+}
