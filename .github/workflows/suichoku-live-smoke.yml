@@ -6,6 +6,10 @@ on:
       - 'celebration-effects.js'
       - 'shared-src/site/celebration-effects.js'
       - 'games/**'
+      - 'game-home.css'
+      - 'parallel.css'
+      - 'parallel-game.js'
+      - 'tests/game-ui-layout.spec.mjs'
       - 'tests/celebration-effects.test.mjs'
       - 'games/suichoku.html'
       - 'suichoku-game.js'
@@ -51,6 +55,10 @@ on:
       - 'celebration-effects.js'
       - 'shared-src/site/celebration-effects.js'
       - 'games/**'
+      - 'game-home.css'
+      - 'parallel.css'
+      - 'parallel-game.js'
+      - 'tests/game-ui-layout.spec.mjs'
       - 'tests/celebration-effects.test.mjs'
       - 'games/suichoku.html'
       - 'suichoku-game.js'
@@ -111,4 +119,4 @@ jobs:
       - name: Serve the candidate pages for pull request tests
         if: github.event_name == 'pull_request'
         run: node tools/suichoku-smoke-server.mjs > /tmp/suichoku-smoke.log 2>&1 &
-      - run: npx playwright test tests/suichoku-live.spec.mjs tests/missing-alphabet-live.spec.mjs
+      - run: npx playwright test tests/suichoku-live.spec.mjs tests/missing-alphabet-live.spec.mjs tests/game-ui-layout.spec.mjs
