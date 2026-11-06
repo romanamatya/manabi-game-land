@@ -57,8 +57,9 @@ export function createRulesClient(project, token, request = fetch) {
 
   async function publish(name) {
     if (!validName(name)) throw new Error('Unexpected publish target');
-    await call(`${release}?updateMask=rulesetName`, 'PATCH', {
+    await call(release, 'PATCH', {
       release: { name: release, rulesetName: name },
+      updateMask: 'rulesetName',
     });
   }
 

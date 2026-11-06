@@ -28,15 +28,16 @@ before(async () => {
 });
 after(async () => { await env?.cleanup(); });
 
-test('unauthenticated and unrelated anonymous users cannot read or list private profiles', async () => {
+for (const [name, read] of [
+  ['get', db => getDoc(doc(db, profilePath, 'fixture-pupil'))],
+  ['list', db => getDocs(collection(db, profilePath))],
+  ['write', db => setDoc(doc(db, profilePath, 'fixture-pupil'), { points: 0 })],
+]) test(`unauthenticated and unrelated anonymous users cannot ${name} private profiles`, async () => {
   for (const context of [
     env.unauthenticatedContext(),
     env.authenticatedContext('fixture-other', { firebase: { sign_in_provider: 'anonymous' } }),
   ]) {
-    const db = context.firestore();
-    await assertFails(getDoc(doc(db, profilePath, 'fixture-pupil')));
-    await assertFails(getDocs(collection(db, profilePath)));
-    await assertFails(setDoc(doc(db, profilePath, 'fixture-pupil'), { points: 0 }));
+    await assertFails(read(context.firestore()));
   }
 });
 

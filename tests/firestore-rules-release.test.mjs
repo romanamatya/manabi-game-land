@@ -28,9 +28,10 @@ function fixture({ driftAfterCreate = false, wrongSource = false, ignorePatch = 
       sources.set(newName, wrongSource ? 'different' : source);
       if (driftAfterCreate) updatedAt = 'changed';
       result = { name: newName };
-    } else if (options.method === 'PATCH' && path === `${release}?updateMask=rulesetName`) {
+    } else if (options.method === 'PATCH' && path === release) {
       const body = JSON.parse(options.body);
       assert.equal(body.release.name, release);
+      assert.equal(body.updateMask, 'rulesetName');
       if (!ignorePatch) active = body.release.rulesetName;
       result = body.release;
     } else {
