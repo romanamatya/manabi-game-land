@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
 import {initializeTestEnvironment,assertFails,assertSucceeds} from '@firebase/rules-unit-testing';
 import * as F from 'firebase/firestore';
-import {GAME_IDS} from '../../management-model.js';
+import {GAME_IDS} from '../../shared-src/site/management-model.js';
 import {createManagementStore} from '../../shared-src/site/management-store.js';
 import {createFirestoreStore} from '../../shared-src/site/firebase-store.js';
 

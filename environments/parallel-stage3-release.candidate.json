@@ -1,0 +1,27 @@
+{
+  "candidateOnly": true,
+  "notApplied": true,
+  "game": "parallelPair",
+  "afterLiveRulesReview": {
+    "rankingGameIdsAdd": [
+      "parallelPair"
+    ],
+    "gameIdsAdd": [
+      "parallelPair"
+    ],
+    "parallelPairRankingEnabled": true
+  },
+  "existingPrerequisites": {
+    "rankingSyncEnabled": true,
+    "playerNameSyncEnabled": true,
+    "identityLink": "must already match existing profile UID; never create from this game"
+  },
+  "rankingPath": "productionRankings/v1/games/parallelPair/players/{rankingAuthUid}",
+  "rulesPrototype": "firebase/parallel-stage3-ranking.candidate.rules",
+  "doNotChange": [
+    "other-game flags",
+    "existing ranking records",
+    "global 120-second settings",
+    "PR #42"
+  ]
+}

@@ -78,7 +78,7 @@ test('production 2-minute challenge keeps its ranking route and direct URL guard
  const navigation=await readFile(new URL('../math-navigation.js',import.meta.url),'utf8');
  assert.ok(navigation.includes("games:['keisan','distribution','distribution2','exchangeAssociation','multiplicationProperties','shapeExpressions','keisanSummary']"));
  assert.ok(navigation.includes("id:'geometry',name:'四角形・垂直と平行'"));
- assert.ok(navigation.includes("page:'math-geometry.html',games:['suichoku']"));
+ assert.ok(navigation.includes("page:'math-geometry.html',games:['suichoku','parallelPair']"));
  assert.ok(navigation.includes("id==='keisanSummary'?'summary-ranking.html':'ranking.html?game='"));
  assert.ok(navigation.includes("play.dataset.gameHref=testLink('games/'+id+'.html')"));
  assert.ok(navigation.includes("rank.href=testLink(id==='keisanSummary'?'summary-ranking.html':'ranking.html?game='+id)"))
@@ -92,7 +92,7 @@ test('math navigation renders the two parallel units and keeps vertical only in 
  const source=await readFile(new URL('../math-navigation.js',import.meta.url),'utf8');
  function render(unitId){class Element{constructor(tag){this.tagName=tag;this.children=[];this.dataset={};this.className='';this.href='';this.textContent='';this.classList={add:name=>{this.className+=' '+name}}}append(...nodes){this.children.push(...nodes)}setAttribute(k,v){this[k]=v}}const root=new Element('section'),document={body:{dataset:{unit:unitId}},getElementById:()=>root,createElement:tag=>new Element(tag),querySelectorAll:()=>[]},location={href:'https://example.test/math.html'},window={ManabiProfileCatalog:[],ManabiGameSelection:{initialize(){}}};const vmContext={document,location,window,URL,URLSearchParams,Object,Array};return import('node:vm').then(({runInNewContext})=>{runInNewContext(source,vmContext);return root})}
  const chooser=await render('');assert.equal(chooser.children.length,2);assert.deepEqual(chooser.children.map(x=>x.children[0].href),['math-calculation.html','math-geometry.html']);assert.deepEqual(chooser.children.map(x=>x.children[0].children[0].textContent),['計算のきまり','四角形・垂直と平行']);
- const calculation=await render('calculation');assert.ok(!calculation.children.some(x=>x.dataset.gameCard==='suichoku'));
- const geometry=await render('geometry');assert.equal(geometry.children.filter(x=>x.dataset.gameCard==='suichoku').length,1);assert.equal(geometry.children[0].children[0].children[0].textContent,'垂直を見つけよう！');
+ const calculation=await render('calculation');assert.ok(!calculation.children.some(x=>['suichoku','parallelPair'].includes(x.dataset.gameCard)));
+ const geometry=await render('geometry');assert.deepEqual(geometry.children.map(x=>x.dataset.gameCard),['suichoku','parallelPair']);assert.equal(geometry.children[0].children[0].children[0].textContent,'垂直を見つけよう！');
  const calcPage=await readFile(new URL('../math-calculation.html',import.meta.url),'utf8'),geometryPage=await readFile(new URL('../math-geometry.html',import.meta.url),'utf8');assert.match(calcPage,/data-unit="calculation"/);assert.match(geometryPage,/data-unit="geometry"/);
 });

@@ -91,3 +91,15 @@ test('wrong and repeated answers do not add celebrations or duplicate overlays',
 test('reduced motion is supported and the common effect module contains no audio playback',()=>{
  const h=harness({reduce:true});assert.ok(moduleSource.includes('@media(prefers-reduced-motion:reduce)'));assert.doesNotMatch(moduleSource,/AudioContext|new Audio\s*\(|speechSynthesis|\.play\s*\(/i);h.window.ManabiCelebrations.showCorrect();assert.equal(h.body.children.filter(n=>n.classList.contains('mgl-celebration')).length,1);
 });
+
+
+test('explicit local title effects use the shared one-second celebration without substitute artwork',()=>{
+ const h=harness();h.window.ManabiCelebrations.showTitle({id:'parallelPair:25',name:'平行の王者',at:25,image:null});
+ const layer=h.body.children.find(n=>n.classList.contains('mgl-celebration'));
+ assert.equal(layer.hidden,false);assert.ok(layer.classList.contains('mgl-celebration--title'));
+ assert.match(layer.textContent,/新しい称号を獲得！平行の王者25問連続正解/);
+ assert.equal(layer.querySelectorAll('img').length,0);assert.equal(layer.querySelectorAll('.mgl-celebration__art').length,0);
+ assert.equal(layer.querySelectorAll('.mgl-celebration__particle').length,66);
+ assert.equal(h.timers.at(-1).ms,1000);h.timers.at(-1).fn();assert.equal(layer.hidden,true);
+ h.window.ManabiCelebrations.showCorrect();assert.equal(h.timers.at(-1).ms,470);
+});
