@@ -17,6 +17,11 @@ test.beforeAll(async()=>{
 
 test.beforeEach(async({page})=>{
  await page.route(/https:\/\/(identitytoolkit|securetoken|firestore)\.googleapis\.com\//,route=>route.abort());
+ // Use a published fixture for layout, without a real Firebase session.
+ await page.route(/\/public-firebase-session\.js(?:\?|$)/,route=>route.fulfill({
+  contentType:'text/javascript',
+  body:`window.ManabiFirebaseSession={open:async()=>({db:{},F:{doc:()=>({}),getDocFromServer:async()=>({exists:()=>true,data:()=>({status:'published'})})}})};`
+ }));
  await page.addInitScript(()=>localStorage.setItem('mgl_nickname','画面テスト'));
 });
 
@@ -24,8 +29,9 @@ test('all 14 games show the official top-right logo and link to subject selectio
  test.setTimeout(120000);
  for(const id of games){
   await page.goto(url('games/'+id+'.html?adminTest=1'),{waitUntil:'domcontentloaded'});
-  const logo=page.locator('a[href="../index.html"]').filter({has:page.getByAltText('マナビクエスト',{exact:true})});
+  const logo=page.locator('a[href]').filter({has:page.getByAltText('マナビクエスト',{exact:true})});
   await expect(logo,id).toHaveCount(1);
+  expect(await logo.evaluate(a=>a.pathname),id).toBe(new URL(url('index.html')).pathname);
   const img=logo.locator('img');
   await expect.poll(()=>img.evaluate(i=>i.complete&&i.naturalWidth>0),{message:id}).toBe(true);
   for(const viewport of viewports){
@@ -49,7 +55,7 @@ test('all 14 games show the official top-right logo and link to subject selectio
    expect(overlapsTitle,id).toBe(false);
   }
   await logo.click();
-  await expect(page).toHaveURL(url('index.html'));
+  await expect(page).toHaveURL(u=>u.pathname===new URL(url('index.html')).pathname);
   await expect(page.getByText('どの教科で遊ぶ？',{exact:true})).toBeVisible();
  }
 });
