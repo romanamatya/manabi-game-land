@@ -35,5 +35,4 @@ jobs:
           java-version: '21'
       - run: npm install --ignore-scripts --no-audit --no-fund
       - run: node --test tests/parallel*.test.mjs
-      - run: node tools/prepare-parallel-release.mjs
       - run: npx firebase emulators:exec --project demo-manabi-parallel-stage3 --only firestore --config firebase/parallel-stage3-emulator.json 'node --test tests/rules/parallel-stage3.test.mjs'
