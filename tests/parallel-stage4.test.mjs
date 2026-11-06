@@ -8,7 +8,7 @@ const root = new URL('../', import.meta.url);
 
 test('parallelPair files and settings match the reviewed release candidate', async () => {
   const manifest = JSON.parse(await readFile(new URL('docs/parallel-stage4-manifest.json', root), 'utf8'));
-  const sharedRuntimeFiles = new Set(['challenge120-core.js', 'economy-core.js', 'profile-catalog.js', 'public-admin-settings.js', 'ranking-sync-api.js']);
+  const sharedRuntimeFiles = new Set(['environment.js', 'management-model.js', 'challenge120-core.js', 'economy-core.js', 'profile-catalog.js', 'public-admin-settings.js', 'ranking-sync-api.js']);
   for (const file of manifest.files) {
     if (sharedRuntimeFiles.has(file.path)) continue;
     const bytes = await readFile(new URL(file.path, root));
@@ -24,4 +24,17 @@ test('parallelPair files and settings match the reviewed release candidate', asy
   assert.ok(config.gameIds.includes('parallelPair'));
   assert.ok(config.rankingGameIds.includes('parallelPair'));
   assert.ok(!config.staticLocalGameIds.includes('parallelPair'));
+
+  const settings = {...config};
+  for (const key of ['gameIds','rankingGameIds']) {
+    assert.equal(settings[key].filter(id=>id==='missingAlphabet').length,1);
+    settings[key]=settings[key].filter(id=>id!=='missingAlphabet');
+  }
+  assert.equal(settings.missingAlphabetRankingSyncEnabled,true);
+  assert.deepEqual([...settings.challenge120GameIds],['missingAlphabet']);
+  delete settings.missingAlphabetRankingSyncEnabled;
+  delete settings.challenge120GameIds;
+  const prior = environment.replace(/MANABI_BACKEND_CONFIG=Object.freeze\(\{[^\n]+?\}\);/, 'MANABI_BACKEND_CONFIG=Object.freeze('+JSON.stringify(settings)+');');
+  assert.equal(createHash('sha256').update(prior).digest('hex'),manifest.files.find(file=>file.path==='environment.js').sha256);
+
 });

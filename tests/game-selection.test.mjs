@@ -69,7 +69,7 @@ test('production subject pages expose separate play and ranking controls',async(
  for(const file of ['japanese.html','social.html','language.html']){
   const html=await readFile(new URL('../'+file,import.meta.url),'utf8');
   const cards=[...html.matchAll(/<article class="card game-card" data-game-card="([^"]+)">([\s\S]*?)<\/article>/g)];
-  assert.ok(cards.length>0,file);assert.match(html,/src="game-selection\.js\?v=availability-read-fix-20261102"/);
+  assert.ok(cards.length>0,file);assert.match(html,/src="game-selection\.js\?v=(?:availability-read-fix-20261102|missing-alphabet-production-v1)"/);
   for(const [,id,body] of cards){assert.match(body,new RegExp('data-game-id="'+id+'"'));assert.match(body,/data-game-play[^>]*disabled/);assert.match(body,/data-game-ranking/);}
  }
 });
