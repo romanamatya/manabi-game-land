@@ -5,15 +5,15 @@
 <title>平行な2本を見つけよう！｜マナビクエスト</title>
 <link rel="stylesheet" href="../suichoku.css"><link rel="stylesheet" href="../parallel.css">
 <script src="../environment.js"></script><script src="../environment-runtime.js"></script><script src="../parallel-model.js"></script><script src="../economy-core.js"></script><script src="../storage-adapters.js"></script><script src="../economy.js"></script><script src="../challenge120-core.js"></script><script src="../parallel-local.js"></script><script src="../celebration-effects.js"></script>
-</head><body>
-<div class="sq-wrap"><header class="sq-header"><a href="../math.html">← 算数へ</a><h1>平行な2本を見つけよう！</h1><a href="../index.html">ホーム</a></header>
+<link rel="stylesheet" href="../game-home.css"></head><body>
+<div class="sq-wrap"><header class="sq-header"><a href="../math.html">← 算数へ</a><h1>平行な2本を見つけよう！</h1><a class="mq-game-home" href="../index.html" aria-label="マナビクエストのトップへ戻る"><img src="../assets/title.png" alt="マナビクエスト"></a></header>
 <div class="sq-layout parallel-layout"><aside class="sq-panel sq-stats" aria-label="このゲームの記録">
 <div class="sq-stat">算数ポイント<small>正解1問で1pt</small><b id="points">0</b><small id="daily">1日最大50pt</small></div>
 <div class="sq-stat">連続正解<b id="streak">0</b></div><div class="sq-stat">最高記録<b id="best">0</b></div>
-<ol id="tower" class="parallel-tower" aria-label="獲得した称号" aria-live="polite"></ol><strong id="challenge-clock" role="timer">時間制限なし</strong><button id="ranking-open" type="button">共有ランキング</button><small id="parallel-ranking-status" role="status"></small><div class="parallel-guide"><strong id="level">初級</strong><p>もう一度タップで<br>選び直せるよ。</p><small id="storage-status" role="status"></small></div></aside>
+<strong id="challenge-clock" role="timer">時間制限なし</strong><button id="ranking-open" type="button">共有ランキング</button><small id="parallel-ranking-status" role="status"></small><div class="parallel-guide"><strong id="level">初級</strong><p>もう一度タップで<br>選び直せるよ。</p><small id="storage-status" role="status"></small></div></aside>
 <main class="sq-panel sq-main"><p class="sq-question">平行な2本はどれ？</p><p id="hint" class="sq-hint" role="status">線を2本選んで「決定！」を押そう。</p>
 <div id="diagram" aria-label="7本の直線から2本を選ぶ"></div>
 <div class="parallel-controls"><span id="selection-count" aria-live="polite">0 / 2本</span><button id="confirm" type="button" disabled>決定！</button></div>
 <section id="feedback" class="sq-feedback" aria-live="assertive" hidden><h2 id="verdict"></h2><p id="explanation"></p></section>
 <section id="challenge-gate" class="parallel-gate" hidden><h2 id="challenge-heading"></h2><p id="challenge-message"></p><button id="challenge-start" type="button"></button></section>
-<section id="parallel-ranking" class="parallel-gate" hidden aria-label="平行ゲームの共有ランキング"><h2>共有ランキング</h2><p id="parallel-ranking-message" role="status"></p><table><thead><tr><th>順位</th><th>名前</th><th>最高記録</th></tr></thead><tbody id="parallel-ranking-rows"></tbody></table><button id="ranking-refresh" type="button">更新する</button><button id="ranking-close" type="button">閉じる</button></section></main></div></div><script src="../parallel-game.js"></script><script type="module" src="../parallel-ranking.js"></script></body></html>
+<section id="parallel-ranking" class="parallel-gate" hidden aria-label="平行ゲームの共有ランキング"><h2>共有ランキング</h2><p id="parallel-ranking-message" role="status"></p><table><thead><tr><th>順位</th><th>名前</th><th>最高記録</th></tr></thead><tbody id="parallel-ranking-rows"></tbody></table><button id="ranking-refresh" type="button">更新する</button><button id="ranking-close" type="button">閉じる</button></section></main><aside class="sq-panel sq-titles parallel-titles"><h2>称号タワー</h2><ol id="tower" aria-label="称号と獲得状況" aria-live="polite"></ol></aside></div></div><script src="../parallel-game.js"></script><script type="module" src="../parallel-ranking.js"></script></body></html>

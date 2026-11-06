@@ -19,5 +19,5 @@ for(const match of [...html.matchAll(/<script src="\.\.\/([^"?]+)"><\/script>/g)
  html=html.replace(match[0],()=>'<script>'+code.replace(/<\/script/gi,'<\\/script')+'</script>');
 }
 html=html.replace('<button id="ranking-open" type="button">共有ランキング</button>','<small>記録はこの端末に保存</small>');
-html=html.replace('<a href="../math.html">← 算数へ</a>','<span>算数</span>').replace('<a href="../index.html">ホーム</a>','<span>マナビクエスト</span>');
+html=html.replace('<a href="../math.html">← 算数へ</a>','<span>算数</span>').replace(/<a class="mq-game-home"[^>]*>.*?<\/a>/,'<span>マナビクエスト</span>');
 await fs.mkdir(path.dirname(output),{recursive:true});await fs.writeFile(output,html);console.log(output);

@@ -1,0 +1,21 @@
+/* In-flow version of the game's official home logo for compact headers. */
+header .mq-game-home {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  width: clamp(112px, 16vw, 175px);
+  min-height: 44px;
+  border-radius: 8px;
+}
+.mq-game-home img {
+  display: block;
+  width: 100%;
+  height: 38px;
+  object-fit: contain;
+  object-position: right center;
+}
+.mq-game-home:focus-visible {
+  outline: 3px solid #315e9c;
+  outline-offset: 2px;
+}

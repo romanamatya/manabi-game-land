@@ -27,6 +27,15 @@ function harness(){
 test('page controller: 27 consecutive answers, title delays, selection/retry and redraw stay consistent',async()=>{
  const h=harness(),{ids}=h,M=h.window.ManabiParallel;
  assert.equal(ids.tower.children.length,5);assert.equal(ids.confirm.disabled,true);
+ const levels=[...h.window.ManabiParallelLocal.titles].reverse();
+ for(const [index,row] of ids.tower.children.entries()){
+  const title=levels[index];
+  assert.equal(row.dataset.title,title.id);
+  assert.equal(row.children[0].src,'../'+title.image);
+  assert.equal(row.children[1].textContent,title.name);
+  assert.equal(row.children[1].children[0].textContent,title.at+'問連続');
+ }
+
  let pair=M.inspect(h.lines()).pairs[0];h.key(pair[0]);assert.equal(ids.confirm.disabled,true);h.key(pair[0]);assert.equal(ids['selection-count'].textContent,'0 / 2本');
  const wrong=[0,1,2,3,4,5,6].find(i=>!pair.includes(i));h.key(pair[0]);h.key(wrong);h.key(pair[1]);assert.equal(ids['selection-count'].textContent,'2 / 2本');
  const before=JSON.stringify(h.lines());await ids.confirm.onclick();assert.equal(JSON.stringify(h.lines()),before);assert.equal(ids.streak.textContent,0);assert.equal(ids.confirm.disabled,true);assert.equal(ids.feedback.hidden,false);

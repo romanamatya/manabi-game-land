@@ -18,7 +18,18 @@ $('confirm').onclick=async()=>{
  if(ok){phase='correct';const title=context.earnedTitles?.at(-1);if(title)window.ManabiCelebrations?.showTitle(title);else window.ManabiCelebrations?.showCorrect();if(!window.ManabiCelebrations){$('feedback').hidden=false;$('feedback').classList.remove('wrong');$('verdict').textContent=title?title.name+' を獲得！':'正解！';$('explanation').textContent=title?title.at+'問連続正解':'2本の直線は平行だよ。'}timer=setTimeout(next,title?1000:500)}
  else{if(!local.canPlay()){next();return}phase='ask';selected=[];context=local.begin('parallelPair',question);$('feedback').hidden=false;$('feedback').classList.add('wrong');$('verdict').textContent='もう一度！';$('explanation').textContent='線の向きをよく見て、同じ問題にちょうせんしよう。';$('hint').textContent='もう一度、平行な2本を選ぼう。';syncSelection()}
 };
-for(const title of local.titles){const li=document.createElement('li');li.dataset.title=title.id;li.textContent=title.at+'問 '+title.name;$('tower').append(li)}
+for (const title of [...local.titles].reverse()) {
+ const row=document.createElement('li'), image=document.createElement('img');
+ const label=document.createElement('span'), threshold=document.createElement('small');
+ row.dataset.title=title.id;
+ image.src=title.image.startsWith('data:')?title.image:'../'+title.image;
+ image.alt='';
+ label.textContent=title.name;
+ threshold.textContent=title.at+'問連続';
+ label.append(threshold);
+ row.append(image,label);
+ $('tower').append(row);
+}
 function paintGate(){
  const s=local.read(),c=s.challenge,running=c.phase==='running';
  $('challenge-clock').textContent=running?'残り '+window.ManabiChallenge120Core.format(c.deadline-Math.max(Date.now(),c.lastWall)):c.phase==='training'?'時間制限なし':'120秒チャレンジ';
