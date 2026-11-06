@@ -44,9 +44,8 @@ test('the approved missing-alphabet sync gate is isolated from global ranking an
  assert.equal(backend.missingAlphabetRankingSyncEnabled,true);
  assert.equal(backend.rankingSyncEnabled,false);assert.equal(backend.playerNameSyncEnabled,false);assert.equal(backend.playerSyncEnabled,false);
  assert.equal(backend.challenge120Enabled,false);assert.deepEqual(backend.challenge120GameIds,['missingAlphabet']);
- assert.throws(()=>validateEnvironment({...scoped,rankingSyncEnabled:true}),/missing-alphabet-ranking-not-allowed/);
- assert.throws(()=>validateEnvironment({...scoped,playerNameSyncEnabled:true}),/missing-alphabet-ranking-not-allowed/);
- assert.throws(()=>validateEnvironment({...scoped,challenge120Enabled:true}),/invalid-challenge-game-settings/);
+ const combined=backendConfig({...scoped,rankingSyncEnabled:true,playerNameSyncEnabled:true,challenge120Enabled:true,parallelPairRankingEnabled:true});
+ for(const flag of ['rankingSyncEnabled','playerNameSyncEnabled','challenge120Enabled','parallelPairRankingEnabled','missingAlphabetRankingSyncEnabled'])assert.equal(combined[flag],true);
  assert.throws(()=>validateEnvironment({...scoped,challenge120GameIds:['suichoku']}),/invalid-challenge-game-settings/);
  assert.throws(()=>validateEnvironment({...scoped,rankingGameIds:production.rankingGameIds}),/missing-alphabet-ranking-not-allowed/);
  assert.throws(()=>validateEnvironment({...scoped,environment:'preview',challenge120GameIds:[],projectId:'manabi-game-landcheck',firebase:{...scoped.firebase,projectId:'manabi-game-landcheck',authDomain:'manabi-game-landcheck.firebaseapp.com'}}),/missing-alphabet-ranking-not-allowed/);

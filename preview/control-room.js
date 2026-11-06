@@ -1,4 +1,4 @@
-import {client,errorText} from './spark-auth.js?v=8ec87f5ee3b9';
+import {client,errorText} from './spark-auth.js?v=90d8a18b4714';
 const cfg=window.MANABI_SPARK_CONFIG,renameEnabled=cfg?.adminFeatures?.playerRename===true,managementEnabled=cfg?.managementEnabled===true;
 const $=id=>document.getElementById(id),names=window.ManabiUpgradeShared?.names||{},catalog=(window.ManabiProfileCatalog||[]).filter(g=>g.id!=='suichoku');
 const statusLabels={published:'公開中',preparing:'公開準備中',hidden:'非公開',unknown:'未確認'};

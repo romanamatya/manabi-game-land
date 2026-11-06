@@ -11,6 +11,8 @@ test('production 120-second challenge can be enabled for missingAlphabet without
  assert.equal(C.enabledForProductionGame({challenge120Enabled:false},'production','missingAlphabet'),false);
  assert.equal(C.enabledForProductionGame({challenge120Enabled:true},'production','suichoku'),true);
  assert.equal(C.enabledForProductionGame(scoped,'preview','missingAlphabet'),false);
+ assert.equal(C.enabledForProductionGame({challenge120Enabled:true},'production','missingAlphabet'),false);
+ assert.equal(C.enabledForProductionGame({...scoped,challenge120Enabled:true},'production','parallelPair'),true);
 });
 
 test('practice is unlimited until the title threshold, then challenge starts at the threshold',()=>{

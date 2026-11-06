@@ -1,4 +1,4 @@
-import {contractFor,normalizePlayer,legacyScorePatch,canonicalNickname,error} from './data-contract.js?v=8ec87f5ee3b9';
+import {contractFor,normalizePlayer,legacyScorePatch,canonicalNickname,error} from './data-contract.js?v=90d8a18b4714';
 export function createFirestoreStore(mode,F,db,{catalog=[],rankingGameIds=[]}={}){
  // Rules can reject a stale backup before a transaction conflict is retried.
  // Retry the complete read/write transaction; never relax validation or write outside it.
@@ -64,4 +64,3 @@ export function createFirestoreStore(mode,F,db,{catalog=[],rankingGameIds=[]}={}
  async function saveProfile(uid,localName,appearance){let name;await transact(async tx=>{const s=await tx.get(ref(uid));name=canonicalNickname(s.exists()?s.data():null,localName);if(!name)throw error('nickname-required');tx.set(ref(uid),{nickname:name,appearance,updatedAt:Date.now()},{merge:true});});return name;}
  return {contract:c,ref,list,rename,setPlayerAccess,saveLegacy,saveProfile};
 }
-

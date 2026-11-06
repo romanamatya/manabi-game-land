@@ -66,7 +66,9 @@ test('regular Suichoku ranking never mixes its separate 120-second challenge rec
 });
 test('missing alphabet combines practice and 120-second bests in one isolated shared row',async()=>{
  docs.clear();authByName.clear();apps.length=0;
- const a=await createProductionRankingClient(config,sdk);
+ docs.set('players/student-a',{nickname:'そら',rankingUid:'student-a'});
+ docs.set('productionRankings/v1/identityLinks/student-a',{uid:'student-a',profileUid:'student-a'});
+ const a=await createProductionRankingClient({...config,rankingSyncEnabled:false,missingAlphabetRankingSyncEnabled:true},sdk);
  const practice=bestForSharedRanking('missingAlphabet',{best:20},{bests:{},attemptBest:0});
  await a.publishRanking(profile('missingAlphabet',practice,'そら'));
  const challenge=bestForSharedRanking('missingAlphabet',{best:20},{bests:{season:22},attemptBest:24});
@@ -74,7 +76,7 @@ test('missing alphabet combines practice and 120-second bests in one isolated sh
  const rows=await a.rankings('missingAlphabet');
  assert.equal(rows.length,1);assert.equal(rows[0].bestStreak,24);assert.equal(rows[0].game,'missingAlphabet');
  assert.deepEqual(Object.keys(rows[0]).sort(),['uid','game','nickname','bestStreak','icon','frame','title','badge','updatedAt'].sort());
- assert.ok([...docs.keys()].every(path=>path.endsWith('/players/student-a')));
+ assert.ok([...docs.keys()].filter(path=>path.includes('/games/')).every(path=>path.endsWith('/games/missingAlphabet/players/student-a')));
 });
 test('keeps best score monotonic while allowing display metadata to change',async()=>{
  docs.clear();authByName.clear();apps.length=0;

@@ -1,7 +1,7 @@
 (()=>{
 'use strict';
-const game=location.pathname.match(/\/games\/([^/]+)\.html$/)?.[1],C=window.ManabiChallenge120Core,config=window.MANABI_BACKEND_CONFIG;if(window.MANABI_ENV?.preview!==false||window.MANABI_ENV?.environment!=='production'||!C?.enabledForProductionGame?.(config,window.MANABI_ENV?.environment,game))return;
-const storage=window.manabiStorage,test=new URL(location.href).searchParams.has('adminTest');if(!C||!storage||!C.highest[game])return;
+if(window.MANABI_ENV?.preview!==false||window.MANABI_ENV?.environment!=='production'||window.MANABI_BACKEND_CONFIG?.challenge120Enabled!==true)return;
+const C=window.ManabiChallenge120Core,storage=window.manabiStorage,game=location.pathname.match(/\/games\/([^/]+)\.html$/)?.[1],test=new URL(location.href).searchParams.has('adminTest');if(!C||!storage||!C.highest[game])return;
 const accessAllowed=()=>window.MANABI_BACKEND_CONFIG?.accountAccessEnabled!==true||window.ManabiPlayerAccess?.canPlay?.()===true;
 const key='mgl_challenge120_v1:'+game,season='production-120-v1',lock='manabi-production-challenge120-'+game;
 let anchorWall=Date.now(),anchorMono=performance.now(),panel,overlay,working=false,serial=Promise.resolve();

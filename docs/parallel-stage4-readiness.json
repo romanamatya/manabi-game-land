@@ -1,0 +1,75 @@
+{
+  "stage": 4,
+  "productionChanged": false,
+  "deployReady": false,
+  "game": "parallelPair",
+  "verifiedHead": "e81c204aabfdc1495b4876a6273532a1ebc7c822",
+  "baseline": "ecdd921b0807e6f52456692700fda903e4be1894",
+  "publicEnvironment": {
+    "url": "https://romanamatya.github.io/manabi-game-land/environment.js",
+    "status": 200,
+    "etag": "\"6aea1eff-5fe\"",
+    "lastModified": "Tue, 03 Nov 2026 17:50:55 GMT",
+    "sha256": "115441cd560d1e46a693e179fc9c3283747a0a56cb74e060b8f3000c2823dd54",
+    "matchesRepositoryRoot": true
+  },
+  "liveRules": {
+    "verified": false,
+    "reason": "No authenticated Firebase CLI account; Firebase plugin provides no service operations in this session."
+  },
+  "gameSetting": {
+    "path": "productionAdmin/v1/gameSettings/parallelPair",
+    "verified": false,
+    "readStatus": 403,
+    "meaning": "Permission denied; document existence and status are unknown."
+  },
+  "tests": {
+    "current": {
+      "total": 156,
+      "pass": 153,
+      "fail": 3
+    },
+    "mainBaseline": {
+      "total": 132,
+      "pass": 129,
+      "fail": 3
+    },
+    "rulesEmulator": {
+      "pass": 3,
+      "fail": 0
+    },
+    "independentGeometry": {
+      "questions": 15000,
+      "pairs": 315000,
+      "errors": 0
+    }
+  },
+  "existingFailures": [
+    "preview game wires storage adapter before economy runtime and keeps production game isolated",
+    "released question model and controller are identical to validated preview",
+    "summary ranking uses one local game-best streak board for practice and challenge"
+  ],
+  "browserEvidence": {
+    "priorManual": "docs/parallel-stage3-browser.json",
+    "freshManualRun": false,
+    "existingGameChecks": [
+      {
+        "name": "browser-smoke",
+        "conclusion": "success",
+        "url": "https://github.com/romanamatya/manabi-game-land/actions/runs/42050942045/job/127326555011"
+      },
+      {
+        "name": "production-rules",
+        "conclusion": "success",
+        "url": "https://github.com/romanamatya/manabi-game-land/actions/runs/42050942158/job/127326554914"
+      }
+    ]
+  },
+  "missingAssets": [],
+  "blockers": [
+    "Authenticated live Rules release/source backup and minimal diff review",
+    "Authenticated read/backup of parallelPair gameSettings, preserve all other games",
+    "Emulator tests against actual live Rules plus minimal new-game diff",
+    "Explicit production publication approval"
+  ]
+}
