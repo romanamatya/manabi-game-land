@@ -58,3 +58,24 @@ test('the approved missing-alphabet sync gate is isolated from global ranking an
  assert.ok(text('../shared-src/site/ranking-page.js').includes('config?.missingAlphabetRankingSyncEnabled!==true'));
  assert.ok(text('../shared-src/site/home-data.js').includes('MANABI_BACKEND_CONFIG?.missingAlphabetRankingSyncEnabled===true'));
 });
+
+test('a queued English answer can be replayed on pages without the game scripts',async()=>{
+ const {runInNewContext}=await import('node:vm');
+ for(const file of ['../economy-core.js','../shared-src/site/economy-core.js']){
+  const context={structuredClone};
+  runInNewContext(text(file),context);
+  const core=context.ManabiEconomyCore;
+  const prompt={id:'u-0-1',lower:false,start:0,missingIndex:1,sequence:['A','□','C','D'],choices:['A','B','C','D'],correctIndex:1};
+  const clean=core.canonicalPrompt('missingAlphabet',prompt);
+  assert.equal(core.correct('missingAlphabet',clean,{choice:'B'}),true);
+  assert.equal(core.correct('missingAlphabet',clean,{choice:'C'}),false);
+  assert.throws(()=>core.canonicalPrompt('missingAlphabet',{...prompt,correctIndex:0}),/invalid-question/);
+  const wallet=core.initial();
+  wallet.balances.math=19;
+  wallet.owned=[core.catalog[0].id];
+  const result=core.reward(wallet,'missingAlphabet',true,'2026-11-06');
+  assert.equal(result.wallet.balances.english,1);
+  assert.equal(result.wallet.balances.math,19);
+  assert.deepEqual([...result.wallet.owned],[...wallet.owned]);
+ }
+});
