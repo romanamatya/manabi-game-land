@@ -1,4 +1,4 @@
-import {bestForSharedRanking} from './ranking-sync-api.js?v=b165f1717fbd';
+import {bestForSharedRanking} from './ranking-sync-api.js?v=1d0a8f9b942b';
 
 const GAME='missingAlphabet',config=window.MANABI_BACKEND_CONFIG,storage=window.manabiStorage;
 if(config?.mode==='production'&&config.missingAlphabetRankingSyncEnabled===true&&config.rankingGameIds?.includes(GAME)&&storage){
@@ -16,7 +16,7 @@ const appearance=()=>window.ManabiProfile?.appearance(storage)||{icon:'cat',fram
 const titleAt=best=>[...titles].filter(title=>best>=title.at).at(-1)?.name||null;
 const accountAllowed=()=>config.accountAccessEnabled!==true||window.ManabiPlayerAccess?.canPlay?.()===true;
 async function api(){
- if(!apiPromise)apiPromise=import('./ranking-sync-api.js?v=b165f1717fbd').then(module=>module.missingAlphabetClient()).catch(error=>{apiPromise=null;throw error});
+ if(!apiPromise)apiPromise=import('./ranking-sync-api.js?v=1d0a8f9b942b').then(module=>module.missingAlphabetClient()).catch(error=>{apiPromise=null;throw error});
  return apiPromise;
 }
 async function flush(){
@@ -28,7 +28,9 @@ async function flush(){
   const score=Math.max(best,pendingBest);
   if(score<1)return;
   await service.publishRanking({game:GAME,bestStreak:score,nickname,icon:look.icon,frame:look.frame,title:titleAt(score),badge:look.badge});
-  pendingBest=0;storage.removeItem(pendingKey);if(status)status.textContent='共有ランキングに保存しました';
+  if(pendingBest<=score){pendingBest=0;storage.removeItem(pendingKey);}
+  else {clearTimeout(flushTimer);flushTimer=setTimeout(()=>void flush(),0);}
+  if(status)status.textContent='共有ランキングに保存しました';
  }catch{
   if(status)status.textContent='共有ランキングへの保存待ちです。個人記録は端末に保持しています。';
  }finally{running=false;}

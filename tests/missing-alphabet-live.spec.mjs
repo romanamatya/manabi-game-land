@@ -15,6 +15,13 @@ test('preview game renders approved titles and supports wrong-answer retry then 
   await expect(image).toBeVisible();
   await expect.poll(()=>image.evaluate(img=>img.complete&&img.naturalWidth>0)).toBe(true);
  }
+ await page.evaluate(()=>{
+  window.addEventListener('manabi-learning-answer',event=>{
+   if(event.detail?.game==='missingAlphabet'&&event.detail.correct===true){
+    window.testEnglishBestAtAnswer=JSON.parse(window.manabiStorage.getItem('mgl_missingAlphabet')).best;
+   }
+  });
+ });
  const first=await page.evaluate(()=>window.MissingAlphabetGame.question());
  const wrongIndex=(first.correctIndex+1)%4;
  await page.locator(`#choices button[data-choice-index="${wrongIndex}"]`).click();
@@ -23,6 +30,7 @@ test('preview game renders approved titles and supports wrong-answer retry then 
  await expect.poll(()=>page.evaluate(()=>window.MissingAlphabetGame.state().streak)).toBe(0);
  await page.locator(`#choices button[data-choice-index="${first.correctIndex}"]`).click();
  await expect.poll(()=>page.evaluate(()=>window.MissingAlphabetGame.state().streak)).toBe(1);
+ expect(await page.evaluate(()=>window.testEnglishBestAtAnswer)).toBe(1);
  await expect(page.locator('#choices button').first()).toBeEnabled({timeout:2500});
  await expect.poll(()=>page.evaluate(()=>window.MissingAlphabetGame.question()?.id)).not.toBe(first.id);
  await expect(page.locator('#points')).toHaveText('0');

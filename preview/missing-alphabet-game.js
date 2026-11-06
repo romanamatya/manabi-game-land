@@ -22,9 +22,9 @@
    else logAnswer(question,letter,false,false,challenge);
    busy=false;stats();return;
   }
-  const oldBest=state.best;state.streak=challenge?.phase==='running'?challenge.streak+1:state.streak+1;state.best=Math.max(state.best,state.streak);state.history=model.normalizeHistory([...state.history,{lower:question.lower,start:question.start,missingIndex:question.missingIndex}]);state.question=null;logAnswer(question,letter,true,true,challenge);
+  const oldBest=state.best;state.streak=challenge?.phase==='running'?challenge.streak+1:state.streak+1;state.best=Math.max(state.best,state.streak);state.history=model.normalizeHistory([...state.history,{lower:question.lower,start:question.start,missingIndex:question.missingIndex}]);state.question=null;
   const gainedTitle=titles.find(item=>item.at>oldBest&&item.at<=state.best)||null;
-  const request=window.ManabiEconomy.answer(pointContext,{choice:letter});save();stats();$('feedback').className='feedback';$('feedback').textContent='';for(const button of $('choices').querySelectorAll('button'))button.disabled=true;
+  const request=window.ManabiEconomy.answer(pointContext,{choice:letter});save();logAnswer(question,letter,true,true,challenge);stats();$('feedback').className='feedback';$('feedback').textContent='';for(const button of $('choices').querySelectorAll('button'))button.disabled=true;
   try{await request}catch{}
   busy=false;advanceTimer=setTimeout(next,gainedTitle?1000:500);
  }

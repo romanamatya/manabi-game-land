@@ -28,7 +28,9 @@ async function flush(){
   const score=Math.max(best,pendingBest);
   if(score<1)return;
   await service.publishRanking({game:GAME,bestStreak:score,nickname,icon:look.icon,frame:look.frame,title:titleAt(score),badge:look.badge});
-  pendingBest=0;storage.removeItem(pendingKey);if(status)status.textContent='共有ランキングに保存しました';
+  if(pendingBest<=score){pendingBest=0;storage.removeItem(pendingKey);}
+  else {clearTimeout(flushTimer);flushTimer=setTimeout(()=>void flush(),0);}
+  if(status)status.textContent='共有ランキングに保存しました';
  }catch{
   if(status)status.textContent='共有ランキングへの保存待ちです。個人記録は端末に保持しています。';
  }finally{running=false;}
