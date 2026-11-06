@@ -14,11 +14,16 @@
   "productionAuthVerified": false,
   "productionRulesApproved": false,
   "legacyScoreSyncEnabled": false,
+  "challenge120Enabled": true,
+  "localChallengeGameIds": [
+    "missingAlphabet"
+  ],
   "gameIds": [
     "keisan",
     "pref-name",
     "pref-place",
     "alphabet",
+    "missingAlphabet",
     "distribution",
     "distribution2",
     "exchangeAssociation",
@@ -32,6 +37,7 @@
     "pref-name",
     "pref-place",
     "alphabet",
+    "missingAlphabet",
     "distribution",
     "kotowaza",
     "distribution2",
@@ -43,3 +49,4 @@
     "suichoku"
   ]
 }
+

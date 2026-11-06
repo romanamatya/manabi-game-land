@@ -3,6 +3,15 @@ import {publishedChampionGames} from './champion-visibility.js?v=home-champions-
 export async function startProductionHome(storage){
  const $=id=>document.getElementById(id);
  let nick=storage.getItem('mgl_nickname')||'',ranking=null,championRows=[];
+ let englishChampion=null;
+ async function refreshEnglishChampion(){
+  if(statuses.get('missingAlphabet')!=='published'||window.MANABI_BACKEND_CONFIG?.missingAlphabetRankingSyncEnabled!==true)return;
+  try {
+   const {missingAlphabetClient}=await import('./ranking-sync-api.js?v=missing-alphabet-production-v1');
+   englishChampion=(await (await missingAlphabetClient()).champions())[0]||null;
+   renderChampions();
+  } catch {}
+ }
  const statuses=new Map(),subscriptions=new Set();
  const games=window.ManabiLeaderboard.games;
  const show=()=>{$('playerWelcome').hidden=!!nick;$('playerReady').hidden=!nick;$('playerName').textContent=nick;};
@@ -10,7 +19,7 @@ export async function startProductionHome(storage){
  function apply(name){if(name!==nick){nick=name;storage.setItem('mgl_nickname',name);show();document.dispatchEvent(new Event('manabi-nickname-sync'));}}
  function renderChampions(error=false){
   const visibleGames=publishedChampionGames(games,statuses);
-  window.ManabiLeaderboard.renderChampions(championRows,{error,visibleGames});
+  window.ManabiLeaderboard.renderChampions(englishChampion?[...championRows,englishChampion]:championRows,{error,visibleGames});
   if(error){$('boardStatus').textContent='ランキングを取得できませんでした。通信状態を確認して、もう一度お試しください。';return;}
   $('boardStatus').textContent=games.some(game=>statuses.get(game.id)==='unknown')?'公開状態を確認できないゲームは表示していません。':'公開中のゲームの共有記録を表示しています。';
  }
@@ -30,6 +39,7 @@ export async function startProductionHome(storage){
    statuses.set(game.id,'unknown');
    Promise.resolve(window.ManabiPublicSettings.subscribeGame(game.id,snapshot=>{
     statuses.set(game.id,snapshot?.exists?.()?statusOf(snapshot.data()):'unknown');renderChampions();
+    if(game.id==='missingAlphabet')void refreshEnglishChampion();
    },()=>{statuses.set(game.id,'unknown');renderChampions();}))
     .then(unsubscribe=>{if(typeof unsubscribe==='function')subscriptions.add(unsubscribe);})
     .catch(()=>{statuses.set(game.id,'unknown');renderChampions();});
@@ -41,6 +51,7 @@ export async function startProductionHome(storage){
    const m=await import('./ranking-sync-client.js?v=prod-admin-stage2-rename-1');
    await m.startRankingSync().catch(()=>{});ranking=m;
    championRows=await (await m.client()).champions();renderChampions();
+   void refreshEnglishChampion();
    if(!subscriptions.size&&statuses.size===0)watchAvailability();
   }catch{championRows=[];renderChampions(true);}
   finally{button.disabled=false;}

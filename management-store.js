@@ -1,4 +1,4 @@
-import {GAME_IDS,checkedInput,visibilityStatus} from './management-model.js?v=availability-read-fix-20261102';
+import {GAME_IDS,checkedInput,visibilityStatus} from './management-model.js?v=missing-alphabet-production-v1';
 import {contractFor} from './data-contract.js?v=adminprod-20261030';
 
 export function createManagementStore(mode,F,db){

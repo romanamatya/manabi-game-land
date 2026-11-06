@@ -1,5 +1,5 @@
 // Suichoku is deliberately ranking-only: it is not part of the management batch.
-const GAME_IDS=Object.freeze(['keisan','pref-name','pref-place','alphabet','distribution','distribution2','exchangeAssociation','kotowaza','multiplicationProperties','shapeExpressions','keisanSummary','suichoku','parallelPair']);
+const GAME_IDS=Object.freeze(['keisan','pref-name','pref-place','alphabet','missingAlphabet','distribution','distribution2','exchangeAssociation','kotowaza','multiplicationProperties','shapeExpressions','keisanSummary','suichoku','parallelPair']);
 const err=code=>Object.assign(new Error(code),{code});
 const validLabel=value=>typeof value==='string'&&value.length<=80;
 export function bestForSharedRanking(game,record,challenge){
@@ -10,11 +10,13 @@ export function bestForSharedRanking(game,record,challenge){
  return best;
 }
 function assertConfig(c){
- if(!c||c.mode!=='production'||c.expectedProjectId!=='manabi-game-land'||c.rankingSyncEnabled!==true||c.firebase?.projectId!=='manabi-game-land')throw err('production-ranking-config-rejected');
+ if(!c||c.mode!=='production'||c.expectedProjectId!=='manabi-game-land'||(c.rankingSyncEnabled!==true&&c.missingAlphabetRankingSyncEnabled!==true)||c.firebase?.projectId!=='manabi-game-land')throw err('production-ranking-config-rejected');
+ if(c.missingAlphabetRankingSyncEnabled===true&&(c.rankingSyncEnabled===true||c.playerNameSyncEnabled===true||!c.rankingGameIds?.includes('missingAlphabet')))throw err('global-ranking-sync-must-remain-disabled');
  if(typeof window!=='undefined'&&(window.MANABI_ENV?.preview!==false||window.MANABI_ENV?.expectedProjectId!=='manabi-game-land'))throw err('production-environment-mismatch');
 }
 export async function createProductionRankingClient(c,[App,A,F]){
  assertConfig(c);
+ const scopedMissingAlphabet=c.missingAlphabetRankingSyncEnabled===true;
  const appName='manabi-production-ranking-v1';
  const app=App.getApps().find(x=>x.name===appName)||App.initializeApp(c.firebase,appName);
  if(app.options.projectId!=='manabi-game-land')throw err('production-project-rejected');
@@ -22,9 +24,9 @@ export async function createProductionRankingClient(c,[App,A,F]){
  await A.setPersistence(auth,A.browserLocalPersistence);await auth.authStateReady();
  if(!auth.currentUser)await A.signInAnonymously(auth);
  if(!auth.currentUser?.isAnonymous)throw err('anonymous-player-required');
- const uid=auth.currentUser.uid,allowed=new Set((c.rankingGameIds||GAME_IDS.filter(x=>x!=='parallelPair')).filter(x=>GAME_IDS.includes(x)&&(x!=='parallelPair'||c.parallelPairRankingEnabled===true)));
+ const uid=auth.currentUser.uid,allowed=new Set(scopedMissingAlphabet?['missingAlphabet']:(c.rankingGameIds||GAME_IDS.filter(x=>x!=='parallelPair')).filter(x=>GAME_IDS.includes(x)&&x!=='missingAlphabet'&&(x!=='parallelPair'||c.parallelPairRankingEnabled===true)));
  let profileUid=null,profileDb=null;
- if(c.playerNameSyncEnabled===true){
+ if(c.playerNameSyncEnabled===true||scopedMissingAlphabet){
   const profileApp=App.getApps().find(x=>x.name==='[DEFAULT]')||App.initializeApp(c.firebase);
   if(profileApp.options.projectId!=='manabi-game-land')throw err('production-project-rejected');
   const profileAuth=A.getAuth(profileApp);await A.setPersistence(profileAuth,A.browserLocalPersistence);await profileAuth.authStateReady();
@@ -105,6 +107,16 @@ export async function createProductionRankingClient(c,[App,A,F]){
 let pending;
 export function client(){
  if(!pending)pending=Promise.all(['app','auth','firestore'].map(n=>import('https://www.gstatic.com/firebasejs/13.1.0/firebase-'+n+'.js')))
-  .then(sdks=>createProductionRankingClient(window.MANABI_BACKEND_CONFIG,sdks)).catch(e=>{pending=null;throw e});
+  .then(sdks=>createProductionRankingClient({...window.MANABI_BACKEND_CONFIG,missingAlphabetRankingSyncEnabled:false},sdks)).catch(e=>{pending=null;throw e});
  return pending;
+}
+
+let missingAlphabetPending;
+export function missingAlphabetClient(){
+ const config=window.MANABI_BACKEND_CONFIG;
+ if(config?.missingAlphabetRankingSyncEnabled!==true||!config.gameIds?.includes('missingAlphabet')||!config.rankingGameIds?.includes('missingAlphabet'))return Promise.reject(err('missing-alphabet-ranking-disabled'));
+ if(!missingAlphabetPending)missingAlphabetPending=Promise.all(['app','auth','firestore'].map(n=>import('https://www.gstatic.com/firebasejs/13.1.0/firebase-'+n+'.js')))
+  .then(sdks=>createProductionRankingClient({...config,rankingSyncEnabled:false,playerNameSyncEnabled:false,rankingGameIds:['missingAlphabet']},sdks))
+  .catch(error=>{missingAlphabetPending=null;throw error});
+ return missingAlphabetPending;
 }

@@ -2,14 +2,15 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {createProductionRankingClient,bestForSharedRanking} from '../ranking-sync-api.js';
 
-const config={mode:'production',expectedProjectId:'manabi-game-land',rankingSyncEnabled:true,rankingGameIds:['keisan','distribution','keisanSummary','suichoku'],firebase:{projectId:'manabi-game-land'}};
+const config={mode:'production',expectedProjectId:'manabi-game-land',rankingSyncEnabled:true,rankingGameIds:['keisan','distribution','keisanSummary','suichoku','missingAlphabet'],firebase:{projectId:'manabi-game-land'}};
 const docs=new Map(),apps=[],authByName=new Map();
-const App={getApps:()=>apps,initializeApp:(options,name)=>{const app={name,options};apps.push(app);return app;}};
+const App={getApps:()=>apps,initializeApp:(options,name)=>{const app={name:name||'[DEFAULT]',options};apps.push(app);return app;}};
 const A={getAuth:app=>{if(!authByName.has(app.name))authByName.set(app.name,{currentUser:null,authStateReady:async()=>{}});return authByName.get(app.name);},setPersistence:async()=>{},browserLocalPersistence:{},signInAnonymously:async auth=>{auth.currentUser={uid:'student-a',isAnonymous:true};return {user:auth.currentUser};}};
 const F={
  getFirestore:()=>({}),
  doc:(db,...parts)=>({path:parts.join('/')}),
  collection:(db,...parts)=>({path:parts.join('/')}),
+ getDocFromServer:async ref=>({exists:()=>docs.has(ref.path),data:()=>structuredClone(docs.get(ref.path))}),
  runTransaction:async(db,fn)=>fn({get:async ref=>({exists:()=>docs.has(ref.path),data:()=>structuredClone(docs.get(ref.path))}),set:(ref,value)=>docs.set(ref.path,structuredClone(value))}),
  serverTimestamp:()=>({serverTimestamp:true}),
  orderBy:(field,direction)=>({field,direction}),limit:count=>({count}),
@@ -20,6 +21,28 @@ const sdk=[App,A,F];
 function profile(game,bestStreak,nickname='そら'){return {game,bestStreak,nickname,icon:'cat',frame:'plain',title:'計算名人',badge:'keisan:10'}}
 
 test('rejects a preview Firebase configuration',async()=>{await assert.rejects(createProductionRankingClient({...config,expectedProjectId:'manabi-game-landcheck',firebase:{projectId:'manabi-game-landcheck'}},sdk),/production-ranking-config-rejected/);});
+test('missing alphabet scoped mode can only read and write its own ranking while global sync stays off',async()=>{
+ docs.clear();authByName.clear();apps.length=0;
+ const scoped={...config,rankingSyncEnabled:false,playerNameSyncEnabled:false,missingAlphabetRankingSyncEnabled:true};
+ await assert.rejects(createProductionRankingClient({...scoped,rankingSyncEnabled:true},sdk),/global-ranking-sync-must-remain-disabled/);
+ docs.set('players/student-a',{nickname:'そら',rankingUid:'student-a'});
+ docs.set('productionRankings/v1/identityLinks/student-a',{uid:'student-a',profileUid:'student-a'});
+ const legacy={uid:'legacy-player',game:'keisan',nickname:'旧記録',bestStreak:31,icon:'cat',frame:'plain',title:null,badge:null};
+ docs.set('productionRankings/v1/games/keisan/players/legacy-player',legacy);
+ const a=await createProductionRankingClient(scoped,sdk);
+ await a.publishRanking(profile('missingAlphabet',20,'そら'));
+ const improved=await a.publishRanking(profile('missingAlphabet',24,'そら'));
+ const lower=await a.publishRanking(profile('missingAlphabet',18,'そら'));
+ assert.equal(improved.bestStreak,24);assert.equal(lower.bestStreak,24);
+ await assert.rejects(a.publishRanking(profile('keisan',99,'そら')),/invalid-ranking/);
+ await assert.rejects(a.rankings('keisan'),/invalid-ranking-game/);
+ assert.deepEqual(docs.get('productionRankings/v1/games/keisan/players/legacy-player'),legacy);
+ authByName.get('manabi-production-ranking-v1').currentUser={uid:'student-b',isAnonymous:true};
+ authByName.get('[DEFAULT]').currentUser={uid:'student-b',isAnonymous:true};
+ const b=await createProductionRankingClient(scoped,sdk),rows=await b.rankings('missingAlphabet');
+ assert.equal(rows.length,1);assert.equal(rows[0].uid,'student-a');assert.equal(rows[0].bestStreak,24);
+ assert.ok([...docs.keys()].filter(path=>path.includes('/games/')).every(path=>path.includes('/missingAlphabet/')||path.includes('/keisan/')));
+});
 test('uses a production-only path and shares sanitized rankings across identities',async()=>{
  docs.clear();authByName.clear();apps.length=0;
  const a=await createProductionRankingClient(config,sdk);
@@ -40,6 +63,20 @@ test('uses a production-only path and shares sanitized rankings across identitie
 test('regular Suichoku ranking never mixes its separate 120-second challenge records',()=>{
  assert.equal(bestForSharedRanking('suichoku',{best:8},{bests:{season:27},attemptBest:30}),8);
  assert.equal(bestForSharedRanking('keisan',{best:8},{bests:{season:27},attemptBest:30}),30);
+});
+test('missing alphabet combines practice and 120-second bests in one isolated shared row',async()=>{
+ docs.clear();authByName.clear();apps.length=0;
+ docs.set('players/student-a',{nickname:'そら',rankingUid:'student-a'});
+ docs.set('productionRankings/v1/identityLinks/student-a',{uid:'student-a',profileUid:'student-a'});
+ const a=await createProductionRankingClient({...config,rankingSyncEnabled:false,missingAlphabetRankingSyncEnabled:true},sdk);
+ const practice=bestForSharedRanking('missingAlphabet',{best:20},{bests:{},attemptBest:0});
+ await a.publishRanking(profile('missingAlphabet',practice,'そら'));
+ const challenge=bestForSharedRanking('missingAlphabet',{best:20},{bests:{season:22},attemptBest:24});
+ await a.publishRanking(profile('missingAlphabet',challenge,'そら'));
+ const rows=await a.rankings('missingAlphabet');
+ assert.equal(rows.length,1);assert.equal(rows[0].bestStreak,24);assert.equal(rows[0].game,'missingAlphabet');
+ assert.deepEqual(Object.keys(rows[0]).sort(),['uid','game','nickname','bestStreak','icon','frame','title','badge','updatedAt'].sort());
+ assert.ok([...docs.keys()].filter(path=>path.includes('/games/')).every(path=>path.endsWith('/games/missingAlphabet/players/student-a')));
 });
 test('keeps best score monotonic while allowing display metadata to change',async()=>{
  docs.clear();authByName.clear();apps.length=0;

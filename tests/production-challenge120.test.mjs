@@ -2,6 +2,19 @@ import '../challenge120-core.js';
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 const C=globalThis.ManabiChallenge120Core;
+
+test('production 120-second challenge can be enabled for missingAlphabet without changing the global switch',()=>{
+ const scoped={challenge120Enabled:false,challenge120GameIds:['missingAlphabet']};
+ assert.equal(C.highest.missingAlphabet,20);
+ assert.equal(C.enabledForProductionGame(scoped,'production','missingAlphabet'),true);
+ assert.equal(C.enabledForProductionGame(scoped,'production','suichoku'),false);
+ assert.equal(C.enabledForProductionGame({challenge120Enabled:false},'production','missingAlphabet'),false);
+ assert.equal(C.enabledForProductionGame({challenge120Enabled:true},'production','suichoku'),true);
+ assert.equal(C.enabledForProductionGame(scoped,'preview','missingAlphabet'),false);
+ assert.equal(C.enabledForProductionGame({challenge120Enabled:true},'production','missingAlphabet'),false);
+ assert.equal(C.enabledForProductionGame({...scoped,challenge120Enabled:true},'production','parallelPair'),true);
+});
+
 test('practice is unlimited until the title threshold, then challenge starts at the threshold',()=>{
  let s=C.fresh('keisan');
  for(let n=1;n<=20;n++){const token=C.issue(s,'p'+n),result=C.answer(s,token,true,n);assert.equal(result.accepted,true);s=result.state;}

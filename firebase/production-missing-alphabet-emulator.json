@@ -1,0 +1,10 @@
+{
+  "firestore": {
+    "rules": "production-missing-alphabet-candidate.rules"
+  },
+  "emulators": {
+    "firestore": {
+      "port": 8089
+    }
+  }
+}

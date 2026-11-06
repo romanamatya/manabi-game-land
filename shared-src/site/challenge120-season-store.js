@@ -1,6 +1,6 @@
 // Read/write only when the separate environment flag and verified readiness are enabled.
 export const CHALLENGE_PROTOCOL=2;
-export const CHALLENGE_GAMES=['keisan','pref-name','pref-place','alphabet','distribution','distribution2','exchangeAssociation','kotowaza','multiplicationProperties','shapeExpressions'];
+export const CHALLENGE_GAMES=['keisan','pref-name','pref-place','alphabet','missingAlphabet','distribution','distribution2','exchangeAssociation','kotowaza','multiplicationProperties','shapeExpressions'];
 export function createSeasonStore(F,db,base,{enabled=false,legacyRows=async()=>[]}={}){
  const ref=(c,id)=>F.doc(db,base+'/'+c,id),control=ref('challengeControl','current');
  const plain=x=>x?.toMillis?x.toMillis():Array.isArray(x)?x.map(plain):x&&typeof x==='object'?Object.fromEntries(Object.entries(x).map(([k,v])=>[k,plain(v)])):x;
@@ -8,3 +8,4 @@ export function createSeasonStore(F,db,base,{enabled=false,legacyRows=async()=>[
  async function switchAll(user,input){if(!enabled)throw Error('season-management-not-enabled');if(input?.confirm!==true||input.phrase!=='全ゲーム'||typeof input.reason!=='string'||input.reason.trim().length<2||input.reason.length>300)throw Error('season-confirmation-required');const before=await snapshot();if(!before.available||before.entries.length>1000)throw Error('challenge-verification-required');const rows=before.season?before.entries:await legacyRows();if(rows.length>1000)throw Error('backup-too-large');const backup=F.doc(F.collection(db,base+'/challengeSeasonBackups')),audit=F.doc(F.collection(db,base+'/challengeSeasonAudit')),season=crypto.randomUUID();return F.runTransaction(db,async tx=>{const old=await tx.get(control),verification=await tx.get(ref('challengeVerification','ready'));if((old.data()?.season||null)!==before.season||verification.data()?.enabled!==true)throw Error('season-changed-retry');const at=F.serverTimestamp();tx.set(backup,{actor:user.uid,at,protocol:2,durationSeconds:120,previous:old.exists()?old.data():null,rows,games:CHALLENGE_GAMES});tx.set(audit,{actor:user.uid,at,action:'switchAll120',season,backupId:backup.id,reason:input.reason});tx.set(control,{protocol:2,durationSeconds:120,season,games:CHALLENGE_GAMES,revision:(old.data()?.revision||0)+1,at,backupId:backup.id,auditId:audit.id});return {season,backupId:backup.id,games:CHALLENGE_GAMES};});}
  return {snapshot,switchAll};
 }
+

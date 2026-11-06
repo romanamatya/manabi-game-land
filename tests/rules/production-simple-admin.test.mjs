@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
 import {initializeTestEnvironment,assertFails,assertSucceeds} from '@firebase/rules-unit-testing';
 import * as F from 'firebase/firestore';
-import {GAME_IDS} from '../../shared-src/site/management-model.js';
+import {BATCH_GAME_IDS} from '../../shared-src/site/management-model.js';
 import {createManagementStore} from '../../shared-src/site/management-store.js';
 import {createFirestoreStore} from '../../shared-src/site/firebase-store.js';
 
@@ -84,7 +84,7 @@ serialTest('admin can schedule and manually end a multi-game campaign with one b
 });
 
 serialTest('admin can atomically change all game visibility with shared audit and backup under Rules access limits',async()=>{
- const adminDb=admin().firestore(),games=[...GAME_IDS];
+ const adminDb=admin().firestore(),games=[...BATCH_GAME_IDS];
  await env.withSecurityRulesDisabled(async c=>{
   const db=c.firestore();
   await F.setDoc(F.doc(db,'productionAdmin/v1/gameSettings/keisan'),{status:'hidden',campaign:{id:'keep-campaign',enabled:true,startAt:10,endAt:20}});
@@ -95,7 +95,7 @@ serialTest('admin can atomically change all game visibility with shared audit an
  for(const game of games){const saved=(await assertSucceeds(F.getDoc(F.doc(adminDb,'productionAdmin/v1/gameSettings/'+game)))).data();assert.equal(saved.status,'published');assert.equal(saved.lastAudit,audit.id);assert.equal(saved.lastBackup,backup.id);}
  const kept=(await F.getDoc(F.doc(adminDb,'productionAdmin/v1/gameSettings/keisan'))).data();assert.deepEqual(kept.campaign,{id:'keep-campaign',enabled:true,startAt:10,endAt:20});
  const auditData=(await F.getDoc(audit)).data(),backupData=(await F.getDoc(backup)).data();
- assert.equal(auditData.action,'visibilityBatch');assert.equal(auditData.reason,'管理室からの操作');assert.equal(auditData.targets.length,GAME_IDS.length);
+ assert.equal(auditData.action,'visibilityBatch');assert.equal(auditData.reason,'管理室からの操作');assert.equal(auditData.targets.length,BATCH_GAME_IDS.length);
  assert.equal(backupData.beforeByGame.keisan.status,'hidden');assert.equal(backupData.beforeByGame.alphabet.status,'preparing');assert.equal(backupData.beforeByGame['pref-name'],null);
  const badAudit='atomic-reject-audit',badBackup='atomic-reject-backup';
  await assertFails(writeVisibilityBatch(adminDb,games,'preparing',{mismatchGame:games.at(-1),auditId:badAudit,backupId:badBackup}));

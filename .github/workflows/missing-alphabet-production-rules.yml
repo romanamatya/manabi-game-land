@@ -1,0 +1,41 @@
+name: Missing Alphabet Production Rules Emulator
+
+on:
+  pull_request:
+    paths:
+      - 'firebase/production-console-backup-20261104.rules'
+      - 'firebase/production-missing-alphabet-candidate.rules'
+      - 'firebase/production-missing-alphabet-emulator.json'
+      - 'tests/rules/production-missing-alphabet-candidate.test.mjs'
+      - '.github/workflows/missing-alphabet-production-rules.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  production-rules-diff:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - run: npm ci --no-audit --no-fund
+      - name: Run Emulator tests against the exact candidate Rules file
+        run: npx firebase-tools@13.35.1 emulators:exec --project demo-missing-alphabet-rules --only firestore --config firebase/production-missing-alphabet-emulator.json "node --test tests/rules/production-missing-alphabet-candidate.test.mjs"
+      - name: Re-run existing production admin Rules tests
+        run: |
+          npm run test:rules:admin-stage2
+          npm run test:rules:simple-admin
+      - name: Run missing alphabet and existing ranking tests
+        run: node --test tests/missing-alphabet.test.mjs tests/missing-alphabet-integration.test.mjs tests/production-ranking-api.test.mjs
+      - name: Verify preview and blocked production build outputs
+        run: |
+          node tools/build-site.mjs preview
+          node tools/build-site.mjs production
+          node tools/check-site.mjs
