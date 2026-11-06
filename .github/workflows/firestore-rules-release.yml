@@ -103,6 +103,16 @@ jobs:
             --only firestore --config firebase/rules-release-emulator.json \
             "node --test tools/firestore-rules-release-emulator.mjs"
 
+      - name: Check the published production baseline in Emulator
+        if: github.event_name == 'pull_request'
+        env:
+          RULES_PROFILE: production
+          RULES_TEST_SOURCE: firebase/production-release-baseline.rules
+        run: |
+          ./node_modules/.bin/firebase emulators:exec --project demo-manabi-rules-release \
+            --only firestore --config firebase/rules-release-emulator.json \
+            "node --test tools/firestore-rules-release-emulator.mjs"
+
   compare:
     needs: [select, test]
     if: >-

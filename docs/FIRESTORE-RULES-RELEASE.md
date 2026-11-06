@@ -2,6 +2,12 @@
 
 この導入段階で本番 `manabi-game-land` に対して実行できるのは `inspect` と `plan` です。実際の公開と復旧は確認用 `manabi-game-landcheck` のみに限定しています。
 
+## 本番の照合基準
+
+`firebase/production-release-baseline.rules` は、2026-11-06（日本時間）に手動公開したと報告されたプロフィール保護版。公開時の写しと検証済みファイルの内容を照合済み。SHA-256 は `cc25070db4219fbf7881ba3aa8c4c58f062f31b493b41c250e38ffa392ec0dfb`。
+
+本番 Rules API での有効版の確認は初回の読み取り認証設定後に実施する。不一致なら公開候補の作成や公開に進む前に、差分と公開経緯を確認する。基準ファイルを公開候補として自動採用しない。
+
 ## 初回設定
 
 1. GitHub の Settings → Environments で `firebase-rules-preview-read` と `firebase-rules-preview-write` を作成し、対象ブランチを `main` に限定する。書き込み側に Required reviewers を設定する。実行者と承認者が同一の場合は Prevent self-review をオフにする。別担当者が承認する運用ならオンにする。公開リポジトリでは利用できるが、実際の設定と承認者は管理画面で確認する。
