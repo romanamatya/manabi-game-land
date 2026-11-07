@@ -55,13 +55,16 @@ test('answer order is shuffled and balanced across positions',()=>{
  assert.ok(Math.max(...counts)-Math.min(...counts)<=1);
 });
 
-test('preview game wires storage adapter before economy runtime and keeps production game isolated',()=>{
+test('both environments load the shared wallet in dependency order',()=>{
  const preview=readFileSync(new URL('../preview/games/exchangeAssociation.html',import.meta.url),'utf8');
  const production=readFileSync(new URL('../games/exchangeAssociation.html',import.meta.url),'utf8');
- assert.ok(preview.indexOf('storage-adapters.js')<preview.indexOf('economy.js'));
- assert.ok(production.includes('math-production-points.js'));
- assert.ok(!production.includes('economy.js?v='));
  for(const page of [preview,production]){
+  const scripts = [...page.matchAll(/<script\b[^>]*src="([^"?]+)(?:\?[^"]*)?"/g)]
+    .map(match => match[1].split('/').at(-1));
+  const walletScripts = ['economy-core.js', 'storage-adapters.js', 'economy.js'];
+  assert.deepEqual(scripts.filter(file => walletScripts.includes(file)), walletScripts);
+  assert.ok(scripts.indexOf('economy.js') < scripts.indexOf('math-new-game.js'));
+  assert.ok(!scripts.includes('math-production-points.js'));
   assert.match(page,/\.titles #tower li\{font-size:14px;line-height:1\.6\}/);
   assert.match(page,/\.titles #tower \.mq-badge\{--badge-size:32px;width:32px;height:32px\}/);
   assert.match(page,/\.titles li\{padding:3px\}/);

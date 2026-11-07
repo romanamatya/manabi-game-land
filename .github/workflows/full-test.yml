@@ -1,0 +1,33 @@
+name: Full test suite
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  full-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - name: Verify committed preview matches generated output
+        run: |
+          npm run build:preview
+          git diff --exit-code -- preview
+          untracked="$(git ls-files --others --exclude-standard -- preview)"
+          if [ -n "$untracked" ]; then
+            printf 'Uncommitted generated preview files:\n%s\n' "$untracked"
+            exit 1
+          fi
+      - run: npm test
