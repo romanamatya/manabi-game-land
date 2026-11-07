@@ -88,9 +88,20 @@ function pointFallback(window, navigator, mode, storage) {
   await transaction();
   return result;
  }
- function locked(work, receipt) {
+ async function nativeLock(work) {
+  let entered = false;
+  try {
+   return await navigator.locks.request(lockName, () => { entered = true; return work(); });
+  } catch (error) {
+   if (!entered) nativeUnavailable = true;
+   throw error;
+  }
+ }
+ async function locked(work, receipt) {
   const run = () => persist(work, receipt);
-  return navigator?.locks?.request ? window.navigator.locks.request(lockName, run) : run();
+  if (nativeUnavailable || !navigator?.locks?.request) return run();
+  try { return await nativeLock(run); }
+  catch (error) { if (nativeUnavailable) return run(); throw error; }
  }
  function queue(namespace) {
   const prefix = 'mgl_point_pending:' + namespace + ':';

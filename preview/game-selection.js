@@ -1,4 +1,4 @@
-import {bindGameAvailability} from './game-selection-model.js?v=19240943f09c';
+import {bindGameAvailability} from './game-selection-model.js?v=060cc4ddf53c';
 const initialized=new WeakSet();
 function addMissingAlphabetCard(){
  const config=window.MANABI_BACKEND_CONFIG;
