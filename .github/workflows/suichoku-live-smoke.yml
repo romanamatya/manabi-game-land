@@ -10,6 +10,9 @@ on:
       - 'parallel.css'
       - 'parallel-game.js'
       - 'tests/game-ui-layout.spec.mjs'
+      - 'tests/points-storage.spec.mjs'
+      - 'storage-adapters.js'
+      - 'math-concepts-production-points.js'
       - 'tests/celebration-effects.test.mjs'
       - 'games/suichoku.html'
       - 'suichoku-game.js'
@@ -59,6 +62,9 @@ on:
       - 'parallel.css'
       - 'parallel-game.js'
       - 'tests/game-ui-layout.spec.mjs'
+      - 'tests/points-storage.spec.mjs'
+      - 'storage-adapters.js'
+      - 'math-concepts-production-points.js'
       - 'tests/celebration-effects.test.mjs'
       - 'games/suichoku.html'
       - 'suichoku-game.js'
@@ -120,3 +126,12 @@ jobs:
         if: github.event_name == 'pull_request'
         run: node tools/suichoku-smoke-server.mjs > /tmp/suichoku-smoke.log 2>&1 &
       - run: npx playwright test tests/suichoku-live.spec.mjs tests/missing-alphabet-live.spec.mjs tests/game-ui-layout.spec.mjs
+
+      - name: Check shared point storage with and without Web Locks
+        if: github.event_name == 'pull_request'
+        run: npx playwright test tests/points-storage.spec.mjs --browser chromium
+      - name: Check point storage in WebKit with a tablet viewport
+        if: github.event_name == 'pull_request'
+        run: |
+          npx playwright install --with-deps webkit
+          npx playwright test tests/points-storage.spec.mjs --browser webkit
