@@ -2,6 +2,7 @@ name: Firestore Rules release rehearsal
 
 on:
   pull_request:
+    types: [opened, synchronize, reopened, labeled]
     paths:
       - '.github/workflows/firestore-rules-release.yml'
       - 'firebase/*release*.rules'
@@ -30,7 +31,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: firestore-rules-${{ github.event_name == 'workflow_dispatch' && inputs.target || github.ref }}
+  group: firestore-rules-${{ github.event_name == 'workflow_dispatch' && inputs.target || (github.event.action == 'labeled' && github.event.label.name == 'preview-rules-rehearsal' && 'preview') || github.ref }}
   cancel-in-progress: false
 
 jobs:
@@ -149,7 +150,10 @@ jobs:
         run: |
           set -euo pipefail
           mode=plan
-          if [[ "$OPERATION" == inspect ]]; then mode=inspect; fi
+          if [[ "$OPERATION" == inspect ]]; then
+            mode=inspect
+            if [[ "$PROJECT" == manabi-game-landcheck ]]; then BASELINE=; fi
+          fi
           node tools/firestore-rules-release.mjs "$mode" "$PROJECT" "$BASELINE" "$CANDIDATE" > rules-backup.json
           printf 'plan=%s\n' "$(cat rules-backup.json)" >> "$GITHUB_OUTPUT"
           printf 'Commit: `%s`\n\n```json\n' "$GITHUB_SHA" >> "$GITHUB_STEP_SUMMARY"
@@ -197,3 +201,47 @@ jobs:
           printf '```json\n' >> "$GITHUB_STEP_SUMMARY"
           cat rules-result.json >> "$GITHUB_STEP_SUMMARY"
           printf '```\n' >> "$GITHUB_STEP_SUMMARY"
+
+
+  rehearse-preview:
+    needs: test
+    if: >-
+      ${{ github.event_name == 'pull_request' && github.event.action == 'labeled'
+          && github.event.label.name == 'preview-rules-rehearsal'
+          && github.event.pull_request.number == 45 && github.repository_id == '1430974446'
+          && github.event.pull_request.head.repo.full_name == github.repository
+          && github.head_ref == 'infra/firestore-rules-release-rehearsal' && github.base_ref == 'main' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    environment: firebase-rules-preview-write
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Install the local Emulator before requesting credentials
+        run: ./node_modules/.bin/firebase setup:emulators:firestore
+      - id: auth
+        uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3
+        with:
+          workload_identity_provider: ${{ vars.RULES_WIF_PROVIDER }}
+          service_account: ${{ vars.RULES_SERVICE_ACCOUNT }}
+          token_format: access_token
+          access_token_lifetime: 300s
+          create_credentials_file: false
+      - name: Compare, publish a comment-only copy, and restore the same Ruleset
+        env:
+          RULES_ACCESS_TOKEN: ${{ steps.auth.outputs.access_token }}
+        run: |
+          set -euo pipefail
+          node tools/firestore-rules-release.mjs rehearse manabi-game-landcheck | tee -a "$GITHUB_STEP_SUMMARY"

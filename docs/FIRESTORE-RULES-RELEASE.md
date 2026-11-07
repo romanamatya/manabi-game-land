@@ -6,7 +6,16 @@
 
 `firebase/production-release-baseline.rules` は、2026-11-06（日本時間）に手動公開したと報告されたプロフィール保護版。公開時の写しと検証済みファイルの内容を照合済み。SHA-256 は `cc25070db4219fbf7881ba3aa8c4c58f062f31b493b41c250e38ffa392ec0dfb`。
 
-本番 Rules API での有効版の確認は初回の読み取り認証設定後に実施する。不一致なら公開候補の作成や公開に進む前に、差分と公開経緯を確認する。基準ファイルを公開候補として自動採用しない。
+本番 Rules API での有効版の確認は初回の読み取り認証設定後に `production / inspect` で実施する。不一致なら公開候補の作成や公開に進む前に、差分と公開経緯を確認する。基準ファイルを公開候補として自動採用しない。
+
+## PR #45 の確認用リハーサル
+
+初回は既存の確認用 Firestore に、現在の Rules からコメントを1行だけ足したコピーを公開し、元の Ruleset に戻す。現行全文は WIF 認証後に API から取得し、公開成果物には含めない。作業用の全文は非公開の一時ファイルに保存し、Emulator 終了後に削除する。初回検証のために Console から全文を転記する必要はない。
+
+1. 確認用 `manabi-game-landcheck` に書き込み用 WIF を用意する。リポジトリ ID と所有者 ID に加え、初回だけ `ref == 'refs/pull/45/merge'`、`workflow_ref == 'romanamatya/manabi-game-land/.github/workflows/firestore-rules-release.yml@refs/pull/45/merge'`、`environment == 'firebase-rules-preview-write'`、`event_name == 'pull_request'` を条件にする。GitHub Environment の選択ブランチ規則にも `refs/pull/45/merge` を追加し、承認者を設定する。
+2. GitHub Environment の変数を設定してから、PR #45 に `preview-rules-rehearsal` ラベルを付ける。該当ラベルの追加イベントでだけ実行し、通常の PR CI からは書き込まない。Actions の `rehearse-preview` ジョブで対象コミットを確認し、承認する。
+3. 同じ実行で、現行とコメントだけの候補を Emulator で検証し、現行との差分がコメント1行であることを担保して公開する。続いて、公開した Ruleset がそのまま有効であることを照合し、元の Ruleset に復旧する。実行概要の `compare`・`deployed`・`restored` を確認する。途中でエラーが出た場合は `compare` にある旧 Ruleset ID を控え、有効版を照合するまで再実行しない。
+4. マージ後は PR 専用の信頼条件と Environment の許可規則を外し、確認用の通常操作は `main` から手動実行する。本番用の権限は確認用の結果をレビューした後に別途設定する。
 
 ## 初回設定
 

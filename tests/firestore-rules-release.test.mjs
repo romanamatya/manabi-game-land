@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { createRulesClient, digest, publishVerified } from '../tools/firestore-rules-release.mjs';
+import { createRulesClient, digest, publishVerified, rehearsePreview } from '../tools/firestore-rules-release.mjs';
 
 const project = 'manabi-game-landcheck';
 const root = `projects/${project}`;
@@ -75,4 +75,39 @@ test('reports verification failure if the update was not observed', async () => 
   const { client } = fixture({ ignorePatch: true });
   const backup = await client.active();
   await assert.rejects(publishVerified({ client, backup, candidate: newSource, wait: async () => {} }), /verification failed/);
+});
+
+
+test('preview rehearsal tests the original and comment-only copy, then restores the original release', async () => {
+  const { client, calls } = fixture();
+  const phases = [];
+  const validated = [];
+  await rehearsePreview({
+    client,
+    validate: async source => { validated.push(source); },
+    record: entry => phases.push(entry.phase),
+  });
+  assert.deepEqual(phases, ['compare', 'deployed', 'restored']);
+  assert.equal(validated[0], oldSource);
+  assert.match(validated[1].slice(oldSource.length), /^\n\/\/ [^\n]+\n$/);
+  assert.equal((await client.active()).ruleset, oldName);
+  assert.deepEqual(calls.filter(([method]) => method !== 'GET').map(([method]) => method),
+    ['POST', 'PATCH', 'PATCH']);
+});
+
+test('a rejected preview candidate cannot write to the live Rules API', async () => {
+  const { client, calls } = fixture();
+  await assert.rejects(rehearsePreview({
+    client,
+    validate: async source => { if (source !== oldSource) throw new Error('Emulator rejected candidate'); },
+  }), /Emulator rejected candidate/);
+  assert.ok(calls.every(([method]) => method === 'GET'));
+});
+
+test('the production REST client rejects mutations before any HTTP request', async () => {
+  const client = createRulesClient('manabi-game-land', 'fixture-token', () => {
+    assert.fail('Production mutation reached HTTP');
+  });
+  await assert.rejects(client.create(oldSource), /Production writes are disabled/);
+  await assert.rejects(client.publish('projects/manabi-game-land/rulesets/old'), /Production writes are disabled/);
 });

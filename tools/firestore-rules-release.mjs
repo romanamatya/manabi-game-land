@@ -1,7 +1,15 @@
 import { createHash } from 'node:crypto';
-import { readFile, writeFile } from 'node:fs/promises';
+import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { join } from 'node:path';
+import { tmpdir } from 'node:os';
+import { execFile } from 'node:child_process';
+import { promisify } from 'node:util';
 import { pathToFileURL } from 'node:url';
 import { setTimeout as delay } from 'node:timers/promises';
+
+const previewProject = 'manabi-game-landcheck';
+const rehearsalMarker = '\n// manabi-preview-rules-rehearsal\n';
+const exec = promisify(execFile);
 
 export const digest = source =>
   createHash('sha256').update(source.replace(/\r\n/g, '\n')).digest('hex');
@@ -47,7 +55,12 @@ export function createRulesClient(project, token, request = fetch) {
     return { ...metadata, updatedAt: current.updateTime ?? null };
   }
 
+  function assertPreviewWrite() {
+    if (project !== previewProject) throw new Error('Production writes are disabled');
+  }
+
   async function create(source) {
+    assertPreviewWrite();
     const result = await call(`${root}/rulesets`, 'POST', {
       source: { files: [{ name: 'firestore.rules', content: source }] },
     });
@@ -56,6 +69,7 @@ export function createRulesClient(project, token, request = fetch) {
   }
 
   async function publish(name) {
+    assertPreviewWrite();
     if (!validName(name)) throw new Error('Unexpected publish target');
     await call(release, 'PATCH', {
       release: { name: release, rulesetName: name },
@@ -92,14 +106,65 @@ export async function publishVerified({ client, backup, candidate, targetRuleset
   throw new Error('Release was updated but verification failed; inspect before retrying');
 }
 
+export async function rehearsePreview({ client, validate, record = () => {} }) {
+  const backup = await client.active();
+  const { source, sha256 } = await client.readRuleset(backup.ruleset);
+  if (sha256 !== backup.sha256 || digest(source) !== backup.sha256) {
+    throw new Error('Preview backup content mismatch');
+  }
+  if (source.replace(/\r\n/g, '\n').endsWith(rehearsalMarker)) {
+    throw new Error('The previous rehearsal copy is still active; inspect its backup before proceeding');
+  }
+
+  const candidate = source + rehearsalMarker;
+  record({ phase: 'compare', backup, candidateSha256: digest(candidate) });
+  await validate(source);
+  await validate(candidate);
+  const deployed = await publishVerified({ client, backup, candidate });
+  record({ phase: 'deployed', deployed });
+  const restored = await publishVerified({
+    client, backup: deployed, candidate: source, targetRuleset: backup.ruleset,
+  });
+  record({ phase: 'restored', restored });
+}
+
+async function validateWithEmulator(source) {
+  const directory = await mkdtemp(join(tmpdir(), 'manabi-rules-rehearsal-'));
+  try {
+    const file = join(directory, 'firestore.rules');
+    await writeFile(file, source, { mode: 0o600 });
+    // Keep live credentials and OIDC variables out of the Emulator process.
+    const env = Object.fromEntries(
+      ['PATH', 'HOME', 'JAVA_HOME', 'LANG', 'TMPDIR', 'CI']
+        .filter(key => process.env[key] !== undefined).map(key => [key, process.env[key]]),
+    );
+    await exec('./node_modules/.bin/firebase', [
+      'emulators:exec', '--project', 'demo-manabi-rules-release', '--only', 'firestore',
+      '--config', 'firebase/rules-release-emulator.json', 'node --test tools/firestore-rules-release-emulator.mjs',
+    ], { env: { ...env, RULES_PROFILE: 'preview', RULES_TEST_SOURCE: file }, timeout: 60_000 });
+  } catch {
+    // Compiler errors can contain lines of the fetched rules.
+    throw new Error('Preview Rules did not pass the private Emulator check; nothing was published');
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+}
+
 async function main() {
   const [mode, project, baselinePath, candidatePath] = process.argv.slice(2);
-  if (!['inspect', 'plan', 'deploy', 'rollback'].includes(mode)) throw new Error('Unknown mode');
-  const writing = mode === 'deploy' || mode === 'rollback';
-  if (writing && project !== 'manabi-game-landcheck') throw new Error('Production writes are disabled');
+  if (!['inspect', 'plan', 'deploy', 'rollback', 'rehearse'].includes(mode)) throw new Error('Unknown mode');
+  const writing = mode === 'deploy' || mode === 'rollback' || mode === 'rehearse';
+  if (writing && project !== previewProject) throw new Error('Production writes are disabled');
   const client = createRulesClient(project, process.env.RULES_ACCESS_TOKEN);
+  if (mode === 'rehearse') {
+    await rehearsePreview({ client, validate: validateWithEmulator, record: entry => console.log(JSON.stringify(entry)) });
+    return;
+  }
   const current = await client.active();
   if (mode === 'inspect') {
+    if (baselinePath && digest(await readFile(baselinePath, 'utf8')) !== current.sha256) {
+      throw new Error('Live Rules differ from the reviewed baseline');
+    }
     if (process.env.RULES_BACKUP_PATH) {
       const backup = await client.readRuleset(current.ruleset);
       if (backup.sha256 !== current.sha256) throw new Error('Backup content mismatch');

@@ -9,4 +9,123 @@ function create(storage,core,mode){if(!['preview','production'].includes(mode))t
  function snapshot(){if(mode==='production')recover();const saved=read(key,null);if(saved){core.checkWallet(saved);if(mode==='production'&&oldJapanese&&!saved.legacyJapaneseImported)throw Error('legacy-japanese-wallet-review-required');return saved;}return structuredClone(initial);}
  function commit(next){core.checkWallet(next);const bounded={...next,claimed:tailClaims(next.claimed)};if(mode==='preview'){storage.setItem(key,JSON.stringify(bounded));return bounded;}recover();const previous=snapshot(),raw=storage.getItem('mgl_points'),japaneseRaw=storage.getItem('mgl_kotowaza_points_v1'),japaneseCurrent=read('mgl_kotowaza_points_v1',null);if(num(japaneseCurrent?.balance)!==num(previous.legacyMirror?.japanese??previous.balances.japanese))throw Error('legacy-japanese-wallet-review-required');const expected=num(previous.legacyMirror?.math??previous.balances.math);if(num(raw)!==expected)throw Error('legacy-wallet-review-required');const recent=[...new Set([...tailClaims(japaneseCurrent?.claims),...tailClaims(bounded.claimed)])].slice(-CLAIM_LIMIT),nextJapanese=JSON.stringify({...japaneseCurrent,version:1,balance:bounded.balances.japanese,date:bounded.daily.date,used:bounded.daily.games.kotowaza||0,claims:recent});const value={...bounded,legacyJapaneseImported:true,legacyMirror:{math:bounded.balances.math,japanese:bounded.balances.japanese}},nextWallet=JSON.stringify(value);if(japaneseRaw!==nextJapanese)storage.setItem('mgl_kotowaza_points_v1',nextJapanese);const pending={beforeWallet:storage.getItem(key),beforeMath:raw,nextWallet,nextMath:String(value.balances.math),beforeJapanese:nextJapanese,nextJapanese};storage.setItem(journal,JSON.stringify(pending));storage.setItem(key,pending.nextWallet);storage.setItem('mgl_points',pending.nextMath);storage.setItem('mgl_kotowaza_points_v1',pending.nextJapanese);storage.removeItem(journal);if(!storage.getItem(backup)){const rawBackup={...original};rawBackup.mgl_kotowaza_points_v1=nextJapanese;try{storage.setItem(backup,JSON.stringify({version:2,source:'production-legacy-local',createdAt:Date.now(),raw:rawBackup}))}catch{}}return value;}
  return {mode,snapshot,commit,legacyTotals:()=>({...totals}),original:()=>({...original})};}
-return {create};});
+function pointFallback(window, navigator, mode, storage) {
+ const disk = window.ManabiPointStorage || storage;
+ const marker = 'mgl_point_fallback_v1';
+ const lockName = 'manabi-' + mode + '-economy-v1';
+ let database, nativeUnavailable = false;
+ function use() {
+  if (nativeUnavailable || !navigator?.locks?.request) return true;
+  try { return disk.getItem(marker) === '1'; } catch { return false; }
+ }
+ function open() {
+  if (!database) database = new Promise((resolve, reject) => {
+   if (!window.indexedDB) { reject(Error('point-storage-unavailable')); return; }
+   const request = window.indexedDB.open('manabi-points-v1:' + (disk.scope ?? mode), 1);
+   request.onupgradeneeded = () => request.result.createObjectStore('ledger');
+   request.onerror = () => reject(request.error);
+   request.onsuccess = () => {
+    const db = request.result;
+    db.onversionchange = () => { db.close(); database = undefined; };
+    resolve(db);
+   };
+  }).catch(error => { database = undefined; throw error; });
+  return database;
+ }
+ async function transaction(work) {
+  const db = await open();
+  return new Promise((resolve, reject) => {
+   const tx = db.transaction('ledger', 'readwrite');
+   const ledger = tx.objectStore('ledger');
+   let result, failure;
+   const run = callback => {
+    try { callback(); } catch (error) { failure = error; tx.abort(); }
+   };
+   tx.oncomplete = () => resolve(result);
+   tx.onabort = () => reject(failure || tx.error || Error('point-storage-aborted'));
+   const projection = ledger.get('projection');
+   projection.onsuccess = () => run(() => {
+    // A committed IDB receipt and its localStorage projection are inseparable.
+    // If a tab closed during projection, each entry is either before or after.
+    const entries = projection.result || [];
+    for (const { key, before, after } of entries) {
+     if (![before, after].includes(disk.getItem(key))) throw Error('legacy-wallet-review-required');
+    }
+    for (const { key, after } of entries) {
+     if (disk.getItem(key) === after) continue;
+     if (after === null) disk.removeItem(key);
+     else disk.setItem(key, after);
+    }
+    if (entries.length) ledger.delete('projection');
+    work?.(ledger, run, value => { result = value; });
+   });
+  });
+ }
+ async function persist(work, receipt) {
+  await open();
+  if (disk.getItem(marker) !== '1') disk.setItem(marker, '1');
+  const update = (ledger, run, done) => {
+   function stage() {
+    const changes = new Map();
+    const overlay = {
+     getItem: key => changes.has(key) ? changes.get(key) : disk.getItem(key),
+     setItem: (key, value) => changes.set(key, String(value)),
+     removeItem: key => changes.set(key, null),
+    };
+    done(work(overlay));
+    const entries = [...changes].map(([key, after]) => ({ key, before: disk.getItem(key), after }))
+     .filter(entry => entry.before !== entry.after);
+    if (entries.length) ledger.put(entries, 'projection');
+    if (receipt) ledger.put(1, 'answer:' + receipt);
+   }
+   if (!receipt) stage();
+   else {
+    const claim = ledger.get('answer:' + receipt);
+    claim.onsuccess = () => run(() => { if (!claim.result) stage(); });
+   }
+  };
+  const result = await transaction(update);
+  await transaction();
+  return result;
+ }
+ async function nativeLock(work) {
+  let entered = false;
+  try {
+   return await navigator.locks.request(lockName, () => { entered = true; return work(); });
+  } catch (error) {
+   if (!entered) nativeUnavailable = true;
+   throw error;
+  }
+ }
+ async function locked(work, receipt) {
+  const run = () => persist(work, receipt);
+  if (nativeUnavailable || !navigator?.locks?.request) return run();
+  try { return await nativeLock(run); }
+  catch (error) { if (nativeUnavailable) return run(); throw error; }
+ }
+ function queue(namespace) {
+  const prefix = 'mgl_point_pending:' + namespace + ':';
+  const sessionKey = key => 'manabi_point_pending:' + (disk.scope ?? mode) + ':' + key;
+  const sessions = () => Object.keys(window.sessionStorage || {})
+   .filter(key => key.startsWith(sessionKey(prefix)));
+  return {
+   add(item) {
+    const key = prefix + item.id;
+    try { if (disk.getItem(key) === null) disk.setItem(key, JSON.stringify(item)); }
+    catch { window.sessionStorage.setItem(sessionKey(key), JSON.stringify(item)); }
+   },
+   list() {
+    let saved = [], backup = [];
+    try { saved = (disk.keys?.(prefix) || []).map(key => disk.getItem(key)); } catch {}
+    try { backup = sessions().map(key => window.sessionStorage.getItem(key)); } catch {}
+    return [...saved, ...backup].filter(Boolean).map(raw => JSON.parse(raw));
+   },
+   remove(id) {
+    disk.removeItem(prefix + id);
+    window.sessionStorage?.removeItem(sessionKey(prefix + id));
+   },
+  };
+ }
+ return { use, locked, nativeLock, queue };
+}
+return {create,pointFallback};});

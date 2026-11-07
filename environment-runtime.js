@@ -14,6 +14,15 @@
  if(preview&&!adminTest&&!syncTest&&!safeGet('localPlayerId'))safeSet('localPlayerId',crypto.randomUUID());
  window.manabiStorage={getItem:safeGet,setItem:(key,value)=>{safeSet(key,value);if(['mgl_profile','mgl_nickname','mgl_best','mgl_pref-name','mgl_pref-place','mgl_alphabet','mgl_kotowaza','mgl_distribution','mgl_distribution2','mgl_exchangeAssociation','mgl_multiplicationProperties','mgl_shapeExpressions'].includes(key))try{capture()}catch{}},removeItem:safeRemove};
 
+ // Point projections must reach shared disk storage, not a tab-only shadow copy.
+ window.ManabiPointStorage={
+  scope:storagePrefix,
+  getItem:key=>localStorage.getItem(storagePrefix+key),
+  setItem(key,value){if(!accessWritable)throw Error('player-access-unavailable');localStorage.setItem(storagePrefix+key,value);memoryFallback.delete(key);fallbackKeys.delete(key);try{sessionStorage.removeItem(sessionPrefix+key)}catch{}window.ManabiStorageWarning=fallbackKeys.size>0},
+  removeItem(key){if(!accessWritable)throw Error('player-access-unavailable');localStorage.removeItem(storagePrefix+key);memoryFallback.delete(key);fallbackKeys.delete(key);try{sessionStorage.removeItem(sessionPrefix+key)}catch{}window.ManabiStorageWarning=fallbackKeys.size>0},
+  keys(prefix){return Object.keys(localStorage).filter(key=>key.startsWith(storagePrefix+prefix)).map(key=>key.slice(storagePrefix.length))}
+ };
+
  const nickname=window.manabiStorage.getItem('mgl_nickname')||'';
  const registered=nickname.trim().length>0&&nickname.length<=12&&!/[<>\n\r]/.test(nickname);
  const isHome=location.pathname==='/'||location.pathname.endsWith('/index.html');

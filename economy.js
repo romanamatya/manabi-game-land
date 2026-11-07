@@ -3,6 +3,8 @@
 const core=window.ManabiEconomyCore,storage=window.manabiStorage;if(!core||!storage)return;
 const testing=new URL(location.href).searchParams.has('adminTest'),preview=window.MANABI_ENV?.preview===true;
 const mode=preview?'preview':'production',localStore=window.ManabiStorageAdapters.create(storage,core,mode);
+const pointFallback=window.ManabiStorageAdapters.pointFallback(window,navigator,mode,storage);
+const durableQueue=window.ManabiPointStorage&&pointFallback.queue('economy');
 const key='mgl_economy_v1',outboxKey='mgl_economy_outbox_v1',sessionOutboxKey='mgl_economy_outbox_v1';const CLAIM_LIMIT=128,memoryOutbox=new Map();let readyPromise=null,api=null,flushing=false,flushRequested=false,lastError='',backupPromise=null;
 const accessReady=()=>window.MANABI_BACKEND_CONFIG?.accountAccessEnabled!==true||window.ManabiPlayerAccess?.canPlay?.()===true;
 const read=(k,fallback)=>{try{return JSON.parse(storage.getItem(k)||'null')??fallback}catch{return fallback}};
@@ -12,32 +14,98 @@ function storedLegacy(){return read('mgl_economy_legacy_backup_v1',{}).totals||l
 function snapshot(){return localStore.snapshot()}
 function notify(){renderBalance();window.dispatchEvent(new Event('manabi-economy-change'))}
 function accept(result){result.wallet=localStore.commit({...result.wallet,claimed:(result.wallet.claimed||[]).slice(-CLAIM_LIMIT)});lastError='';notify();return result}
-function localLock(fn){return navigator.locks?navigator.locks.request('manabi-'+mode+'-economy-v1',fn):Promise.reject(Error('cross-tab-lock-required'))}
+const localLock=pointFallback.nativeLock;
 async function ready(){if(api)return api;const config=window.MANABI_BACKEND_CONFIG;if(!config?.firebase?.projectId)throw Error('campaign-config-unavailable');if(!window.ManabiFirebaseSession?.open)throw Error('firebase-session-unavailable');api=await window.ManabiFirebaseSession.open(config.firebase);return api}
 const campaignCache=new Map();
 async function campaignPolicy(game,at){const config=window.MANABI_BACKEND_CONFIG;if(config?.campaignsEnabled!==true||!config.gameIds?.includes(game))return {multiplier:1,cap:50};try{const {F,db}=await ready(),cached=campaignCache.get(game);let setting=cached?.until>Date.now()?cached.value:null;if(!setting){const snap=await F.getDocFromServer(F.doc(db,'productionAdmin/v1/gameSettings',game));setting=snap.exists()?snap.data():null;campaignCache.set(game,{value:setting,until:Date.now()+15000})}const c=setting?.campaign;if(c?.enabled===true&&Number.isSafeInteger(c.startAt)&&Number.isSafeInteger(c.endAt)&&c.startAt<=at&&at<c.endAt)return {multiplier:2,cap:50};return {multiplier:1,cap:50}}catch{return {multiplier:1,cap:50}}}
 function questionId(){if(typeof crypto.randomUUID==='function')return crypto.randomUUID();const bytes=new Uint8Array(16);crypto.getRandomValues(bytes);bytes[6]=(bytes[6]&15)|64;bytes[8]=(bytes[8]&63)|128;const h=Array.from(bytes,b=>b.toString(16).padStart(2,'0')).join('');return h.slice(0,8)+'-'+h.slice(8,12)+'-'+h.slice(12,16)+'-'+h.slice(16,20)+'-'+h.slice(20)}
 function begin(game,prompt){const context={game,prompt:structuredClone(prompt),id:questionId(),startedAt:Date.now(),answered:false};return context}
 function queueItem(item){const pending=read(outboxKey,[]);if(pending.some(x=>x.id===item.id)||memoryOutbox.has(item.id))return;pending.push(item);try{storage.setItem(outboxKey,JSON.stringify(pending))}catch{try{const backup=JSON.parse(window.sessionStorage?.getItem(sessionOutboxKey)||'[]');if(!backup.some(x=>x.id===item.id)){backup.push(item);window.sessionStorage.setItem(sessionOutboxKey,JSON.stringify(backup))}}catch{memoryOutbox.set(item.id,item)}}}
-function queued(){const a=read(outboxKey,[]),b=(()=>{try{return JSON.parse(window.sessionStorage?.getItem(sessionOutboxKey)||'[]')}catch{return []}})();return [...a,...b,...memoryOutbox.values()]}
+function queued(){const a=read(outboxKey,[]),b=(()=>{try{return JSON.parse(window.sessionStorage?.getItem(sessionOutboxKey)||'[]')}catch{return []}})();return [...(durableQueue?.list()||[]),...a,...b,...memoryOutbox.values()]}
 function firstQueued(){return queued()[0]||null}
-function removeQueued(id){for(const [store,keyName] of [[storage,outboxKey],[window.sessionStorage,sessionOutboxKey]]){try{const a=JSON.parse(store?.getItem(keyName)||'[]');store?.setItem(keyName,JSON.stringify(a.filter(x=>x.id!==id)))}catch{}}memoryOutbox.delete(id);return !queued().some(x=>x.id===id)}
+function removeQueued(id){durableQueue?.remove(id);for(const [store,keyName] of [[storage,outboxKey],[window.sessionStorage,sessionOutboxKey]]){try{const a=JSON.parse(store?.getItem(keyName)||'[]');store?.setItem(keyName,JSON.stringify(a.filter(x=>x.id!==id)))}catch{}}memoryOutbox.delete(id);return !queued().some(x=>x.id===id)}
 function needsClaimCompaction(w){const j=read('mgl_kotowaza_points_v1',null);return (Array.isArray(w?.claimed)&&w.claimed.length>CLAIM_LIMIT)||(Array.isArray(j?.claims)&&j.claims.length>CLAIM_LIMIT)}
 function backupClaimsBeforeCompaction(w){if(backupPromise)return backupPromise;backupPromise=new Promise((resolve,reject)=>{const idb=window.indexedDB;if(!idb){reject(Error('claim-backup-unavailable'));return}const request=idb.open('manabi-economy-repair-backups',1);request.onupgradeneeded=()=>{if(!request.result.objectStoreNames.contains('backups'))request.result.createObjectStore('backups',{keyPath:'id'})};request.onerror=()=>reject(request.error||Error('claim-backup-failed'));request.onsuccess=()=>{const db=request.result;try{const tx=db.transaction('backups','readwrite'),store=tx.objectStore('backups'),get=store.get('claim-history-v1');get.onsuccess=()=>{if(!get.result)store.put({id:'claim-history-v1',createdAt:Date.now(),wallet:structuredClone(w),other:{math:storage.getItem('mgl_points'),japanese:(()=>{const j=read('mgl_kotowaza_points_v1',null);return j?{version:j.version,balance:j.balance,date:j.date,used:j.used,claims:(w.claimed||[]).slice(-CLAIM_LIMIT)}:null})()},profile:storage.getItem('mgl_profile'),best:storage.getItem('mgl_best')})};tx.oncomplete=()=>{db.close();resolve()};tx.onerror=()=>{db.close();reject(tx.error||Error('claim-backup-failed'))};tx.onabort=()=>{db.close();reject(tx.error||Error('claim-backup-failed'))}}catch(e){db.close();reject(e)}}}) ;return backupPromise.catch(e=>{backupPromise=null;throw e})}
 async function compactClaims(w){if(!needsClaimCompaction(w))return w;await backupClaimsBeforeCompaction(w);return localStore.commit({...w,claimed:(w.claimed||[]).slice(-CLAIM_LIMIT)})}
-async function repairExistingClaims(){if(testing)return;try{await localLock(async()=>{const w=snapshot();if(needsClaimCompaction(w))await compactClaims(w)})}catch(e){lastError='回答履歴の整理待ち。元データは保持中。';renderBalance()}}
-async function answer(context,value){if(!context||context.answered||testing||!accessReady())return false;context.answered=true;const item={id:context.id,game:context.game,prompt:context.prompt,answer:structuredClone(value),answeredAt:Date.now(),policy:context.policy&&[1,2].includes(context.policy.multiplier)&&context.policy.cap===50?{multiplier:context.policy.multiplier,cap:50}:null};try{await localLock(()=>queueItem(item))}catch{queueItem(item)}return flush()}
-async function flush(){if(testing||!accessReady())return;if(flushing){flushRequested=true;return}flushing=true;try{do{flushRequested=false;while(true){const item=firstQueued();if(!item)break;const policy=item.policy||await campaignPolicy(item.game,item.answeredAt||0);await localLock(async()=>{let w=snapshot();w=await compactClaims(w);if(!core.hasClaimed(w,item.id)){const prompt=core.canonicalPrompt(item.game,item.prompt),result=core.reward(w,item.game,core.correct(item.game,prompt,item.answer),core.dayKey(),policy);result.wallet.claimed=[...(w.claimed||[]),item.id].slice(-CLAIM_LIMIT);accept(result)}});const removed=removeQueued(item.id);notify();if(!removed)break}}while(flushRequested&&queued().length)}catch(e){lastError=e.message==='legacy-wallet-review-required'?'旧端末の残高との照合が必要。元データは保持中。':e.message==='claim-backup-unavailable'?'回答履歴のバックアップに失敗。元データを保持中。':'ポイント保存待ち。回答履歴を保持中。';renderBalance()}finally{flushing=false;if(flushRequested&&queued().length)void flush()}}
-async function buy(productId,subject){if(testing)throw Error('test-mode');if(!accessReady())throw Object.assign(Error('player-suspended'),{code:'player-suspended'});if(preview&&window.MANABI_SPARK_CONFIG?.playerSyncEnabled===true){const sync=window.ManabiPlayerSync||await window.ManabiPlayerSyncReady;if(!sync)throw Error('sync-not-ready');return sync.buy(productId,subject);}return localLock(()=>accept({wallet:core.purchase(snapshot(),core.catalog.find(i=>i.id===productId),subject)}))}
+async function repairExistingClaims(){
+ if(testing||!accessReady())return;
+ try{
+  if(pointFallback.use()){
+   await pointFallback.locked(disk=>window.ManabiStorageAdapters.create(disk,core,mode).snapshot());
+   const current=snapshot();
+   if(needsClaimCompaction(current)){
+    await backupClaimsBeforeCompaction(current);
+    await pointFallback.locked(disk=>{
+     const adapter=window.ManabiStorageAdapters.create(disk,core,mode),wallet=adapter.snapshot();
+     adapter.commit(wallet);
+    });
+   }
+  }else await localLock(async()=>{const wallet=snapshot();if(needsClaimCompaction(wallet))await compactClaims(wallet)});
+ }catch{lastError='ポイント保存待ち。元データを保持中。';renderBalance()}
+}
+async function answer(context,value){
+ if(!context||context.answered||testing||!accessReady())return false;
+ const item={id:context.id,game:context.game,prompt:context.prompt,answer:structuredClone(value),answeredAt:Date.now(),
+  policy:context.policy&&[1,2].includes(context.policy.multiplier)&&context.policy.cap===50?{multiplier:context.policy.multiplier,cap:50}:null};
+ context.answered=true;
+ if(durableQueue){
+  try{durableQueue.add(item)}catch{queueItem(item)}
+ }else if(pointFallback.use())queueItem(item);
+ else await localLock(()=>queueItem(item));
+ return flush();
+}
+function reward(adapter,wallet,item,policy){
+ if(core.hasClaimed(wallet,item.id))return;
+ const prompt=core.canonicalPrompt(item.game,item.prompt);
+ const result=core.reward(wallet,item.game,core.correct(item.game,prompt,item.answer),core.dayKey(),policy);
+ result.wallet.claimed=[...(wallet.claimed||[]),item.id].slice(-CLAIM_LIMIT);
+ adapter.commit(result.wallet);
+}
+async function flush(){
+ if(testing||!accessReady())return;
+ if(flushing){flushRequested=true;return}
+ flushing=true;
+ try{
+  do{
+   flushRequested=false;
+   while(true){
+    const item=firstQueued();if(!item)break;
+    const policy=item.policy||await campaignPolicy(item.game,item.answeredAt||0);
+    let removed;
+    if(pointFallback.use()){
+     const current=snapshot();
+     if(needsClaimCompaction(current))await backupClaimsBeforeCompaction(current);
+     await pointFallback.locked(disk=>{
+      if(!accessReady())throw Error('player-access-unavailable');
+      const adapter=window.ManabiStorageAdapters.create(disk,core,mode);
+      reward(adapter,adapter.snapshot(),item,policy);
+     },'economy:'+item.id);
+     removed=removeQueued(item.id);
+    }else{
+     await localLock(async()=>{
+      if(!accessReady())throw Error('player-access-unavailable');
+      reward(localStore,await compactClaims(snapshot()),item,policy);
+      removed=removeQueued(item.id);
+     });
+    }
+    lastError='';notify();if(!removed)break;
+   }
+  }while(flushRequested&&queued().length);
+ }catch(error){
+  lastError=error.message==='legacy-wallet-review-required'?'旧端末の残高との照合が必要。元データは保持中。':'ポイント保存待ち。回答履歴を保持中。';
+  renderBalance();
+ }finally{flushing=false;if(flushRequested&&queued().length)void flush()}
+}
+async function buy(productId,subject){if(testing)throw Error('test-mode');if(!accessReady())throw Object.assign(Error('player-suspended'),{code:'player-suspended'});if(preview&&window.MANABI_SPARK_CONFIG?.playerSyncEnabled===true){const sync=window.ManabiPlayerSync||await window.ManabiPlayerSyncReady;if(!sync)throw Error('sync-not-ready');return sync.buy(productId,subject);}const product=core.catalog.find(i=>i.id===productId);if(pointFallback.use()){const wallet=await pointFallback.locked(disk=>{const adapter=window.ManabiStorageAdapters.create(disk,core,mode);return adapter.commit(core.purchase(adapter.snapshot(),product,subject))});notify();return {wallet};}return localLock(()=>accept({wallet:core.purchase(snapshot(),product,subject)}))}
 async function equip(icon){if(!accessReady())throw Object.assign(Error('player-suspended'),{code:'player-suspended'});if(!core.freeIcons.includes(icon)&&!(core.catalog.some(p=>p.id===icon&&p.kind==='icon')&&snapshot().owned.includes(icon)))throw Error('not-owned');const profile=read('mgl_profile',{});profile.icon=icon;storage.setItem('mgl_profile',JSON.stringify(profile));window.dispatchEvent(new Event('manabi-profile-change'));notify()}
 async function equipFrame(frame){if(!accessReady())throw Object.assign(Error('player-suspended'),{code:'player-suspended'});if(!core.catalog.some(p=>p.id===frame&&['frame','limited-frame'].includes(p.kind))||!snapshot().owned.includes(frame))throw Error('not-owned');const profile=read('mgl_profile',{});profile.frame=frame;storage.setItem('mgl_profile',JSON.stringify(profile));window.dispatchEvent(new Event('manabi-profile-change'));notify()}
 async function equipSubjectIcon(subject,icon){if(testing)throw Error('test-mode');if(!accessReady())throw Object.assign(Error('player-suspended'),{code:'player-suspended'});window.ManabiProfile.equipLimited(storage,subject,icon);notify()}
 async function equipSubjectFrame(subject,frame){if(testing)throw Error('test-mode');if(!accessReady())throw Object.assign(Error('player-suspended'),{code:'player-suspended'});window.ManabiProfile.equipLimitedFrame(storage,subject,frame);notify()}
 function balance(game){const subject=core.games[game];return num(snapshot().balances[subject])}
 function renderBalance(){const game=document.body?.dataset.scoreGame;if(!game)return;const points=document.getElementById('points');if(points)points.textContent=balance(game);let note=document.getElementById('economyDailyStatus');if(!note&&points){note=document.createElement('small');note.id='economyDailyStatus';note.setAttribute('role','status');points.after(note)}if(note){const w=snapshot(),used=w.daily.date===core.dayKey()?num(w.daily.games[game]):0;note.textContent=testing?'テスト：ポイント対象外':lastError||(window.ManabiStorageWarning?'保存領域が不足。回答を一時保存中。':'今日 '+used+'/50pt'+(used>=50?'・記録の更新は続けられる':''))}}
-window.ManabiEconomy={core,snapshot,legacyTotals:storedLegacy,balance,begin,answer,buy,equip,equipFrame,equipSubjectFrame,equipSubjectIcon,refresh:async()=>{notify();return snapshot()},flush,testing};
+window.ManabiEconomy={core,snapshot,legacyTotals:storedLegacy,balance,begin,answer,buy,equip,equipFrame,equipSubjectFrame,equipSubjectIcon,refresh:async()=>{if(pointFallback.use()&&accessReady()&&!testing)await repairExistingClaims();notify();return snapshot()},flush,testing};
 if(!storage.getItem('mgl_economy_legacy_backup_v1')){const keys=['mgl_points','mgl_best','mq_pref_name','mq_pref_place','mgl_pref-name','mgl_pref-place','mgl_alphabet','mgl_profile'];storage.setItem('mgl_economy_legacy_backup_v1',JSON.stringify({totals:legacyTotals(),raw:Object.fromEntries(keys.map(k=>[k,storage.getItem(k)]))}))}if(preview)snapshot();
-window.addEventListener('online',flush);window.addEventListener('storage',notify);window.addEventListener('pageshow',()=>{notify();if(!testing)flush()});setInterval(()=>{renderBalance();if(!testing&&queued().length)flush()},15000);
+window.addEventListener('online',flush);window.addEventListener('storage',notify);window.addEventListener('pageshow',()=>{notify();if(!testing)repairExistingClaims().then(flush)});setInterval(()=>{renderBalance();if(!testing&&queued().length)flush()},15000);
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>{notify();repairExistingClaims().then(flush)});else{notify();repairExistingClaims().then(flush)}
 })();
 
