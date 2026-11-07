@@ -93,6 +93,7 @@ for (const rel of sourceFiles) {
   const relativeModule = new RegExp(`([\"'])((?:\\.\\.?/)[^\"'\\s?]+\\.js)\\1`, 'g');
   text = text.replace(relativeModule, `$1$2?v=${buildId}$1`);
   text = text.replace(/(src="(?:\.\.\/)?environment\.js)"/g, `$1?v=${buildId}"`);
+  if (rel.endsWith('.html')) text = text.replace(/(href="(?:\.\.\/)?[A-Za-z0-9_-]+\.css)"/g, `$1?v=${buildId}"`);
   text = text.replace(/((?:[A-Za-z0-9_-]+)\.(?:js|css))\?v=[^"'\s<>]*/g, `$1?v=${buildId}`);
   await fs.mkdir(path.dirname(path.join(out, rel)), {recursive: true});
   await fs.writeFile(path.join(out, rel), text);
