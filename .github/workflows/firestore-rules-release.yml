@@ -172,7 +172,7 @@ jobs:
           && inputs.target == 'preview' && (inputs.operation == 'deploy' || inputs.operation == 'rollback') }}
     runs-on: ubuntu-latest
     timeout-minutes: 5
-    environment: firebase-rules-preview-write
+    environment: firebase-rules-preview
     permissions:
       contents: read
       id-token: write
@@ -213,7 +213,7 @@ jobs:
           && github.head_ref == 'infra/firestore-rules-release-rehearsal' && github.base_ref == 'main' }}
     runs-on: ubuntu-latest
     timeout-minutes: 8
-    environment: firebase-rules-preview-write
+    environment: firebase-rules-preview
     permissions:
       contents: read
       id-token: write

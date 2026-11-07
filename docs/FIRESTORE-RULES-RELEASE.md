@@ -12,14 +12,14 @@
 
 初回は既存の確認用 Firestore に、現在の Rules からコメントを1行だけ足したコピーを公開し、元の Ruleset に戻す。現行全文は WIF 認証後に API から取得し、公開成果物には含めない。作業用の全文は非公開の一時ファイルに保存し、Emulator 終了後に削除する。初回検証のために Console から全文を転記する必要はない。
 
-1. 確認用 `manabi-game-landcheck` に書き込み用 WIF を用意する。リポジトリ ID と所有者 ID に加え、初回だけ `ref == 'refs/pull/45/merge'`、`workflow_ref == 'romanamatya/manabi-game-land/.github/workflows/firestore-rules-release.yml@refs/pull/45/merge'`、`environment == 'firebase-rules-preview-write'`、`event_name == 'pull_request'` を条件にする。GitHub Environment の選択ブランチ規則にも `refs/pull/45/merge` を追加し、承認者を設定する。
+1. 確認用 `manabi-game-landcheck` に書き込み用 WIF を用意する。リポジトリ ID と所有者 ID に加え、従来の `main` 条件とは別の許可分岐として初回だけ `ref == 'refs/pull/45/merge'`、`workflow_ref == 'romanamatya/manabi-game-land/.github/workflows/firestore-rules-release.yml@refs/pull/45/merge'`、`environment == 'firebase-rules-preview'`、`event_name == 'pull_request'` を条件にする。GitHub Environment の選択ブランチ規則にも `refs/pull/45/merge` を追加し、承認者を設定する。
 2. GitHub Environment の変数を設定してから、PR #45 に `preview-rules-rehearsal` ラベルを付ける。該当ラベルの追加イベントでだけ実行し、通常の PR CI からは書き込まない。Actions の `rehearse-preview` ジョブで対象コミットを確認し、承認する。
 3. 同じ実行で、現行とコメントだけの候補を Emulator で検証し、現行との差分がコメント1行であることを担保して公開する。続いて、公開した Ruleset がそのまま有効であることを照合し、元の Ruleset に復旧する。実行概要の `compare`・`deployed`・`restored` を確認する。途中でエラーが出た場合は `compare` にある旧 Ruleset ID を控え、有効版を照合するまで再実行しない。
 4. マージ後は PR 専用の信頼条件と Environment の許可規則を外し、確認用の通常操作は `main` から手動実行する。本番用の権限は確認用の結果をレビューした後に別途設定する。
 
 ## 初回設定
 
-1. GitHub の Settings → Environments で `firebase-rules-preview-read` と `firebase-rules-preview-write` を作成し、対象ブランチを `main` に限定する。書き込み側に Required reviewers を設定する。実行者と承認者が同一の場合は Prevent self-review をオフにする。別担当者が承認する運用ならオンにする。公開リポジトリでは利用できるが、実際の設定と承認者は管理画面で確認する。
+1. GitHub の Settings → Environments で既存の `firebase-rules-preview` を書き込み用として再利用し、対象ブランチを `main` に限定する。マージ後に読み取り操作を使う段階で、別に `firebase-rules-preview-read` を作成する。書き込み側に Required reviewers を設定する。実行者と承認者が同一の場合は Prevent self-review をオフにする。別担当者が承認する運用ならオンにする。公開リポジトリでは利用できるが、実際の設定と承認者は管理画面で確認する。
 2. Google Cloud の IAM と管理 → Workload Identity 連携で、確認用プロジェクトの GitHub OIDC プロバイダを設定する。発行元は `https://token.actions.githubusercontent.com`。IAM、Resource Manager、Security Token Service、IAM Service Account Credentials、Firebase Rules API の有効化状況を確認する。組織ポリシーで許可されていることも確認する。
 3. OIDC では数値の `repository_id` と `repository_owner_id`、`ref`、`environment`、`workflow_ref` を照合する。対象はリポジトリ ID `1430974446`、所有者 ID `346875777`、`refs/heads/main`、`romanamatya/manabi-game-land/.github/workflows/firestore-rules-release.yml@refs/heads/main`。環境ごとに別の信頼条件とサービスアカウントを使う。プールを共有する場合、SA の IAM バインディングは環境も含む専用属性に限定し、リポジトリ全体を許可しない。対象 ID にサービスアカウント上で `roles/iam.workloadIdentityUser` を付与する。
 4. 読み取り用サービスアカウントに `firebaserules.releases.get`、`firebaserules.rulesets.get` を付与する。書き込み用にはこの2つと `firebaserules.rulesets.create`、`firebaserules.releases.update` をカスタムロールで付与する。権限は確認用プロジェクトだけに適用する。Firestore文書、インデックス、既存Ruleset削除の権限とサービスアカウントの秘密鍵は不要。
