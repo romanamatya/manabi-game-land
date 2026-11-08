@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { createRulesClient, digest, publishVerified, rehearsePreview } from '../tools/firestore-rules-release.mjs';
+import { assertApprovedPlan, createRulesClient, digest, publishVerified, rehearsePreview, verifyPublished } from '../tools/firestore-rules-release.mjs';
 
 const project = 'manabi-game-landcheck';
 const root = `projects/${project}`;
@@ -83,11 +83,11 @@ test('preview rehearsal tests the original and comment-only copy, then restores 
   const phases = [];
   const validated = [];
   await rehearsePreview({
-    client,
+    client, exerciseDrift: true,
     validate: async source => { validated.push(source); },
     record: entry => phases.push(entry.phase),
   });
-  assert.deepEqual(phases, ['compare', 'deployed', 'restored']);
+  assert.deepEqual(phases, ['compare', 'deployed', 'drift-rejected', 'restored']);
   assert.equal(validated[0], oldSource);
   assert.match(validated[1].slice(oldSource.length), /^\n\/\/ [^\n]+\n$/);
   assert.equal((await client.active()).ruleset, oldName);
@@ -110,4 +110,44 @@ test('the production REST client rejects mutations before any HTTP request', asy
   });
   await assert.rejects(client.create(oldSource), /Production writes are disabled/);
   await assert.rejects(client.publish('projects/manabi-game-land/rulesets/old'), /Production writes are disabled/);
+});
+
+test('the approval binds the exact project, commit, operation, restore ID, and release metadata', () => {
+  const plan = {
+    project, commit: 'reviewed', operation: 'rollback', targetRuleset: oldName,
+    candidateSha256: digest(oldSource),
+    backup: { ruleset: newName, sha256: digest(newSource), updatedAt: 'initial' },
+  };
+  assert.doesNotThrow(() => assertApprovedPlan(structuredClone(plan), plan));
+  for (const field of ['project', 'commit', 'operation', 'targetRuleset', 'candidateSha256']) {
+    assert.throws(() => assertApprovedPlan({ ...plan, [field]: 'different' }, plan), /approved plan/);
+  }
+  for (const field of ['ruleset', 'sha256', 'updatedAt']) {
+    const backup = { ...plan.backup, [field]: 'different' };
+    assert.throws(() => assertApprovedPlan({ ...plan, backup }, plan), /approved plan/);
+  }
+});
+
+test('the independent read-only verification matches the exact receipt', async () => {
+  const { client, calls } = fixture();
+  const result = await client.active();
+  calls.length = 0;
+  const receipt = { result, candidateSha256: result.sha256 };
+  assert.deepEqual(await verifyPublished(client, receipt), result);
+  await assert.rejects(verifyPublished(client, { ...receipt, candidateSha256: digest(newSource) }), /verification/);
+  assert.ok(calls.every(([method]) => method === 'GET'));
+});
+
+test('a stale approved preview snapshot stops before any mutation', async () => {
+  const { client, calls } = fixture();
+  const backup = await client.active();
+  const approved = {
+    project, commit: process.env.GITHUB_SHA ?? null, operation: 'rehearse', targetRuleset: null,
+    backup: { ...backup, updatedAt: 'stale' },
+    candidateSha256: digest(oldSource + '\n// manabi-preview-rules-rehearsal\n'),
+  };
+  await assert.rejects(rehearsePreview({
+    client, approved, validate: async () => assert.fail('Unexpected validation'),
+  }), /approved plan/);
+  assert.ok(calls.every(([method]) => method === 'GET'));
 });
