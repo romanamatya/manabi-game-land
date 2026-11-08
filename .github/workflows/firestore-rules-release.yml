@@ -19,12 +19,12 @@ on:
         options: [preview, production]
         default: preview
       operation:
-        description: Production supports inspect and plan only
+        description: Publish or restore requires approval. Rehearse is preview-only.
         type: choice
-        options: [inspect, plan, deploy, rollback]
+        options: [inspect, plan, deploy, rollback, rehearse]
         default: inspect
       rollback_ruleset:
-        description: Previous immutable Ruleset name from the preview backup receipt
+        description: Previous immutable Ruleset name from the backup receipt
         type: string
 
 permissions:
@@ -48,15 +48,16 @@ jobs:
           TARGET: ${{ inputs.target || 'preview' }}
           OPERATION: ${{ inputs.operation || 'test' }}
           ROLLBACK_RULESET: ${{ inputs.rollback_ruleset }}
+          RULES_PRODUCTION_WRITE_ENABLED: ${{ vars.RULES_PRODUCTION_WRITE_ENABLED }}
         run: |
           set -euo pipefail
           case "$TARGET/$OPERATION" in
-            production/inspect|production/plan)
+            production/inspect|production/plan|production/deploy|production/rollback)
               project=manabi-game-land
               baseline=firebase/production-release-baseline.rules
               source=firebase/production-release-candidate.rules
               ;;
-            preview/test)
+            preview/test|preview/rehearse)
               project=manabi-game-landcheck
               baseline=
               source=preview/firebase/tests/challenge-prototype.rules
@@ -66,10 +67,16 @@ jobs:
               baseline=firebase/preview-release-baseline.rules
               source=firebase/preview-release-candidate.rules
               ;;
-            *) echo "::error::Unsupported operation. Production writes are disabled."; exit 1 ;;
+            *) echo "::error::Unsupported operation for the selected project."; exit 1 ;;
           esac
+          if [[ "$TARGET" == production && ( "$OPERATION" == deploy || "$OPERATION" == rollback ) ]]; then
+            if [[ "$RULES_PRODUCTION_WRITE_ENABLED" != true ]]; then
+              echo "::error::Production writes are disabled."
+              exit 1
+            fi
+          fi
           if [[ "$OPERATION" == rollback ]]; then
-            [[ "$ROLLBACK_RULESET" =~ ^projects/manabi-game-landcheck/rulesets/[A-Za-z0-9_-]+$ ]]
+            [[ "$ROLLBACK_RULESET" =~ ^projects/${project}/rulesets/[A-Za-z0-9_-]+$ ]]
             temp="$baseline"
             baseline="$source"
             source="$temp"
@@ -78,7 +85,7 @@ jobs:
 
   test:
     needs: select
-    if: github.event_name == 'pull_request' || inputs.operation != 'inspect'
+    if: github.event_name == 'pull_request' || (inputs.operation != 'inspect' && inputs.operation != 'rehearse')
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -119,7 +126,7 @@ jobs:
     if: >-
       ${{ !cancelled() && github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main'
           && needs.select.result == 'success'
-          && (needs.test.result == 'success' || (inputs.operation == 'inspect' && needs.test.result == 'skipped')) }}
+          && (needs.test.result == 'success' || ((inputs.operation == 'inspect' || inputs.operation == 'rehearse') && needs.test.result == 'skipped')) }}
     runs-on: ubuntu-latest
     timeout-minutes: 5
     environment: firebase-rules-${{ inputs.target }}-read
@@ -147,12 +154,16 @@ jobs:
           BASELINE: ${{ needs.select.outputs.baseline }}
           CANDIDATE: ${{ needs.select.outputs.source }}
           OPERATION: ${{ inputs.operation }}
+          RULES_PLANNED_OPERATION: ${{ inputs.operation }}
+          ROLLBACK_RULESET: ${{ inputs.rollback_ruleset }}
         run: |
           set -euo pipefail
           mode=plan
           if [[ "$OPERATION" == inspect ]]; then
             mode=inspect
             if [[ "$PROJECT" == manabi-game-landcheck ]]; then BASELINE=; fi
+          elif [[ "$OPERATION" == rehearse ]]; then
+            mode=rehearse-plan
           fi
           node tools/firestore-rules-release.mjs "$mode" "$PROJECT" "$BASELINE" "$CANDIDATE" > rules-backup.json
           printf 'plan=%s\n' "$(cat rules-backup.json)" >> "$GITHUB_OUTPUT"
@@ -165,14 +176,62 @@ jobs:
           path: rules-backup.json
           if-no-files-found: error
 
-  publish-preview:
+  publish:
     needs: [select, test, compare]
     if: >-
       ${{ github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main'
-          && inputs.target == 'preview' && (inputs.operation == 'deploy' || inputs.operation == 'rollback') }}
+          && (inputs.operation == 'deploy' || inputs.operation == 'rollback')
+          && (inputs.target == 'preview' || vars.RULES_PRODUCTION_WRITE_ENABLED == 'true') }}
     runs-on: ubuntu-latest
     timeout-minutes: 5
-    environment: firebase-rules-preview
+    environment: ${{ inputs.target == 'production' && 'firebase-rules-production-write' || 'firebase-rules-preview' }}
+    outputs:
+      receipt: ${{ steps.publish.outputs.receipt }}
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Require the dedicated production publisher
+        if: inputs.target == 'production'
+        env:
+          SERVICE_ACCOUNT: ${{ vars.RULES_SERVICE_ACCOUNT }}
+        run: test "$SERVICE_ACCOUNT" = manabi-rules-production-write@manabi-game-land.iam.gserviceaccount.com
+      - id: auth
+        uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3
+        with:
+          workload_identity_provider: ${{ vars.RULES_WIF_PROVIDER }}
+          service_account: ${{ vars.RULES_SERVICE_ACCOUNT }}
+          token_format: access_token
+          access_token_lifetime: 300s
+          create_credentials_file: false
+      - id: publish
+        env:
+          RULES_ACCESS_TOKEN: ${{ steps.auth.outputs.access_token }}
+          RULES_PRODUCTION_WRITE_ENABLED: ${{ vars.RULES_PRODUCTION_WRITE_ENABLED }}
+          PROJECT: ${{ needs.select.outputs.project }}
+          APPROVED_RULES_PLAN: ${{ needs.compare.outputs.plan }}
+          BASELINE: ${{ needs.select.outputs.baseline }}
+          CANDIDATE: ${{ needs.select.outputs.source }}
+          OPERATION: ${{ inputs.operation }}
+          ROLLBACK_RULESET: ${{ inputs.rollback_ruleset }}
+        run: |
+          set -euo pipefail
+          node tools/firestore-rules-release.mjs "$OPERATION" "$PROJECT" "$BASELINE" "$CANDIDATE" > rules-result.json
+          printf 'receipt=%s\n' "$(cat rules-result.json)" >> "$GITHUB_OUTPUT"
+          printf '```json\n' >> "$GITHUB_STEP_SUMMARY"
+          cat rules-result.json >> "$GITHUB_STEP_SUMMARY"
+          printf '```\n' >> "$GITHUB_STEP_SUMMARY"
+
+
+  verify-production:
+    needs: publish
+    if: inputs.target == 'production'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    environment: firebase-rules-production-read
     permissions:
       contents: read
       id-token: write
@@ -190,27 +249,16 @@ jobs:
           create_credentials_file: false
       - env:
           RULES_ACCESS_TOKEN: ${{ steps.auth.outputs.access_token }}
-          APPROVED_RULES_PLAN: ${{ needs.compare.outputs.plan }}
-          BASELINE: ${{ needs.select.outputs.baseline }}
-          CANDIDATE: ${{ needs.select.outputs.source }}
-          OPERATION: ${{ inputs.operation }}
-          ROLLBACK_RULESET: ${{ inputs.rollback_ruleset }}
+          RULES_PUBLICATION_RECEIPT: ${{ needs.publish.outputs.receipt }}
         run: |
           set -euo pipefail
-          node tools/firestore-rules-release.mjs "$OPERATION" manabi-game-landcheck "$BASELINE" "$CANDIDATE" > rules-result.json
-          printf '```json\n' >> "$GITHUB_STEP_SUMMARY"
-          cat rules-result.json >> "$GITHUB_STEP_SUMMARY"
-          printf '```\n' >> "$GITHUB_STEP_SUMMARY"
-
+          node tools/firestore-rules-release.mjs verify manabi-game-land | tee -a "$GITHUB_STEP_SUMMARY"
 
   rehearse-preview:
-    needs: test
+    needs: compare
     if: >-
-      ${{ github.event_name == 'pull_request' && github.event.action == 'labeled'
-          && github.event.label.name == 'preview-rules-rehearsal'
-          && github.event.pull_request.number == 45 && github.repository_id == '1430974446'
-          && github.event.pull_request.head.repo.full_name == github.repository
-          && github.head_ref == 'infra/firestore-rules-release-rehearsal' && github.base_ref == 'main' }}
+      ${{ github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main'
+          && inputs.target == 'preview' && inputs.operation == 'rehearse' }}
     runs-on: ubuntu-latest
     timeout-minutes: 8
     environment: firebase-rules-preview
@@ -239,9 +287,10 @@ jobs:
           token_format: access_token
           access_token_lifetime: 300s
           create_credentials_file: false
-      - name: Compare, publish a comment-only copy, and restore the same Ruleset
+      - name: Compare, publish a comment-only copy, reject a stale plan, and restore
         env:
           RULES_ACCESS_TOKEN: ${{ steps.auth.outputs.access_token }}
+          APPROVED_RULES_PLAN: ${{ needs.compare.outputs.plan }}
         run: |
           set -euo pipefail
           node tools/firestore-rules-release.mjs rehearse manabi-game-landcheck | tee -a "$GITHUB_STEP_SUMMARY"
