@@ -257,7 +257,8 @@ jobs:
   rehearse-preview:
     needs: compare
     if: >-
-      ${{ github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main'
+      ${{ !cancelled() && needs.compare.result == 'success'
+          && github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main'
           && inputs.target == 'preview' && inputs.operation == 'rehearse' }}
     runs-on: ubuntu-latest
     timeout-minutes: 8
