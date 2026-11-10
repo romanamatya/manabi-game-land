@@ -13,11 +13,17 @@ const progress = window.ManabiLineQuizProgress.createProgress({
   storage, economy, challenge, core, titles: titleList, game,
 });
 const labels = model.labels;
-if (window.MANABI_ENV?.preview !== true || window.MANABI_BACKEND_CONFIG?.mode !== 'preview') {
-  $('question').textContent = 'このゲームは確認用サイトでプレイできます。';
-  throw Error('line-quiz-preview-only');
+const env = window.MANABI_ENV;
+const config = window.MANABI_BACKEND_CONFIG;
+const preview = env?.preview === true && config?.mode === 'preview';
+const production = env?.preview === false && config?.mode === 'production'
+  && env.expectedProjectId === 'manabi-game-land' && config.expectedProjectId === env.expectedProjectId
+  && config.staticLocalGameIds?.includes(game);
+if (!preview && !production) {
+  $('question').textContent = 'このゲームは現在非公開です。';
+  throw Error('line-quiz-unavailable');
 }
-const ranking = openLineQuizRanking({ storage, titles: titleList });
+const ranking = preview ? openLineQuizRanking({ storage, titles: titleList }) : null;
 
 let question, mode, attempt, level, transition;
 let phase = 'closed';
@@ -172,7 +178,7 @@ $('confirm').onclick = async () => {
     if (result.title) window.ManabiCelebrations.showTitle(result.title);
     else window.ManabiCelebrations.showCorrect();
     transition = setTimeout(next, result.title ? 1000 : 500);
-    void ranking.publish(record.best);
+    void ranking?.publish(record.best);
   } else if (record.challenge.phase === 'training') {
     selected.clear();
     attempt = progress.begin(question);
@@ -204,8 +210,12 @@ $('challenge-start').onclick = async () => {
 };
 $('ranking-open').onclick = async () => {
   $('line-ranking').hidden = false;
-  $('ranking-message').textContent = '読み込み中…';
   $('ranking-rows').replaceChildren();
+  if (!ranking) {
+    $('ranking-message').textContent = `共有ランキングは準備中です。端末の最高記録は ${progress.read().best}問です。`;
+    return;
+  }
+  $('ranking-message').textContent = '読み込み中…';
   try {
     const rows = await ranking.rows();
     let previous, rank;
@@ -231,13 +241,13 @@ function tick() {
 }
 window.addEventListener('storage', () => { tick(); paintStats(progress.read()); });
 window.addEventListener('manabi-economy-change', () => paintStats(progress.read()));
-window.addEventListener('online', () => { void ranking.publish(progress.read().best); });
+window.addEventListener('online', () => { void ranking?.publish(progress.read().best); });
 document.addEventListener('visibilitychange', tick);
 setInterval(tick, 200);
-ranking.watchAvailability(published => {
+ranking?.watchAvailability(published => {
   if (publicAllowed === published) return;
   publicAllowed = published;
   if (phase !== 'checking') next();
 });
 next();
-void ranking.publish(progress.read().best);
+void ranking?.publish(progress.read().best);

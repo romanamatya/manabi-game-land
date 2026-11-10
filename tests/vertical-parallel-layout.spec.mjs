@@ -182,3 +182,53 @@ test('the preview management game list exposes the line quiz controls', async ({
   await page.locator('#execute').click();
   await expect(row.getByRole('cell', { name: '公開中', exact: true })).toBeVisible();
 });
+
+test('the production game preserves progress and awards points while ranking is paused', async ({ page }) => {
+  await page.setViewportSize(viewports[0]);
+  await page.addInitScript(() => {
+    if (sessionStorage.getItem('line-quiz-fixture')) return;
+    sessionStorage.setItem('line-quiz-fixture', '1');
+    localStorage.setItem('mgl_nickname', '図形テスト');
+    localStorage.setItem('mgl_points', '7');
+    localStorage.setItem('mgl_parallelPair', '{"best":19}');
+    localStorage.setItem('mgl_profile', '{"icon":"rabbit"}');
+    localStorage.setItem('mgl_verticalParallel', JSON.stringify({
+      best: 24,
+      challenge: {
+        protocol: 2, game: 'verticalParallel', phase: 'training', unlocked: false,
+        practiceStreak: 24, claimed: [], attemptId: null, season: null,
+        lastWall: 0, streak: 0, attemptBest: 0,
+      },
+    }));
+  });
+  await page.goto(new URL('math-geometry.html', base).href);
+  const card = page.locator('[data-game-card="verticalParallel"]');
+  await expect(card.getByRole('button', { name: 'プレイ' })).toBeEnabled();
+  await card.getByRole('button', { name: 'プレイ' }).click();
+  await expect(page).toHaveURL(/\/games\/verticalParallel\.html$/);
+  await expect(page.locator('#tower img')).toHaveCount(5);
+  for (const image of await page.locator('#tower img').all()) {
+    expect(await image.evaluate(async img => { await img.decode(); return img.naturalWidth; })).toBe(512);
+  }
+
+  const question = await diagram(page);
+  for (const i of question.answers) await page.touchscreen.tap(question.points[i].x, question.points[i].y);
+  await page.locator('#confirm').tap();
+  await expect(page.locator('#best')).toHaveText('25');
+  await expect(page.locator('#points')).toHaveText('8');
+  await expect(page.locator('#daily')).toHaveText('今日 1 / 50pt');
+  await expect(page.locator('#tower .earned')).toHaveCount(5);
+  await page.locator('#ranking-open').tap();
+  await expect(page.locator('#ranking-message')).toHaveText('共有ランキングは準備中です。端末の最高記録は 25問です。');
+  await page.locator('#ranking-close').tap();
+  await page.locator('#challenge-start').tap();
+  await expect(page.locator('#challenge-clock')).toHaveText(/残り (2:00|1:59)/);
+  await page.reload();
+  await expect(page.locator('#best')).toHaveText('25');
+  await expect(page.locator('#points')).toHaveText('8');
+  await expect(page.locator('#challenge-clock')).toHaveText(/残り/);
+  expect(await page.evaluate(() => ({
+    oldBest: JSON.parse(localStorage.getItem('mgl_parallelPair')).best,
+    oldIcon: JSON.parse(localStorage.getItem('mgl_profile')).icon,
+  }))).toEqual({ oldBest: 19, oldIcon: 'rabbit' });
+});
