@@ -100,3 +100,51 @@ test('touch selection, retry, 25 correct answers, titles and the timer work in t
   await expect(page.locator('#best')).toHaveText('25');
   await expect(page.locator('#challenge-clock')).toHaveText(/残り/);
 });
+
+test('the preview game card follows remote visibility without hiding other games', async ({ page }) => {
+  await page.route('https://www.gstatic.com/firebasejs/13.1.0/firebase-auth.js', route => route.fulfill({
+    contentType: 'text/javascript',
+    headers: { 'access-control-allow-origin': '*' },
+    body: 'export const getAuth=()=>({currentUser:{isAnonymous:true,uid:"preview-fixture"}});',
+  }));
+  await page.route(/\/public-firebase-session\.js(?:\?|$)/, route => route.fulfill({
+    contentType: 'text/javascript',
+    body: `
+      window.ManabiFirebaseSession = {
+        open: async () => ({
+          db: { app: { options: { projectId: 'manabi-game-landcheck' } } },
+          F: {
+            doc: () => ({}),
+            collection: () => ({}),
+            onSnapshot: (_ref, _options, update) => {
+              const send = status => update({
+                metadata: { fromCache: false },
+                exists: () => true,
+                data: () => ({ status }),
+              });
+              window.addEventListener('preview-line-quiz-setting', event => send(event.detail));
+              send('hidden');
+              return () => {};
+            },
+          },
+        }),
+      };
+    `,
+  }));
+  await page.goto(new URL('preview/math.html', base).href);
+  const quiz = page.locator('[data-game-card="verticalParallel"]');
+  const previous = page.locator('[data-game-card="suichoku"]');
+  await expect(quiz).toHaveAttribute('data-game-availability', 'hidden');
+  await expect(quiz).toBeHidden();
+  await expect(previous).toBeVisible();
+
+  const set = status => page.evaluate(status => {
+    window.dispatchEvent(new CustomEvent('preview-line-quiz-setting', { detail: status }));
+  }, status);
+  await set('published');
+  await expect(quiz).toBeVisible();
+  await expect(quiz.getByRole('button', { name: 'プレイ' })).toBeEnabled();
+  await set('hidden');
+  await expect(quiz).toBeHidden();
+  await expect(previous).toBeVisible();
+});
