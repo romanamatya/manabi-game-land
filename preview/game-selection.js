@@ -1,4 +1,5 @@
-import {bindGameAvailability} from './game-selection-model.js?v=159b967ab2e5';
+import {bindGameAvailability,renderGameState} from './game-selection-model.js?v=ab3a8e720211';
+import {openLineQuizRanking} from './line-quiz-online.js?v=ab3a8e720211';
 const initialized=new WeakSet();
 function addMissingAlphabetCard(){
  const config=window.MANABI_BACKEND_CONFIG;
@@ -23,6 +24,15 @@ function initialize(){
   if(initialized.has(card))continue;initialized.add(card);
   const button=card.querySelector('[data-game-play]');
   if(button)button.addEventListener('click',()=>{if(card.dataset.gameAvailability==='published'&&!button.disabled&&button.dataset.gameHref)location.assign(button.dataset.gameHref)});
+  if(card.dataset.gameCard==='verticalParallel'&&window.MANABI_ENV?.preview===true){
+   card.hidden=true;
+   const ranking=openLineQuizRanking({storage:window.manabiStorage,titles:[]});
+   ranking.watchAvailability(published=>{
+    card.hidden=!published;
+    renderGameState(card,published?'published':'hidden');
+   });
+   continue;
+  }
   const binding=bindGameAvailability(card,{enabled:window.MANABI_BACKEND_CONFIG?.availabilityEnabled===true,settings:window.ManabiPublicSettings});
   window.addEventListener('pagehide',binding.dispose,{once:true});
  }
