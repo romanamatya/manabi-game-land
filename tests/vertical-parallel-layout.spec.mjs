@@ -148,3 +148,37 @@ test('the preview game card follows remote visibility without hiding other games
   await expect(quiz).toBeHidden();
   await expect(previous).toBeVisible();
 });
+
+test('the preview management game list exposes the line quiz controls', async ({ page }) => {
+  await page.route(/\/spark-auth\.js(?:\?|$)/, route => route.fulfill({
+    contentType: 'text/javascript',
+    body: `
+      let status = 'published';
+      export const errorText = error => error.message;
+      export async function client() {
+        return {
+          watch: update => update({ uid: 'preview-admin-fixture' }),
+          async call(action, input) {
+            if (action === 'admin:snapshot') return { games: [], players: [], managementReady: false };
+            if (action === 'admin:line-quiz:read') return status;
+            if (action === 'admin:line-quiz:visibility' && input.confirm === true) {
+              status = input.status;
+              return { ok: true };
+            }
+            throw Error('Unexpected management action');
+          },
+        };
+      }
+    `,
+  }));
+  await page.goto(new URL('preview/control-room.html', base).href);
+  await page.getByRole('button', { name: 'ゲーム公開設定', exact: true }).click();
+  const row = page.getByRole('row').filter({ hasText: '垂直・平行ラインクイズ！' });
+  await expect(row.getByRole('cell', { name: '公開中', exact: true })).toBeVisible();
+  await row.getByRole('button', { name: '非公開にする' }).click();
+  await page.locator('#execute').click();
+  await expect(row.getByRole('cell', { name: '非公開', exact: true })).toBeVisible();
+  await row.getByRole('button', { name: '公開する', exact: true }).click();
+  await page.locator('#execute').click();
+  await expect(row.getByRole('cell', { name: '公開中', exact: true })).toBeVisible();
+});
