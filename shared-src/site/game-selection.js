@@ -26,11 +26,8 @@ function initialize(){
   if(button)button.addEventListener('click',()=>{if(card.dataset.gameAvailability==='published'&&!button.disabled&&button.dataset.gameHref)location.assign(button.dataset.gameHref)});
   if(card.dataset.gameCard==='verticalParallel'&&window.MANABI_ENV?.preview===true){
    card.hidden=true;
-   // Keep the review playable while the preview Rules are awaiting deployment.
-   const timeout=setTimeout(()=>{card.hidden=false;renderGameState(card,'published')},3000);
    const ranking=openLineQuizRanking({storage:window.manabiStorage,titles:[]});
    ranking.watchAvailability(published=>{
-    clearTimeout(timeout);
     card.hidden=!published;
     renderGameState(card,published?'published':'hidden');
    });
