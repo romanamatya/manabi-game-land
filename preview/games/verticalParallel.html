@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="robots" content="noindex,nofollow">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src https://www.gstatic.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://firestore.googleapis.com; object-src 'none'; base-uri 'self'">
+  <title>垂直・平行ラインクイズ！｜マナビクエスト</title>
+  <link rel="stylesheet" href="../suichoku.css?v=159b967ab2e5">
+  <link rel="stylesheet" href="../parallel.css?v=159b967ab2e5">
+  <link rel="stylesheet" href="../game-home.css?v=159b967ab2e5">
+  <link rel="stylesheet" href="../line-quiz.css?v=159b967ab2e5">
+  <script src="../environment.js?v=159b967ab2e5"></script>
+  <script src="../environment-runtime.js?v=159b967ab2e5"></script>
+  <script src="../public-firebase-session.js?v=159b967ab2e5"></script>
+  <script src="../public-game-availability.js?v=159b967ab2e5"></script>
+  <script src="../public-admin-settings.js?v=159b967ab2e5"></script>
+  <script src="../profile-catalog.js?v=159b967ab2e5"></script>
+  <script src="../economy-core.js?v=159b967ab2e5"></script><script src="../storage-adapters.js?v=159b967ab2e5"></script>
+  <script src="../economy.js?v=159b967ab2e5"></script>
+  <script src="../challenge120-core.js?v=159b967ab2e5"></script>
+  <script src="../celebration-effects.js?v=159b967ab2e5"></script>
+  <script src="../line-quiz-model.js?v=159b967ab2e5"></script>
+  <script src="../line-quiz-progress.js?v=159b967ab2e5"></script>
+</head>
+<body>
+  <div class="sq-wrap">
+    <header class="sq-header">
+      <a href="../math.html">← 算数へ</a>
+      <h1>垂直・平行ラインクイズ！</h1>
+      <a class="mq-game-home" href="../index.html" aria-label="マナビクエストのトップへ戻る">
+        <img src="../assets/title.png" alt="マナビクエスト">
+      </a>
+    </header>
+    <div class="sq-layout line-quiz-layout">
+      <aside class="sq-panel sq-stats" aria-label="このゲームの記録">
+        <div class="sq-stat">算数ポイント<b id="points">0</b><small id="daily">今日 0 / 50pt</small></div>
+        <div class="sq-stat">連続正解<b id="streak">0</b></div>
+        <div class="sq-stat">最高記録<b id="best">0</b></div>
+        <strong id="challenge-clock" role="timer">時間制限なし</strong>
+        <button id="ranking-open" type="button">共有ランキング</button>
+        <div class="parallel-guide"><strong id="level">初級</strong><small id="storage-status" role="status"></small></div>
+      </aside>
+      <main class="sq-panel sq-main">
+        <h2 id="mission" class="line-quiz-mission"></h2>
+        <p id="question" class="sq-question"></p>
+        <div id="diagram" aria-label="AからGまでの7本の直線"></div>
+        <p id="hint" class="sq-hint" role="status"></p>
+        <div class="parallel-controls">
+          <span id="selection-count" aria-live="polite"></span>
+          <button id="confirm" type="button" disabled>決定！</button>
+        </div>
+        <section id="challenge-gate" class="parallel-gate" hidden>
+          <h2 id="challenge-heading"></h2>
+          <p id="challenge-message"></p>
+          <button id="challenge-start" type="button"></button>
+        </section>
+        <section id="line-ranking" class="parallel-gate" aria-label="共有ランキング" hidden>
+          <h2>共有ランキング</h2>
+          <p id="ranking-message" role="status"></p>
+          <table aria-label="連続正解ランキング"><thead><tr><th>順位</th><th>名前</th><th>最高記録</th></tr></thead><tbody id="ranking-rows"></tbody></table>
+          <button id="ranking-close" type="button">閉じる</button>
+        </section>
+      </main>
+      <aside class="sq-panel sq-titles parallel-titles">
+        <h2>称号タワー</h2>
+        <ol id="tower" aria-label="称号と獲得状況"></ol>
+      </aside>
+    </div>
+  </div>
+  <script type="module" src="../line-quiz-game.js?v=159b967ab2e5"></script>
+</body>
+</html>

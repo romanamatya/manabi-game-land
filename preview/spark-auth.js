@@ -1,6 +1,6 @@
-import {createManagementStore} from './management-store.js?v=060cc4ddf53c';
-import {validateBackend,contractFor} from './data-contract.js?v=060cc4ddf53c';
-import {createFirestoreStore} from './firebase-store.js?v=060cc4ddf53c';
+import {createManagementStore} from './management-store.js?v=159b967ab2e5';
+import {validateBackend,contractFor} from './data-contract.js?v=159b967ab2e5';
+import {createFirestoreStore} from './firebase-store.js?v=159b967ab2e5';
 const config = window.MANABI_SPARK_CONFIG;
 const error = code => Object.assign(new Error(code), {code});
 const validName = value => typeof value === 'string' && value === value.trim() && value.length >= 1 && value.length <= 12 && !/[<>\r\n]/.test(value);
@@ -114,6 +114,18 @@ export function createAdminOperations(c,{auth,db},A,F) {
       return {players:players.rows,playerCursor:players.cursor,...more,managementReady:c.managementEnabled===true,audit:history.docs.map(d=>plain({...d.data(),id:d.id}))};
     }
     if (action === 'admin:players') return list('players', input.cursor);
+    if (contract.mode === 'preview' && c.gameIds?.includes('verticalParallel')) {
+      const target = ref('gameSettings', 'verticalParallel');
+      if (action === 'admin:line-quiz:read') {
+        const snap = await F.getDocFromServer(target);
+        return snap.exists() ? snap.data().status : 'published';
+      }
+      if (action === 'admin:line-quiz:visibility' && input.confirm === true
+          && ['published', 'hidden'].includes(input.status)) {
+        await F.setDoc(target, { status: input.status, updatedAt: F.serverTimestamp() });
+        return { ok: true };
+      }
+    }
     if (input.confirm !== true) throw error('invalid-input');
     if (action === 'admin:rename') return rename(input);
     if(managementActions.includes(action)){if(c.managementEnabled!==true)throw error('management-not-enabled');const role=await F.getDocFromServer(ref('private','admin'));if(role.data()?.managementEnabled!==true)throw error('management-not-enabled');const user=await verify();return management.mutate(user,action.slice(6),input);}
