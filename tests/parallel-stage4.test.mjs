@@ -11,7 +11,15 @@ test('parallelPair files and settings match the reviewed release candidate', asy
   const sharedRuntimeFiles = new Set(['environment.js', 'management-model.js', 'challenge120-core.js', 'economy-core.js', 'profile-catalog.js', 'public-admin-settings.js', 'ranking-sync-api.js', 'parallel-game.js', 'parallel.css', 'games/parallelPair.html']);
   for (const file of manifest.files) {
     if (sharedRuntimeFiles.has(file.path)) continue;
-    const bytes = await readFile(new URL(file.path, root));
+    let bytes = await readFile(new URL(file.path, root));
+    if (file.path === 'math-navigation.js') {
+      // Remove just the later line-quiz entry before comparing the reviewed menu.
+      bytes = Buffer.from(bytes.toString('utf8')
+        .replace("if(window.MANABI_BACKEND_CONFIG?.staticLocalGameIds?.includes('verticalParallel'))units.find(unit=>unit.id==='geometry').games.push('verticalParallel');\r\n", '')
+        .replace("verticalParallel:'赤い基準線を見て、垂直・平行な線を選ぼう',", '')
+        .replace("if(id!=='verticalParallel'){const rank", 'const rank')
+        .replace('actions.append(rank)}', 'actions.append(rank)'));
+    }
     assert.equal(createHash('sha256').update(bytes).digest('hex'), file.sha256, file.path);
   }
 
@@ -26,6 +34,8 @@ test('parallelPair files and settings match the reviewed release candidate', asy
   assert.ok(!config.staticLocalGameIds.includes('parallelPair'));
 
   const settings = {...config};
+  assert.equal(settings.staticLocalGameIds.filter(id=>id==='verticalParallel').length,1);
+  settings.staticLocalGameIds=settings.staticLocalGameIds.filter(id=>id!=='verticalParallel');
   for (const key of ['gameIds','rankingGameIds']) {
     assert.equal(settings[key].filter(id=>id==='missingAlphabet').length,1);
     settings[key]=settings[key].filter(id=>id!=='missingAlphabet');
