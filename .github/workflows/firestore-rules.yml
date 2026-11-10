@@ -47,3 +47,9 @@ jobs:
       - run: npm run test:simple-admin
       - run: npm run test:rules:simple-admin
 
+
+      - name: Verify the line quiz's preview-only ranking and visibility rules
+        run: |
+          ./node_modules/.bin/firebase emulators:exec --project demo-manabi-vertical-parallel \
+            --only firestore --config firebase/rules-release-emulator.json \
+            "node --test tests/rules/vertical-parallel-preview.test.mjs"

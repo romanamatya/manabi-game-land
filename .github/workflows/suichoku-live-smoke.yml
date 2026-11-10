@@ -10,6 +10,7 @@ on:
       - 'parallel.css'
       - 'parallel-game.js'
       - 'tests/game-ui-layout.spec.mjs'
+      - 'tests/vertical-parallel-layout.spec.mjs'
       - 'tests/points-storage.spec.mjs'
       - 'storage-adapters.js'
       - 'math-concepts-production-points.js'
@@ -62,6 +63,7 @@ on:
       - 'parallel.css'
       - 'parallel-game.js'
       - 'tests/game-ui-layout.spec.mjs'
+      - 'tests/vertical-parallel-layout.spec.mjs'
       - 'tests/points-storage.spec.mjs'
       - 'storage-adapters.js'
       - 'math-concepts-production-points.js'
@@ -135,3 +137,7 @@ jobs:
         run: |
           npx playwright install --with-deps webkit
           npx playwright test tests/points-storage.spec.mjs --browser webkit
+
+      - name: Check the line quiz with iPad-sized touch input
+        if: github.event_name == 'pull_request'
+        run: npx playwright test tests/vertical-parallel-layout.spec.mjs --browser webkit

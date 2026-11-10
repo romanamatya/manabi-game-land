@@ -222,6 +222,15 @@ service cloud.firestore {
               || a.action == 'reset' && d.generation == (old == null ? 1 : old.generation + 1) && d.published == (old == null ? true : old.published) && d.campaign == (old == null ? {'enabled':false,'endAt':null,'id':null} : old.campaign)
                 && d.rankingResetAt == request.time && getAfter(/databases/$(database)/documents/previewSpark/v1/rankingBackups/$(d.rankingBackup)).data.generation == (old == null ? 0 : old.generation)));
     }
+    // Line quiz preview setting: status (published or hidden), updatedAt (server timestamp).
+    match /previewSpark/v1/gameSettings/verticalParallel {
+      function validLineQuizVisibility(data) {
+        return data.keys().hasOnly(['status', 'updatedAt'])
+          && data.status in ['published', 'hidden'] && data.updatedAt == request.time;
+      }
+      allow get: if request.auth != null;
+      allow create, update: if admin() && validLineQuizVisibility(request.resource.data);
+    }
     match /previewSpark/v1/gameSettings/{game} {
       allow read: if mgGame(game);
       allow create: if mgGame(game) && mgWrite('previewSpark/v1/gameSettings/'+game,null,request.resource.data,false);
@@ -281,7 +290,7 @@ service cloud.firestore {
 
     // Sanitized, per-game public leaderboard projection. Player profiles stay private.
     function rankingGame(game) {
-      return game in ['keisan','pref-name','pref-place','alphabet','distribution','distribution2','exchangeAssociation','kotowaza','multiplicationProperties','shapeExpressions','keisanSummary'];
+      return game in ['keisan','pref-name','pref-place','alphabet','distribution','distribution2','exchangeAssociation','kotowaza','multiplicationProperties','shapeExpressions','keisanSummary','verticalParallel'];
     }
     function rankingShape(game, uid, data) {
       return rankingGame(game) && data.keys().hasOnly(['uid','game','nickname','bestStreak','icon','frame','title','badge','updatedAt'])
@@ -293,6 +302,10 @@ service cloud.firestore {
         && (data.badge == null || data.badge is string && data.badge.size() <= 80)
         && data.updatedAt == request.time;
     }
+    function rankingIsOpen(game) {
+      let setting = /databases/$(database)/documents/previewSpark/v1/gameSettings/verticalParallel;
+      return game != 'verticalParallel' || !exists(setting) || get(setting).data.status == 'published';
+    }
     match /previewSpark/v1/rankings/{game}/players/{uid} {
       // Only the sanitized projection is visible to authenticated users.
       allow get, list: if request.auth != null && rankingGame(game);
@@ -300,10 +313,12 @@ service cloud.firestore {
       allow create: if request.auth != null
         && request.auth.token.firebase.sign_in_provider == 'anonymous'
         && request.auth.uid == uid
+        && rankingIsOpen(game)
         && rankingShape(game, uid, request.resource.data);
       allow update: if request.auth != null
         && request.auth.token.firebase.sign_in_provider == 'anonymous'
         && request.auth.uid == uid
+        && rankingIsOpen(game)
         && rankingShape(game, uid, request.resource.data)
         && request.resource.data.game == resource.data.game
         && request.resource.data.uid == resource.data.uid

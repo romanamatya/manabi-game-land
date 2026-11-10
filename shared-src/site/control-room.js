@@ -7,7 +7,7 @@ const node=(tag,text)=>{const n=document.createElement(tag);if(text!==undefined)
 const btn=(text,fn)=>{const b=node('button',text);b.type='button';b.onclick=fn;return b};
 const date=v=>v?new Date(v).toLocaleString('ja-JP',{timeZone:'Asia/Tokyo'}):'—';
 function lock(){data=null;$('workspace').hidden=true;$('login').hidden=false;$('content').replaceChildren();$('logout').hidden=true;$('account').textContent=''}
-async function refresh(){try{data=await api.call('admin:snapshot');$('workspace').hidden=false;$('login').hidden=true;$('logout').hidden=false;$('account').textContent='本番・管理者';draw()}catch(e){lock();$('status').textContent=errorText(e)}}
+async function refresh(){try{data=await api.call('admin:snapshot');$('workspace').hidden=false;$('login').hidden=true;$('logout').hidden=false;$('account').textContent=cfg?.mode==='preview'?'確認用・管理者':'本番・管理者';draw()}catch(e){lock();$('status').textContent=errorText(e)}}
 function table(headers,rows){const t=node('table'),h=node('thead'),tr=node('tr');headers.forEach(x=>tr.append(node('th',x)));h.append(tr);t.append(h);const body=node('tbody');rows.forEach(row=>{const r=node('tr');row.forEach(v=>{const c=node('td');if(v instanceof Node)c.append(v);else c.textContent=v??'—';r.append(c)});body.append(r)});t.append(body);return t}
 function panel(title){$('content').replaceChildren(node('h2',title));return $('content')}
 function ask(title,description,submit){$('dialogTitle').textContent=title;$('dialogFields').replaceChildren(node('p',description));$('dialogError').textContent='';pending=async()=>submit();$('confirmDialog').showModal()}
@@ -18,7 +18,23 @@ function campaignTab(){const n=panel('ゲームのポイントキャンペーン
 function noticeTab(){const n=panel('ホーム画面のお知らせ');if(!managementEnabled||!data.managementReady){n.append(node('p','管理Rulesと権限の有効化後に利用できます。'));return}const title=node('input'),body=node('textarea'),publish=node('input');title.maxLength=80;body.maxLength=3000;title.value=data.notice?.title||'';body.value=data.notice?.body||'';publish.type='checkbox';publish.checked=data.notice?.published===true;for(const [text,input]of [['タイトル',title],['本文',body],['ホームに公開',publish]]){const l=node('label',text);l.append(input);n.append(l)}n.append(btn('保存',()=>ask('お知らせを保存','現在のお知らせを更新します。',()=>api.call('admin:notice',{title:title.value,body:body.value,published:publish.checked,confirm:true}))),btn('削除',()=>ask('お知らせを削除','現在のお知らせを非公開にします。',()=>api.call('admin:notice',{title:title.value,body:body.value,published:false,deleted:true,confirm:true}))))}
 function applyVisibility(games,status,label){if(!games.length){$('status').textContent='ゲームを選択してください';return}if(games.includes('missingAlphabet')){if(games.length!==1){$('status').textContent='ぬけたアルファベットは、一括変更の負荷を避けるため個別に設定してください。';return}ask('公開設定を変更',`${label}を「${statusLabels[status]}」に変更します。`,()=>api.call('admin:visibility',{game:'missingAlphabet',status,confirm:true}));return}ask('公開設定を変更',`${label}の${games.length}ゲームを「${statusLabels[status]}」に変更します。`,()=>api.call('admin:visibilityBatch',{games,status,confirm:true}))}
 function availabilityTab(){const n=panel('ゲームの公開設定');if(!managementEnabled||!data.managementReady){n.append(node('p','管理Rulesと権限の有効化後に利用できます。'));return}const bulk=node('section'),batchGames=data.games.filter(g=>g.id!=='missingAlphabet').map(g=>g.id);bulk.append(node('p','一括操作は既存ゲームを対象にします。ぬけたアルファベットは個別に設定できます。'));bulk.append(btn('すべて公開',()=>applyVisibility(batchGames,'published','一括変更対象ゲーム')),btn('すべて準備中',()=>applyVisibility(batchGames,'preparing','一括変更対象ゲーム')),btn('すべて非公開',()=>applyVisibility(batchGames,'hidden','一括変更対象ゲーム')));const selectedStatus=node('select');[['published','公開中'],['preparing','準備中'],['hidden','非公開']].forEach(([value,label])=>{const option=node('option',label);option.value=value;selectedStatus.append(option)});bulk.append(selectedStatus,btn('選択したゲームに適用',()=>{const games=[...n.querySelectorAll('input[data-game-select]:checked')].map(x=>x.value);applyVisibility(games,selectedStatus.value,'選択したゲーム')}));n.append(bulk,table(['選択','ゲーム','現在の状態','個別変更'],(data.games||[]).map(g=>{const check=node('input');check.type='checkbox';check.value=g.id;check.dataset.gameSelect='true';check.setAttribute('aria-label',(names[g.id]||g.id)+'を一括変更の対象にする');const s=node('select');[['unknown','未確認'],['published','公開中'],['preparing','公開準備中'],['hidden','非公開']].forEach(([v,t])=>{const o=node('option',t);o.value=v;o.selected=(g.status||'unknown')===v;if(v==='unknown')o.disabled=true;s.append(o)});s.onchange=()=>{const value=s.value;s.value=g.status||'unknown';if(['published','preparing','hidden'].includes(value))applyVisibility([g.id],value,names[g.id]||g.id)};return[check,names[g.id]||g.id,statusLabels[g.status]||statusLabels.unknown,s]})))}
-function draw(){for(const b of document.querySelectorAll('[data-tab]'))b.setAttribute('aria-current',String(b.dataset.tab===active));({players:nicknameTab,campaigns:campaignTab,notices:noticeTab,availability:availabilityTab})[active]()}
+function lineQuizTab() {
+ const n=panel('垂直・平行ラインクイズ！の公開設定');
+ const status=node('p','読み込み中…');n.append(status);
+ api.call('admin:line-quiz:read').then(value=>{
+  if(!status.isConnected)return;
+  status.textContent=statusLabels[value]||statusLabels.unknown;
+  for(const [next,label] of [['published','公開する'],['hidden','非公開にする']]){
+   const button=btn(label,()=>ask('公開設定を変える',label+'。対象は確認用の垂直・平行ラインクイズ！です。',()=>api.call('admin:line-quiz:visibility',{status:next,confirm:true})));
+   button.disabled=next===value;n.append(button);
+  }
+ }).catch(error=>{status.textContent=errorText(error)});
+}
+if(cfg?.mode==='preview'&&cfg.gameIds?.includes('verticalParallel')){
+ const tab=btn('ラインクイズの公開設定',()=>{active='lineQuiz';draw()});
+ tab.dataset.tab='lineQuiz';$('workspace').querySelector('nav').append(tab);
+}
+function draw(){for(const b of document.querySelectorAll('[data-tab]'))b.setAttribute('aria-current',String(b.dataset.tab===active));({players:nicknameTab,campaigns:campaignTab,notices:noticeTab,availability:availabilityTab,lineQuiz:lineQuizTab})[active]()}
 document.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>{active=b.dataset.tab;draw()});
 $('passwordLogin').onsubmit=async e=>{e.preventDefault();try{api=await client();await api.login($('adminPassword').value);await refresh()}catch(err){$('loginError').textContent=errorText(err)}};
 $('logout').onclick=async()=>{await api?.logout();lock()};
