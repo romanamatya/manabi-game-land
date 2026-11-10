@@ -1,5 +1,5 @@
-import {validateConfig} from './spark-auth.js?v=ab3a8e720211';
-import {SUBJECTS,zero,number,union,mergePlayer,error} from './player-sync-model.js?v=ab3a8e720211';
+import {validateConfig} from './spark-auth.js?v=23f24924246c';
+import {SUBJECTS,zero,number,union,mergePlayer,error} from './player-sync-model.js?v=23f24924246c';
 export async function createPlayerClient(config,[App,A,F],{testScope=false}={}){
  validateConfig(config);
  const name=testScope?'manabi-preview-player-test':'manabi-preview-player-v2';
