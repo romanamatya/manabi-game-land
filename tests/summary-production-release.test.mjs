@@ -134,5 +134,6 @@ test('the geometry list includes the new game only when its standalone release i
   assert.deepEqual(cards.children.map(card => card.dataset.gameCard), [...geometryIds, 'verticalParallel']);
   const [play, ranking] = cards.children.at(-1).children[2].children;
   assert.equal(play.dataset.gameHref, 'games/verticalParallel.html');
-  assert.equal(ranking, undefined);
+  assert.equal(ranking.href, 'ranking.html?game=verticalParallel');
+  assert.equal(cards.children.at(-1).dataset.hideUnpublished, 'true');
 });

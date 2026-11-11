@@ -39,12 +39,29 @@ export function createLineQuizCloud({ F, db, uid }) {
 export function openLineQuizRanking({ storage, titles }) {
   const config = window.MANABI_BACKEND_CONFIG;
   const params = new URL(location.href).searchParams;
-  const allowed = previewLineQuizEnabled(config, window.MANABI_ENV)
+  const env = window.MANABI_ENV;
+  const production = env?.preview === false && env.expectedProjectId === 'manabi-game-land'
+    && config?.mode === 'production' && config.firebase?.projectId === env.expectedProjectId
+    && config.verticalParallelManagedEnabled === true;
+  const allowed = (production || previewLineQuizEnabled(config, env))
     && !params.has('adminTest') && !params.has('syncTest');
   let pending, lastPublished = 0, inFlight = false, desiredBest = 0;
   function client() {
     if (!allowed) return Promise.reject(Error('preview-line-quiz-only'));
     if (!pending) pending = (async () => {
+      if (production) {
+        const { verticalParallelClient } = await import('./ranking-sync-api.js');
+        const api = await verticalParallelClient();
+        return {
+          rows: () => api.rankings(game),
+          async publish({ bestStreak, nickname, title, badge }) {
+            const canonical = config.accountAccessEnabled === true
+              ? await api.getExistingPlayerLink() : await api.ensurePlayerLink(nickname);
+            const { icon, frame } = window.ManabiProfile?.appearance(storage) || {};
+            return api.publishRanking({ game, bestStreak, nickname: canonical, icon, frame, title, badge });
+          },
+        };
+      }
       const { F, db } = await window.ManabiFirebaseSession.open(config.firebase);
       if (db.app.options.projectId !== project) throw Error('preview-project-mismatch');
       const { getAuth } = await import('https://www.gstatic.com/firebasejs/13.1.0/firebase-auth.js');
@@ -69,7 +86,8 @@ export function openLineQuizRanking({ storage, titles }) {
         const api = await client();
         while (lastPublished < desiredBest) {
           const bestStreak = desiredBest;
-          await api.publish({ bestStreak, nickname, title: titles.filter(t => t.at <= bestStreak).at(-1)?.name || null });
+          const earned = titles.filter(t => t.at <= bestStreak).at(-1);
+          await api.publish({ bestStreak, nickname, title: earned?.name || null, badge: earned?.id || null });
           lastPublished = bestStreak;
         }
       } catch {

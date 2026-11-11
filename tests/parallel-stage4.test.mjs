@@ -17,7 +17,8 @@ test('parallelPair files and settings match the reviewed release candidate', asy
       bytes = Buffer.from(bytes.toString('utf8')
         .replace("if(window.MANABI_BACKEND_CONFIG?.staticLocalGameIds?.includes('verticalParallel'))units.find(unit=>unit.id==='geometry').games.push('verticalParallel');\r\n", '')
         .replace("verticalParallel:'赤い基準線を見て、垂直・平行な線を選ぼう',", '')
-        .replace("if(id!=='verticalParallel'){const rank", 'const rank')
+        .replace("if(id==='verticalParallel'&&window.MANABI_BACKEND_CONFIG?.verticalParallelManagedEnabled===true){item.dataset.hideUnpublished='true';item.hidden=true}", '')
+        .replace("if(id!=='verticalParallel'||window.MANABI_BACKEND_CONFIG?.verticalParallelManagedEnabled===true){const rank", 'const rank')
         .replace('actions.append(rank)}', 'actions.append(rank)'));
     }
     assert.equal(createHash('sha256').update(bytes).digest('hex'), file.sha256, file.path);
@@ -34,6 +35,8 @@ test('parallelPair files and settings match the reviewed release candidate', asy
   assert.ok(!config.staticLocalGameIds.includes('parallelPair'));
 
   const settings = {...config};
+  assert.equal(settings.verticalParallelManagedEnabled,true);
+  delete settings.verticalParallelManagedEnabled;
   assert.equal(settings.staticLocalGameIds.filter(id=>id==='verticalParallel').length,1);
   settings.staticLocalGameIds=settings.staticLocalGameIds.filter(id=>id!=='verticalParallel');
   for (const key of ['gameIds','rankingGameIds']) {

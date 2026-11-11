@@ -11,6 +11,7 @@ export function renderGameState(card,state){
  if(!play||!badge)throw Error('game-selection-card-incomplete');
  const normalized=Object.hasOwn(labels,state)?state:'unknown',blocked=normalized!=='published';
  card.dataset.gameAvailability=normalized;play.disabled=blocked;
+ if(card.dataset.hideUnpublished==='true')card.hidden=blocked;
  play.textContent=normalized==='checking'?'確認中…':blocked?'× プレイ':'プレイ';
  play.setAttribute('aria-label',normalized==='published'?'プレイ':labels[normalized]+'。プレイできません');
  badge.textContent=labels[normalized];badge.hidden=normalized==='published';return normalized;

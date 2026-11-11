@@ -9,12 +9,12 @@ const displayNames={parallelPair:'平行な2本を見つけよう！',keisan:'�
 const descriptions={verticalParallel:'赤い基準線を見て、垂直・平行な線を選ぼう',parallelPair:'7本の直線から平行な2本を見つけよう',keisan:'計算する順番を考えよう',distribution:'100を使って式を変え、計算しよう',distribution2:'共通する数をまとめて計算しよう',exchangeAssociation:'計算しやすい組み合わせを見つけよう',multiplicationProperties:'かける数が変わると、積はどう変わる？',shapeExpressions:'図の囲み方を式に表そう',suichoku:'2本の直線が垂直に交わる組を見つけよう',keisanSummary:'7つの問題形式で総復習。30問連続で最高称号！'};
 for(const id of (units.find(u=>u.id===unitId)?.games||[])){
  const g=window.ManabiProfileCatalog.find(g=>g.id===id),title=displayNames[id]||g?.name||id;
- const item=document.createElement('article');item.className='unit-card game-card';item.dataset.gameCard=id;if(id==='keisanSummary')item.classList.add('summary-card');
+ const item=document.createElement('article');item.className='unit-card game-card';item.dataset.gameCard=id;if(id==='verticalParallel'&&window.MANABI_BACKEND_CONFIG?.verticalParallelManagedEnabled===true){item.dataset.hideUnpublished='true';item.hidden=true}if(id==='keisanSummary')item.classList.add('summary-card');
  const summary=document.createElement('div');summary.className='game-summary';const h=document.createElement('h2'),p=document.createElement('p');h.textContent=title;p.textContent=descriptions[id]||'';summary.append(h,p);
  const badge=document.createElement('span');badge.className='game-status-badge';badge.dataset.gameStatus='';badge.setAttribute('role','status');badge.setAttribute('aria-live','polite');badge.hidden=true;
  const actions=document.createElement('div');actions.className='game-actions';
  const play=document.createElement('button');play.type='button';play.className='play-button';play.dataset.gamePlay='';play.dataset.gameId=id;play.dataset.gameHref=testLink('games/'+id+'.html');play.disabled=true;play.textContent='確認中…';actions.append(play);
- if(id!=='verticalParallel'){const rank=document.createElement('a');rank.className='rank-button';rank.dataset.gameRanking='';rank.href=testLink(id==='keisanSummary'?'summary-ranking.html':'ranking.html?game='+id);rank.textContent='ランキング';actions.append(rank)}
+ if(id!=='verticalParallel'||window.MANABI_BACKEND_CONFIG?.verticalParallelManagedEnabled===true){const rank=document.createElement('a');rank.className='rank-button';rank.dataset.gameRanking='';rank.href=testLink(id==='keisanSummary'?'summary-ranking.html':'ranking.html?game='+id);rank.textContent='ランキング';actions.append(rank)}
  item.append(summary,badge,actions);root.append(item);
 }
 window.ManabiGameSelection?.initialize();

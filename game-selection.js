@@ -1,4 +1,4 @@
-import {bindGameAvailability} from './game-selection-model.js?v=availability-read-fix-20261102';
+import {bindGameAvailability} from './game-selection-model.js?v=vertical-parallel-managed-v1';
 const initialized=new WeakSet();
 function addMissingAlphabetCard(){
  const config=window.MANABI_BACKEND_CONFIG;

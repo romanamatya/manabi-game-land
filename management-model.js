@@ -22,7 +22,7 @@ export function checkedInput(action,input){
   if(typeof input.enabled!=='boolean')throw Error('invalid-campaign');
  }
  if(action==='visibility'&&(!GAME_IDS.includes(input.game)||!['published','preparing','hidden'].includes(input.status)))throw Error('invalid-visibility');
- if(action==='visibilityBatch'&&(!Array.isArray(input.games)||!input.games.length||input.games.length>GAME_IDS.length||input.games.some(g=>!GAME_IDS.includes(g))||new Set(input.games).size!==input.games.length||!['published','preparing','hidden'].includes(input.status)))throw Error('invalid-visibility-batch');
+ if(action==='visibilityBatch'&&(!Array.isArray(input.games)||!input.games.length||input.games.length>GAME_IDS.length||input.games.some(g=>!GAME_IDS.includes(g)&&!(g==='verticalParallel'&&input.games.length===1))||new Set(input.games).size!==input.games.length||!['published','preparing','hidden'].includes(input.status)))throw Error('invalid-visibility-batch');
  if(action==='notice'&&(typeof input.title!=='string'||input.title.length>80||typeof input.body!=='string'||input.body.length>3000||typeof input.published!=='boolean'||input.published&&!input.title.trim()))throw Error('invalid-notice');
  return input;
 }
