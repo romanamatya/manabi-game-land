@@ -1,5 +1,5 @@
 // Suichoku is deliberately ranking-only: it is not part of the management batch.
-const GAME_IDS=Object.freeze(['keisan','pref-name','pref-place','alphabet','missingAlphabet','distribution','distribution2','exchangeAssociation','kotowaza','multiplicationProperties','shapeExpressions','keisanSummary','suichoku','parallelPair']);
+const GAME_IDS=Object.freeze(['keisan','pref-name','pref-place','alphabet','missingAlphabet','distribution','distribution2','exchangeAssociation','kotowaza','multiplicationProperties','shapeExpressions','keisanSummary','suichoku','parallelPair','verticalParallel']);
 const err=code=>Object.assign(new Error(code),{code});
 const validLabel=value=>typeof value==='string'&&value.length<=80;
 export function bestForSharedRanking(game,record,challenge){
@@ -24,7 +24,7 @@ export async function createProductionRankingClient(c,[App,A,F]){
  await A.setPersistence(auth,A.browserLocalPersistence);await auth.authStateReady();
  if(!auth.currentUser)await A.signInAnonymously(auth);
  if(!auth.currentUser?.isAnonymous)throw err('anonymous-player-required');
- const uid=auth.currentUser.uid,allowed=new Set(scopedMissingAlphabet?['missingAlphabet']:(c.rankingGameIds||GAME_IDS.filter(x=>x!=='parallelPair')).filter(x=>GAME_IDS.includes(x)&&x!=='missingAlphabet'&&(x!=='parallelPair'||c.parallelPairRankingEnabled===true)));
+ const uid=auth.currentUser.uid,allowed=new Set(scopedMissingAlphabet?['missingAlphabet']:(c.rankingGameIds||GAME_IDS.filter(x=>x!=='parallelPair')).filter(x=>GAME_IDS.includes(x)&&x!=='missingAlphabet'&&(x!=='parallelPair'||c.parallelPairRankingEnabled===true)&&(x!=='verticalParallel'||c.verticalParallelManagedEnabled===true)));
  let profileUid=null,profileDb=null;
  if(c.playerNameSyncEnabled===true||scopedMissingAlphabet){
   const profileApp=App.getApps().find(x=>x.name==='[DEFAULT]')||App.initializeApp(c.firebase);
@@ -119,4 +119,14 @@ export function missingAlphabetClient(){
   .then(sdks=>createProductionRankingClient({...config,rankingSyncEnabled:false,playerNameSyncEnabled:false,rankingGameIds:['missingAlphabet']},sdks))
   .catch(error=>{missingAlphabetPending=null;throw error});
  return missingAlphabetPending;
+}
+
+let verticalParallelPending;
+export function verticalParallelClient(){
+ const config=window.MANABI_BACKEND_CONFIG;
+ if(config?.verticalParallelManagedEnabled!==true||config.playerNameSyncEnabled!==true)return Promise.reject(err('vertical-parallel-ranking-disabled'));
+ if(!verticalParallelPending)verticalParallelPending=Promise.all(['app','auth','firestore'].map(n=>import('https://www.gstatic.com/firebasejs/13.1.0/firebase-'+n+'.js')))
+  .then(sdks=>createProductionRankingClient({...config,missingAlphabetRankingSyncEnabled:false,rankingGameIds:['verticalParallel']},sdks))
+  .catch(error=>{verticalParallelPending=null;throw error});
+ return verticalParallelPending;
 }

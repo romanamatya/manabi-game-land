@@ -5,7 +5,8 @@
  const games=['keisan','pref-name','pref-place','alphabet','missingAlphabet','distribution','distribution2','exchangeAssociation','kotowaza','multiplicationProperties','shapeExpressions','keisanSummary','parallelPair','suichoku','verticalParallel'];
  const settingsRoot=cfg.environment==='productionAdmin/v1'?'productionAdmin/v1':cfg.environment==='previewSpark/v1'?'previewSpark/v1':null;
  const staticLocalGames=new Set(cfg.staticLocalGameIds||[]);
- const staticPublished=id=>staticLocalGames.has(id);
+ const managedLineQuiz=id=>id==='verticalParallel'&&cfg.verticalParallelManagedEnabled===true;
+ const staticPublished=id=>staticLocalGames.has(id)&&!managedLineQuiz(id);
  const staticSnapshot={exists:()=>true,data:()=>({status:'published'}),metadata:{fromCache:false}};
  function gameAvailabilityStatus(setting){
   if(!setting)return 'unknown';
@@ -27,7 +28,7 @@
  async function read(collection,id){
   if(!settingsRoot)throw Error('settings-environment-unavailable');
   const session=await db(),snapshot=await session.F.getDocFromServer(session.F.doc(session.db,settingsRoot+'/'+collection+'/'+id));
-  return snapshot.exists()?snapshot.data():null;
+  return snapshot.exists()?snapshot.data():collection==='gameSettings'&&managedLineQuiz(id)?staticSnapshot.data():null;
  }
  window.ManabiPublicSettings=Object.freeze({
   availabilityEnabled:cfg.availabilityEnabled===true,
@@ -35,10 +36,12 @@
   subscribeGame(id,onValue,onError){
    if(!settingsRoot||!games.includes(id))return Promise.reject(Error('game-settings-unavailable'));
    if(staticPublished(id)){onValue(staticSnapshot);return Promise.resolve(()=>{});}
-   return db().then(({F,db})=>F.onSnapshot(F.doc(db,settingsRoot+'/gameSettings/'+id),{includeMetadataChanges:true},onValue,onError));
+   return db().then(({F,db})=>F.onSnapshot(F.doc(db,settingsRoot+'/gameSettings/'+id),{includeMetadataChanges:true},snapshot=>{
+    onValue(managedLineQuiz(id)&&!snapshot.metadata.fromCache&&!snapshot.exists()?staticSnapshot:snapshot);
+   },onError));
   }
  });
- const gameId=location.pathname.match(/(?:^|\/)games\/([^/]+)\.html$/)?.[1],gated=cfg.availabilityEnabled===true&&games.includes(gameId)&&!staticPublished(gameId);
+ const gameId=location.pathname.match(/(?:^|\/)games\/([^/]+)\.html$/)?.[1],gated=cfg.availabilityEnabled===true&&games.includes(gameId)&&!staticPublished(gameId)&&!managedLineQuiz(gameId);
  if(gated){
   const readGameSetting=()=>read('gameSettings',gameId);
   if(window.ManabiGameAvailability?.create){const reset=()=>window.ManabiPublicSettings?.reset?.();void window.ManabiGameAvailability.create(document).check(readGameSetting,{onTimeout:reset,onError:reset});}

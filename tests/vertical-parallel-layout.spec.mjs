@@ -183,8 +183,41 @@ test('the preview management game list exposes the line quiz controls', async ({
   await expect(row.getByRole('cell', { name: '公開中', exact: true })).toBeVisible();
 });
 
-test('the production game preserves progress and awards points while ranking is paused', async ({ page }) => {
+test('the production game follows managed visibility, preserves progress and shares challenge scores', async ({ page }) => {
   await page.setViewportSize(viewports[0]);
+  await page.route(/\/public-firebase-session\.js(?:\?|$)/, route => route.fulfill({
+    contentType: 'text/javascript',
+    body: `
+      const snapshot = status => ({ metadata: { fromCache: false }, exists: () => status !== null, data: () => ({ status }) });
+      window.ManabiFirebaseSession = { open: async () => ({ db: {}, F: {
+        doc: (_db, path) => path,
+        getDocFromServer: async () => snapshot('published'),
+        onSnapshot: (path, _options, update) => {
+          const receive = event => { if (path.endsWith('/verticalParallel')) update(snapshot(event.detail)); };
+          window.addEventListener('test-line-quiz-visibility', receive);
+          update(snapshot(path.endsWith('/verticalParallel') ? sessionStorage.getItem('line-quiz-status') : 'published'));
+          return () => window.removeEventListener('test-line-quiz-visibility', receive);
+        },
+      } }) };
+    `,
+  }));
+  await page.route(/\/ranking-sync-api\.js\?v=vertical-parallel-managed-v1$/, route => route.fulfill({
+    contentType: 'text/javascript',
+    body: `
+      export async function verticalParallelClient() {
+        return {
+          ensurePlayerLink: async () => '図形テスト',
+          publishRanking: async row => sessionStorage.setItem('line-quiz-published', JSON.stringify(row)),
+          rankings: async () => [{ nickname:'検証プレイヤー', icon:'rabbit', frame:'plain',
+            title:'垂直・平行の覇王', badge:'verticalParallel:25', bestStreak:27 }],
+        };
+      }
+    `,
+  }));
+  const visibility = status => page.evaluate(status => {
+    sessionStorage.setItem('line-quiz-status', status);
+    window.dispatchEvent(new CustomEvent('test-line-quiz-visibility', { detail: status }));
+  }, status);
   await page.addInitScript(() => {
     if (sessionStorage.getItem('line-quiz-fixture')) return;
     sessionStorage.setItem('line-quiz-fixture', '1');
@@ -204,6 +237,16 @@ test('the production game preserves progress and awards points while ranking is 
   await page.goto(new URL('math-geometry.html', base).href);
   const card = page.locator('[data-game-card="verticalParallel"]');
   await expect(card.getByRole('button', { name: 'プレイ' })).toBeEnabled();
+  await visibility('hidden');
+  await expect(card).toBeHidden();
+  await expect(page.locator('[data-game-card="parallelPair"]')).toBeVisible();
+  await page.goto(new URL('games/verticalParallel.html', base).href);
+  await expect(page.locator('#challenge-heading')).toHaveText('現在非公開です');
+  await expect(page.locator('#confirm')).toBeDisabled();
+  await expect(page.locator('#ranking-open')).toBeDisabled();
+  await visibility('published');
+  await page.goto(new URL('math-geometry.html', base).href);
+  await expect(card.getByRole('button', { name: 'プレイ' })).toBeEnabled();
   await card.getByRole('button', { name: 'プレイ' }).click();
   await expect(page).toHaveURL(/\/games\/verticalParallel\.html$/);
   await expect(page.locator('#tower img')).toHaveCount(5);
@@ -219,9 +262,14 @@ test('the production game preserves progress and awards points while ranking is 
   await expect(page.locator('#daily')).toHaveText('今日 1 / 50pt');
   await expect(page.locator('#tower .earned')).toHaveCount(5);
   await page.locator('#ranking-open').tap();
-  await expect(page.locator('#ranking-message')).toHaveText('共有ランキングは準備中です。端末の最高記録は 25問です。');
+  await expect(page.locator('#ranking-rows')).toContainText('検証プレイヤー');
+  await expect(page.locator('#ranking-rows')).toContainText('垂直・平行の覇王');
+  await expect(page.locator('#ranking-rows [role="img"]').first()).toHaveAttribute('aria-label', /アイコン/);
+  expect(await page.evaluate(() => sessionStorage.getItem('line-quiz-published'))).toBeNull();
   await page.locator('#ranking-close').tap();
   await page.locator('#challenge-start').tap();
+  await expect.poll(() => page.evaluate(() => JSON.parse(sessionStorage.getItem('line-quiz-published'))?.bestStreak)).toBe(25);
+
   await expect(page.locator('#challenge-clock')).toHaveText(/残り (2:00|1:59)/);
   await page.reload();
   await expect(page.locator('#best')).toHaveText('25');

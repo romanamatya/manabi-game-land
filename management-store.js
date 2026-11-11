@@ -1,4 +1,4 @@
-import {GAME_IDS,checkedInput,visibilityStatus} from './management-model.js?v=missing-alphabet-production-v1';
+import {GAME_IDS,checkedInput,visibilityStatus} from './management-model.js?v=vertical-parallel-managed-v1';
 import {contractFor} from './data-contract.js?v=adminprod-20261030';
 
 export function createManagementStore(mode,F,db){
@@ -25,8 +25,9 @@ export function createManagementStore(mode,F,db){
   return {ok:true,auditId:audit.id,backupId:backup.id};
  }
  async function snapshot(){
-  const [docs,notice,audit]=await Promise.all([Promise.all(GAME_IDS.map(id=>F.getDocFromServer(ref('gameSettings',id)))),F.getDocFromServer(ref('notices','current')),list('managementAudit')]);
-  const games=GAME_IDS.map(id=>{const data=docs.find(d=>d.id===id)?.exists()?plain(docs.find(d=>d.id===id).data()):{};return {id,...data,status:visibilityStatus(data)}});
+  const ids=mode==='production'?[...GAME_IDS,'verticalParallel']:GAME_IDS;
+  const [docs,notice,audit]=await Promise.all([Promise.all(ids.map(id=>F.getDocFromServer(ref('gameSettings',id)))),F.getDocFromServer(ref('notices','current')),list('managementAudit')]);
+  const games=ids.map((id,index)=>{const snap=docs[index];const data=snap.exists()?plain(snap.data()):{};return {id,...data,status:id==='verticalParallel'&&!snap.exists()?'published':visibilityStatus(data)}});
   const campaignMap=new Map();for(const game of games){const c=game.campaign;if(!c?.id)continue;const row=campaignMap.get(c.id)||{...c,games:[],enabled:true};row.games.push(game.id);row.enabled=row.enabled&&c.enabled===true;campaignMap.set(c.id,row)}
   const campaigns=[...campaignMap.values()];
   return {games,notice:notice.exists()?plain(notice.data()):null,managementAudit:audit,campaigns};

@@ -1,4 +1,4 @@
-import {createManagementStore} from './management-store.js?v=missing-alphabet-production-v1';
+import {createManagementStore} from './management-store.js?v=vertical-parallel-managed-v1';
 import {validateBackend,contractFor} from './data-contract.js?v=adminprod-20261030';
 import {createFirestoreStore} from './firebase-store.js?v=admin-stage2-player-rename-1';
 const config = window.MANABI_SPARK_CONFIG;

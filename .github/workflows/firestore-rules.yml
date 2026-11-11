@@ -53,3 +53,9 @@ jobs:
           ./node_modules/.bin/firebase emulators:exec --project demo-manabi-vertical-parallel \
             --only firestore --config firebase/rules-release-emulator.json \
             "node --test tests/rules/vertical-parallel-preview.test.mjs"
+
+      - name: Verify the line quiz's production Rules candidate
+        run: |
+          ./node_modules/.bin/firebase emulators:exec --project demo-manabi-vertical-parallel-production \
+            --only firestore --config firebase/rules-release-emulator.json \
+            "node --test tests/rules/vertical-parallel-production.test.mjs"

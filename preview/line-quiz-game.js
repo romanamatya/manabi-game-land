@@ -1,4 +1,4 @@
-import { openLineQuizRanking } from './line-quiz-online.js?v=23f24924246c';
+import { openLineQuizRanking } from './line-quiz-online.js?v=cc0d320be8b8';
 
 const $ = id => document.getElementById(id);
 const model = window.ManabiLineQuiz;
@@ -23,12 +23,22 @@ if (!preview && !production) {
   $('question').textContent = 'このゲームは現在非公開です。';
   throw Error('line-quiz-unavailable');
 }
-const ranking = preview ? openLineQuizRanking({ storage, titles: titleList }) : null;
+const managed = production && config.verticalParallelManagedEnabled === true;
+const testMode = new URLSearchParams(location.search).has('adminTest');
+const ranking = preview || (managed && !testMode)
+  ? openLineQuizRanking({ storage, titles: titleList }) : null;
+
+function publishChallengeBest() {
+  const { challenge: state } = progress.read();
+  const best = Math.max(0, ...[state.attemptBest, ...Object.values(state.bests || {})].filter(Number.isSafeInteger));
+  if (publicAllowed && best > 0) void ranking?.publish(best);
+}
 
 let question, mode, attempt, level, transition;
 let phase = 'closed';
 let selected = new Set();
-let publicAllowed = true;
+let publicAllowed = !managed;
+let availability = managed ? 'checking' : 'published';
 
 function svg(tag, attributes) {
   const node = document.createElementNS('http://www.w3.org/2000/svg', tag);
@@ -80,10 +90,11 @@ function paintGate(record) {
   const closed = !publicAllowed || ['waiting', 'ended'].includes(state.phase);
   $('challenge-gate').hidden = !closed;
   $('challenge-start').hidden = !publicAllowed;
+  $('ranking-open').disabled = !publicAllowed;
   if (!closed) return;
-  $('challenge-heading').textContent = !publicAllowed ? '現在非公開です'
+  $('challenge-heading').textContent = !publicAllowed ? ({checking:'公開状態を確認中です', unknown:'公開状態を確認できません', preparing:'公開準備中です'}[availability] || '現在非公開です')
     : state.phase === 'waiting' ? '垂直・平行の覇王 達成！' : 'チャレンジ終了';
-  $('challenge-message').textContent = !publicAllowed ? '公開されるまでお待ちください。'
+  $('challenge-message').textContent = !publicAllowed ? (availability === 'unknown' ? '通信を確認して、ページを読み直してください。' : '公開されるまでお待ちください。')
     : state.phase === 'waiting' ? '開始ボタンを押すと、25問連続からスタートするよ！'
     : `${state.endReason === 'timeout' ? '時間切れ！' : 'もう一度ちょうせんしよう！'} 今回の最高 ${state.attemptBest}問`;
   $('challenge-start').textContent = state.phase === 'waiting' ? '120秒チャレンジを始める' : 'もう一度120秒チャレンジ';
@@ -178,7 +189,7 @@ $('confirm').onclick = async () => {
     if (result.title) window.ManabiCelebrations.showTitle(result.title);
     else window.ManabiCelebrations.showCorrect();
     transition = setTimeout(next, result.title ? 1000 : 500);
-    void ranking?.publish(record.best);
+    publishChallengeBest();
   } else if (record.challenge.phase === 'training') {
     selected.clear();
     attempt = progress.begin(question);
@@ -205,10 +216,11 @@ for (const title of [...titleList].reverse()) {
 $('challenge-start').onclick = async () => {
   if (!publicAllowed) return;
   $('challenge-start').disabled = true;
-  try { await progress.start(); next(); }
+  try { await progress.start(); next(); publishChallengeBest(); }
   finally { $('challenge-start').disabled = false; }
 };
 $('ranking-open').onclick = async () => {
+  if (!publicAllowed) return;
   $('line-ranking').hidden = false;
   $('ranking-rows').replaceChildren();
   if (!ranking) {
@@ -218,14 +230,29 @@ $('ranking-open').onclick = async () => {
   $('ranking-message').textContent = '読み込み中…';
   try {
     const rows = await ranking.rows();
+    if (!publicAllowed) return;
     let previous, rank;
     for (const [i, item] of rows.entries()) {
       if (item.bestStreak !== previous) rank = i + 1;
       previous = item.bestStreak;
       const row = $('ranking-rows').insertRow();
-      for (const value of [rank + '位', item.nickname, item.bestStreak + '問連続']) {
-        row.insertCell().textContent = value;
+      row.insertCell().textContent = rank + '位';
+      const person = row.insertCell();
+      if (window.ManabiIdentity) {
+        person.append(window.ManabiIdentity.identity({
+          nickname: item.nickname,
+          appearance: { icon: item.icon, frame: item.frame, badge: item.badge },
+        }, { size: 38, badgeSize: 38, game }));
+        if (item.title) {
+          const title = document.createElement('small');
+          title.className = 'ranking-title';
+          title.textContent = item.title;
+          person.append(title);
+        }
+      } else {
+        person.textContent = item.nickname;
       }
+      row.insertCell().textContent = item.bestStreak + '問連続';
     }
     $('ranking-message').textContent = rows.length ? '' : 'まだ記録がありません。';
   } catch {
@@ -241,13 +268,31 @@ function tick() {
 }
 window.addEventListener('storage', () => { tick(); paintStats(progress.read()); });
 window.addEventListener('manabi-economy-change', () => paintStats(progress.read()));
-window.addEventListener('online', () => { void ranking?.publish(progress.read().best); });
+window.addEventListener('online', publishChallengeBest);
+window.addEventListener('focus', publishChallengeBest);
 document.addEventListener('visibilitychange', tick);
 setInterval(tick, 200);
-ranking?.watchAvailability(published => {
-  if (publicAllowed === published) return;
-  publicAllowed = published;
+function updateAvailability(state) {
+  if (state === availability) return;
+  availability = state;
+  publicAllowed = state === 'published';
+  if (!publicAllowed) $('line-ranking').hidden = true;
   if (phase !== 'checking') next();
-});
+  if (publicAllowed) publishChallengeBest();
+}
+if (managed) {
+  const unavailable = () => updateAvailability('unknown');
+  const timeout = setTimeout(unavailable, 10000);
+  const settings = window.ManabiPublicSettings;
+  if (!settings) unavailable();
+  else settings.subscribeGame(game, snapshot => {
+    if (snapshot.metadata.fromCache) return;
+    clearTimeout(timeout);
+    const status = snapshot.exists() ? snapshot.data().status : 'unknown';
+    updateAvailability(status);
+  }, unavailable).catch(unavailable);
+} else {
+  ranking?.watchAvailability(published => updateAvailability(published ? 'published' : 'hidden'));
+}
 next();
-void ranking?.publish(progress.read().best);
+publishChallengeBest();
