@@ -50,7 +50,7 @@ export function openLineQuizRanking({ storage, titles }) {
     if (!allowed) return Promise.reject(Error('preview-line-quiz-only'));
     if (!pending) pending = (async () => {
       if (production) {
-        const { verticalParallelClient } = await import('./ranking-sync-api.js?v=27c80c7c4fbd');
+        const { verticalParallelClient } = await import('./ranking-sync-api.js?v=c3f74ab642d8');
         const api = await verticalParallelClient();
         return {
           rows: () => api.rankings(game),
