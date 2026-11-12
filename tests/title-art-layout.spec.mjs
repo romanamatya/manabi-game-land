@@ -103,7 +103,9 @@ async function assertTower(page, game) {
 
 async function holdAwardArtworkStill(page) {
   // Capture the fully visible card inside the real one-second award window.
-  await page.addStyleTag({ content: '.mgl-celebration__title-card { animation: none !important; }' });
+  await page.addStyleTag({
+    content: '.mgl-celebration__title-card, .mgl-celebration__art { animation: none !important; }',
+  });
 }
 
 for (const game of games) {
@@ -125,6 +127,9 @@ for (const game of games) {
       const index = game.thresholds.indexOf(answer);
       if (index === -1) continue;
       await expect(img).toBeVisible();
+      const artworkBox = await img.boundingBox();
+      expect(artworkBox.width).toBeGreaterThanOrEqual(150);
+      expect(artworkBox.height).toBeGreaterThanOrEqual(150);
       expect(await img.evaluate(async image => {
         await image.decode();
         return [new URL(image.src).pathname, image.naturalWidth, image.naturalHeight];
@@ -182,7 +187,7 @@ test('the shared badge renderer uses the complete PNG for all 15 titles', async 
     await page.evaluate(games => {
       const panel = document.createElement('section');
       panel.id = 'badge-comparison';
-      panel.style.cssText = 'position:fixed;inset:40px 80px;z-index:1000;background:white;padding:32px;display:grid;align-items:center';
+      panel.style.cssText = 'position:fixed;inset:40px 80px;z-index:100000;background:white;padding:32px;display:grid;align-items:center';
       for (const game of games) {
         const group = document.createElement('div');
         const heading = document.createElement('h2');
