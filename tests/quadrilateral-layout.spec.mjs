@@ -2,16 +2,21 @@ import { mkdir } from 'node:fs/promises';
 import { expect, test } from '@playwright/test';
 
 const base = process.env.MGL_BASE_URL || 'http://127.0.0.1:4173/';
-const game = new URL('preview/games/quadrilateral.html', base).href;
-const math = new URL('preview/math.html', base).href;
+const production = process.env.MGL_QUADRILATERAL_PRODUCTION === '1';
+const game = new URL((production ? '' : 'preview/') + 'games/quadrilateral.html', base).href;
+const math = new URL(production ? 'math-geometry.html' : 'preview/math.html', base).href;
+const screenshots = 'quadrilateral-screenshots/' + (production ? 'production' : 'preview');
 const sizes = [{ width: 1024, height: 768 }, { width: 1194, height: 834 }];
 const awards = new Map([[3, '01_rookie'], [5, '02_hunter'], [10, '03_master'], [15, '04_tatsujin'], [25, '05_haou']]);
 
 test.use({ hasTouch: true, isMobile: true });
 test.beforeEach(async ({ page }) => {
   await page.route('https://**/*', route => route.abort());
-  await page.addInitScript(() => localStorage.setItem('manabi_public_preview:mgl_nickname', '図形テスト'));
-  await mkdir('quadrilateral-screenshots', { recursive: true });
+  await page.addInitScript(() => {
+    localStorage.setItem('manabi_public_preview:mgl_nickname', '図形テスト');
+    localStorage.setItem('mgl_nickname', '図形テスト');
+  });
+  await mkdir(screenshots, { recursive: true });
 });
 
 async function enter(page, value) {
@@ -56,12 +61,12 @@ async function checkDiagram(page) {
   expect(valid).toEqual({ contained: true, separate: true, arcs: true, count: singleLength ? 6 : 7, unknown: 1 });
 }
 
-test('iPad landscape fits the complete game and opens from the preview math list', async ({ page }) => {
+test('iPad landscape fits the complete game and opens from the math list', async ({ page }) => {
   const errors = [];
   page.on('pageerror', error => errors.push(error.message));
   await page.setViewportSize(sizes[0]);
   await page.goto(math);
-  await page.locator('article').filter({ hasText: '四角形のひみつ！' }).getByRole('link', { name: 'プレイ' }).tap();
+  await page.locator('article').filter({ hasText: '四角形のひみつ！' }).getByRole(production ? 'button' : 'link', { name: 'プレイ', exact: true }).tap();
   await expect(page).toHaveURL(game);
   for (const size of sizes) {
     await page.setViewportSize(size);
@@ -83,12 +88,12 @@ test('iPad landscape fits the complete game and opens from the preview math list
       })).toEqual([512, 512, 42, 42, 'contain']);
     }
     await checkDiagram(page);
-    await page.screenshot({ path: `quadrilateral-screenshots/length-${size.width}.png` });
+    await page.screenshot({ path: `${screenshots}/length-${size.width}.png` });
     await submit(page);
     await expect(page.locator('#kind')).toHaveText('角度');
     await expect(page.locator('#diagram path')).toHaveCount(3);
     await checkDiagram(page);
-    await page.screenshot({ path: `quadrilateral-screenshots/angle-${size.width}.png` });
+    await page.screenshot({ path: `${screenshots}/angle-${size.width}.png` });
     await page.goto(game);
   }
   expect(errors).toEqual([]);
@@ -142,7 +147,7 @@ test('confirm, retry, five awards, points and 120-second challenge work with tab
         await img.decode();
         return img.naturalWidth;
       })).toBe(512);
-      if (n === 25) await page.screenshot({ path: 'quadrilateral-screenshots/award-25.png' });
+      if (n === 25) await page.screenshot({ path: screenshots + '/award-25.png' });
     }
   }
   expect([...appearance].sort()).toEqual(['ひし形', '平行四辺形']);

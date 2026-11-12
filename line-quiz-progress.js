@@ -3,7 +3,8 @@
 
   function createProgress({ storage, economy, challenge, core, titles, game,
     now = Date.now, monotonic = () => performance.now(), uuid = () => crypto.randomUUID(),
-    locks = globalThis.navigator?.locks }) {
+    locks = globalThis.navigator?.locks,
+    answerValue = selection => ({ selection }), season = 'vertical-parallel-v1' }) {
     const key = 'mgl_' + game;
     let memory, warning = false, queue = Promise.resolve();
     let wallAnchor = now(), monoAnchor = monotonic();
@@ -46,10 +47,10 @@
       return { context, token: challenge.issue(read().challenge, context.id) };
     }
 
-    function answer({ context, token }, selection) {
+    function answer({ context, token }, input) {
       return transaction(async record => {
         if (context.answered) return { accepted: false };
-        const value = { selection };
+        const value = answerValue(input);
         const correct = core.correct(game, context.prompt, value);
         const result = challenge.answer(record.challenge, token, correct, Math.max(now(), record.challenge.lastWall));
         if (!result.accepted) return { accepted: false };
@@ -70,7 +71,7 @@
         if (!['waiting', 'ended'].includes(record.challenge.phase)) return;
         wallAnchor = now();
         monoAnchor = monotonic();
-        const state = challenge.start(record.challenge, wallAnchor, uuid(), 'vertical-parallel-v1');
+        const state = challenge.start(record.challenge, wallAnchor, uuid(), season);
         save({ best: record.best, streak: state.streak, challenge: state });
       });
     }

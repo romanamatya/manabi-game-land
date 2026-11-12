@@ -153,7 +153,7 @@ test('the shared progress and economy persist best, unlock 120 seconds, and cap 
   assert.equal(progress.read().best, 51);
 });
 
-test('the game is enabled only in the preview catalog and has no ranking registration', async () => {
+test('the game ships as a standalone release in preview and production without a ranking registration', async () => {
   const read = path => readFile(new URL('../' + path, import.meta.url), 'utf8');
   const preview = JSON.parse(await read('environments/preview.json'));
   const production = JSON.parse(await read('environments/production.json'));
@@ -162,4 +162,8 @@ test('the game is enabled only in the preview catalog and has no ranking registr
   assert.ok(!production.staticLocalGameIds?.includes(GAME) && !production.gameIds.includes(GAME));
   assert.match(await read('preview/math.html'), /href="games\/quadrilateral\.html"/);
   assert.doesNotMatch(await read('.release/production/math.html'), /href="games\/quadrilateral\.html"/);
+  assert.match(await read('environment.js'), /"staticLocalGameIds":\[[^\]]*"quadrilateral"/);
+  assert.match(await read('games/quadrilateral.html'), /href="\.\.\/math-geometry\.html"/);
+  assert.equal(await read('quadrilateral-game.js'), await read('shared-src/site/quadrilateral-game.js'));
+  assert.equal(await read('quadrilateral-model.js'), await read('shared-src/site/quadrilateral-model.js'));
 });
