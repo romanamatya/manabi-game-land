@@ -26,6 +26,13 @@ test('parallelPair files and settings match the reviewed release candidate', asy
         .replace(' item.append(summary,badge,actions);\n if(newGameIds.has(id)) markNew(item);\n root.append(item);',
           ' item.append(summary,badge,actions);root.append(item);'));
     }
+    if (file.path === 'parallel-ranking.js') {
+      // Isolate the legacy ranking path from the separately gated challenge ranking.
+      bytes = Buffer.from(bytes.toString('utf8')
+        .replace(/^import .*challenge-ranking\.js[^\n]*\n/, '')
+        .replace(/ if\(challengeRankingEnabled\(GAME\)\)\{[\s\S]*? \} else \{\n/, '')
+        .replace(/ \}\n\}\n$/, '}\n'));
+    }
     if (file.path === 'celebration-effects.js') {
       // The artwork uses a single fit box now. Keep checking the reviewed effect and timer.
       bytes = Buffer.from(bytes.toString('utf8').replaceAll('.mgl-celebration__art > ', '.mgl-celebration__art '));

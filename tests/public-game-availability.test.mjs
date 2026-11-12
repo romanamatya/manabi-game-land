@@ -56,7 +56,8 @@ test('all 11 root game pages load the safe availability guard before settings; p
    continue;
   }
   if(filename==='quadrilateral.html'){
-   assert.doesNotMatch(html,/public-firebase-session\.js|public-game-availability\.js|ranking-sync\.js/,'the preview-only game has no Firebase dependency');
+   assert.match(html,/public-firebase-session\.js/,'the challenge ranking can use the preview session');
+   assert.doesNotMatch(html,/public-game-availability\.js|ranking-sync\.js/,'play is independent of managed availability and legacy ranking sync');
    assert.match(html,/challenge120-core\.js/);
    continue;
   }
