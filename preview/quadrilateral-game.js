@@ -1,4 +1,5 @@
-import { createQuestionDeck, GAME, WIDTH, HEIGHT } from './quadrilateral-model.js?v=6609f7cdc911';
+import { mountChallengeRanking } from './challenge-ranking.js?v=b721f383bed3';
+import { createQuestionDeck, GAME, WIDTH, HEIGHT } from './quadrilateral-model.js?v=b721f383bed3';
 
 const $ = id => document.getElementById(id);
 const config = window.MANABI_BACKEND_CONFIG;
@@ -20,6 +21,7 @@ function runGame() {
   const savedChallenge = progress.read().challenge;
   let deck = createQuestionDeck(Math.random, savedChallenge.phase === 'running' ? savedChallenge.sequence : 0);
   let question, attempt;
+  const ranking = mountChallengeRanking({ game: GAME, read: progress.read, titles });
   let input = '';
   let phase = 'closed';
   let timer;
@@ -161,6 +163,7 @@ function runGame() {
       paintStats(record);
       if (!result.accepted) return next();
       if (result.correct) {
+        void ranking?.sync();
         phase = 'correct';
         if (result.title) window.ManabiCelebrations.showTitle(result.title);
         else window.ManabiCelebrations.showCorrect();

@@ -4,20 +4,22 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="robots" content="noindex,nofollow">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; object-src 'none'; base-uri 'self'">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com; connect-src https://www.gstatic.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://firestore.googleapis.com; style-src 'self' 'unsafe-inline'; img-src 'self' data:; object-src 'none'; base-uri 'self'">
   <title>四角形のひみつ！｜マナビクエスト</title>
-  <link rel="stylesheet" href="../suichoku.css?v=6609f7cdc911">
-  <link rel="stylesheet" href="../game-home.css?v=6609f7cdc911">
-  <link rel="stylesheet" href="../quadrilateral.css?v=6609f7cdc911">
-  <script src="../environment.js?v=6609f7cdc911"></script>
-  <script src="../environment-runtime.js?v=6609f7cdc911"></script>
-  <script src="../profile-catalog.js?v=6609f7cdc911"></script>
-  <script src="../economy-core.js?v=6609f7cdc911"></script><script src="../storage-adapters.js?v=6609f7cdc911"></script>
-  <script src="../economy.js?v=6609f7cdc911"></script>
-  <script src="../challenge120-core.js?v=6609f7cdc911"></script>
-  <script src="../celebration-effects.js?v=6609f7cdc911"></script>
-  <script src="../line-quiz-progress.js?v=6609f7cdc911"></script>
-  <script type="module" src="../quadrilateral-game.js?v=6609f7cdc911"></script>
+  <link rel="stylesheet" href="../suichoku.css?v=b721f383bed3">
+  <link rel="stylesheet" href="../game-home.css?v=b721f383bed3">
+  <link rel="stylesheet" href="../quadrilateral.css?v=b721f383bed3">
+  <script src="../environment.js?v=b721f383bed3"></script>
+  <script src="../environment-runtime.js?v=b721f383bed3"></script>
+  <script src="../profile-catalog.js?v=b721f383bed3"></script>
+  <script src="../economy-core.js?v=b721f383bed3"></script><script src="../storage-adapters.js?v=b721f383bed3"></script>
+  <script src="../economy.js?v=b721f383bed3"></script>
+  <script src="../challenge120-core.js?v=b721f383bed3"></script>
+  <script src="../celebration-effects.js?v=b721f383bed3"></script>
+  <script src="../line-quiz-progress.js?v=b721f383bed3"></script>
+  <script type="module" src="../quadrilateral-game.js?v=b721f383bed3"></script>
+<link rel="stylesheet" href="../challenge-ranking.css?v=b721f383bed3">
+<script src="../public-firebase-session.js?v=b721f383bed3"></script>
 </head>
 <body>
   <div class="sq-wrap">
@@ -34,6 +36,7 @@
           <div class="sq-stat">最高記録<b id="best">0</b></div>
         </div>
         <strong id="clock" role="timer">時間制限なし</strong>
+        <button id="ranking-open" type="button">共有ランキング</button>
         <div id="keypad" aria-label="数字入力">
           <output id="answer" aria-label="入力した答え"><span id="digits">—</span> <span id="unit"></span></output>
           <div id="keys"></div>
