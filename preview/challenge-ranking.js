@@ -37,7 +37,7 @@ export function createPreviewChallengeRanking(F, db, uid, game) {
 export async function openChallengeRanking(game, config = window.MANABI_BACKEND_CONFIG, env = window.MANABI_ENV) {
   if (!challengeRankingEnabled(game, config, env)) throw Error('challenge-ranking-disabled');
   if (!env.preview) {
-    const { challengeRankingClient } = await import('./ranking-sync-api.js?v=b721f383bed3');
+    const { challengeRankingClient } = await import('./ranking-sync-api.js?v=5c79b69352a6');
     const api = await challengeRankingClient();
     return {
       rows: () => api.rankings(game),
@@ -135,7 +135,7 @@ export function mountChallengeRanking({ game, read, titles, button = document.ge
       if (request === requestId) status.textContent = 'ランキングを読み込めませんでした。接続を確認して更新してください。';
     }
   }
-  button.onclick = () => { if (!dialog.open) dialog.show(); void show(); void sync(); };
+  button.onclick = () => { if (!dialog.open) dialog.showModal(); void show(); void sync(); };
   refresh.onclick = show;
   close.onclick = () => { dialog.close(); button.focus(); };
   dialog.addEventListener('close', () => { requestId++; });
