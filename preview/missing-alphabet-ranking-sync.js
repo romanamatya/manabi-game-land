@@ -1,4 +1,4 @@
-import {bestForSharedRanking} from './ranking-sync-api.js?v=23f24924246c';
+import {bestForSharedRanking} from './ranking-sync-api.js?v=efb3d80b0d40';
 
 const GAME='missingAlphabet',config=window.MANABI_BACKEND_CONFIG,storage=window.manabiStorage;
 if(config?.mode==='production'&&config.missingAlphabetRankingSyncEnabled===true&&config.rankingGameIds?.includes(GAME)&&storage){
@@ -16,7 +16,7 @@ const appearance=()=>window.ManabiProfile?.appearance(storage)||{icon:'cat',fram
 const titleAt=best=>[...titles].filter(title=>best>=title.at).at(-1)?.name||null;
 const accountAllowed=()=>config.accountAccessEnabled!==true||window.ManabiPlayerAccess?.canPlay?.()===true;
 async function api(){
- if(!apiPromise)apiPromise=import('./ranking-sync-api.js?v=23f24924246c').then(module=>module.missingAlphabetClient()).catch(error=>{apiPromise=null;throw error});
+ if(!apiPromise)apiPromise=import('./ranking-sync-api.js?v=efb3d80b0d40').then(module=>module.missingAlphabetClient()).catch(error=>{apiPromise=null;throw error});
  return apiPromise;
 }
 async function flush(){

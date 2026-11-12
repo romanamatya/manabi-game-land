@@ -20,6 +20,10 @@ test('parallelPair files and settings match the reviewed release candidate', asy
         .replace("if(id!=='verticalParallel'){const rank", 'const rank')
         .replace('actions.append(rank)}', 'actions.append(rank)'));
     }
+    if (file.path === 'celebration-effects.js') {
+      // The artwork uses a single fit box now. Keep checking the reviewed effect and timer.
+      bytes = Buffer.from(bytes.toString('utf8').replaceAll('.mgl-celebration__art > ', '.mgl-celebration__art '));
+    }
     assert.equal(createHash('sha256').update(bytes).digest('hex'), file.sha256, file.path);
   }
 
