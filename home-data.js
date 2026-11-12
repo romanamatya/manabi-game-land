@@ -1,9 +1,19 @@
+import {challengeRankingEnabled,openChallengeRanking} from './challenge-ranking.js?v=challenge-rankings-v1';
 import {publishedChampionGames} from './champion-visibility.js?v=home-champions-visibility-v1';
 
 export async function startProductionHome(storage){
  const $=id=>document.getElementById(id);
  let nick=storage.getItem('mgl_nickname')||'',ranking=null,championRows=[];
  let englishChampion=null;
+ const challengeChampions=new Map();
+ async function refreshChallengeChampion(game){
+  if(statuses.get(game)!=='published'||!challengeRankingEnabled(game))return;
+  try {
+   const [row]=await (await openChallengeRanking(game)).rows();
+   challengeChampions.set(game,{game,row});
+   renderChampions();
+  } catch {}
+ }
  async function refreshEnglishChampion(){
   if(statuses.get('missingAlphabet')!=='published'||window.MANABI_BACKEND_CONFIG?.missingAlphabetRankingSyncEnabled!==true)return;
   try {
@@ -19,7 +29,10 @@ export async function startProductionHome(storage){
  function apply(name){if(name!==nick){nick=name;storage.setItem('mgl_nickname',name);show();document.dispatchEvent(new Event('manabi-nickname-sync'));}}
  function renderChampions(error=false){
   const visibleGames=publishedChampionGames(games,statuses);
-  window.ManabiLeaderboard.renderChampions(englishChampion?[...championRows,englishChampion]:championRows,{error,visibleGames});
+  const legacyRows=championRows.filter(({game})=>!challengeRankingEnabled(game));
+  const rows=[...legacyRows,...challengeChampions.values()];
+  if(englishChampion)rows.push(englishChampion);
+  window.ManabiLeaderboard.renderChampions(rows,{error,visibleGames});
   if(error){$('boardStatus').textContent='ランキングを取得できませんでした。通信状態を確認して、もう一度お試しください。';return;}
   $('boardStatus').textContent=games.some(game=>statuses.get(game.id)==='unknown')?'公開状態を確認できないゲームは表示していません。':'公開中のゲームの共有記録を表示しています。';
  }
@@ -40,6 +53,7 @@ export async function startProductionHome(storage){
    Promise.resolve(window.ManabiPublicSettings.subscribeGame(game.id,snapshot=>{
     statuses.set(game.id,snapshot?.exists?.()?statusOf(snapshot.data()):'unknown');renderChampions();
     if(game.id==='missingAlphabet')void refreshEnglishChampion();
+    void refreshChallengeChampion(game.id);
    },()=>{statuses.set(game.id,'unknown');renderChampions();}))
     .then(unsubscribe=>{if(typeof unsubscribe==='function')subscriptions.add(unsubscribe);})
     .catch(()=>{statuses.set(game.id,'unknown');renderChampions();});
@@ -52,6 +66,7 @@ export async function startProductionHome(storage){
    await m.startRankingSync().catch(()=>{});ranking=m;
    championRows=await (await m.client()).champions();renderChampions();
    void refreshEnglishChampion();
+   for(const game of games)void refreshChallengeChampion(game.id);
    if(!subscriptions.size&&statuses.size===0)watchAvailability();
   }catch{championRows=[];renderChampions(true);}
   finally{button.disabled=false;}

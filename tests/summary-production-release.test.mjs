@@ -73,7 +73,7 @@ test('summary links use the shared ranking and practice and challenge use the sa
     },
   };
   const redirects = [];
-  vm.runInNewContext(read('ranking-page.js').replace(/^import[^\n]+\n/, ''), {
+  vm.runInNewContext(read('ranking-page.js').replace(/^import[^\n]+\n/gm, ''), {
     document, URLSearchParams,
     window: { ManabiLeaderboard: { games: [{ id: 'keisanSummary', name: '計算のきまり・総まとめ' }] } },
     location: { search: '?game=keisanSummary', replace: url => redirects.push(url) },
