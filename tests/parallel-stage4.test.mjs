@@ -51,6 +51,8 @@ test('parallelPair files and settings match the reviewed release candidate', asy
   assert.ok(!config.staticLocalGameIds.includes('parallelPair'));
 
   const settings = {...config};
+  assert.deepEqual([...settings.challengeRankingGameIds],['parallelPair','verticalParallel','quadrilateral']);
+  delete settings.challengeRankingGameIds;
   assert.equal(settings.staticLocalGameIds.filter(id=>id==='verticalParallel').length,1);
   settings.staticLocalGameIds=settings.staticLocalGameIds.filter(id=>!['verticalParallel','quadrilateral'].includes(id));
   for (const key of ['gameIds','rankingGameIds']) {

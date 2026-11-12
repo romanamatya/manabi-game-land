@@ -6,7 +6,12 @@ test.use({ hasTouch: true, isMobile: true });
 for (const game of ['parallelPair', 'verticalParallel', 'quadrilateral']) {
   test(game + ' opens and closes the challenge ranking while keeping the game interactive', async ({ page }) => {
     await page.setViewportSize({ width: 1024, height: 768 });
-    await page.addInitScript(() => localStorage.setItem('manabi_public_preview:mgl_nickname', '検証A'));
+    await page.addInitScript(gameId => {
+      localStorage.setItem('manabi_public_preview:mgl_nickname', '検証A');
+      if (gameId === 'verticalParallel') {
+        localStorage.setItem('manabi_public_preview:mgl_verticalParallel', JSON.stringify({ best: 25 }));
+      }
+    }, game);
     await page.route('https://**/*', route => route.abort());
     await page.route(/firebase-auth\.js$/, route => route.fulfill({
       contentType: 'application/javascript',
@@ -37,6 +42,7 @@ for (const game of ['parallelPair', 'verticalParallel', 'quadrilateral']) {
       `,
     }));
     await page.goto(new URL('preview/games/' + game + '.html', base).href);
+    if (game === 'verticalParallel') await expect(page.locator('#challenge-gate')).toBeVisible();
     await page.locator('#ranking-open').tap();
     const dialog = page.getByRole('dialog', { name: '共有ランキング' });
     await expect(dialog).toBeInViewport({ ratio: 1 });

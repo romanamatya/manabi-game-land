@@ -162,6 +162,9 @@ test('confirm, retry, five awards, points and 120-second challenge work with tab
   await expect(page.locator('#best')).toHaveText('26');
   await expect(page.locator('#points')).toHaveText('26');
   await expect(kind).toHaveText('角度');
+  // Freeze at the same wall time in both documents so WebKit navigation cannot
+  // replay the earlier fast-forward against a running challenge.
+  await page.clock.pauseAt(new Date(await page.evaluate(() => Date.now() + 5000)));
   await page.reload();
   await expect(kind).toHaveText('角度');
   await expect(page.locator('#best')).toHaveText('26');

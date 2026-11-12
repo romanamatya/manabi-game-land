@@ -1,4 +1,4 @@
-import { mountChallengeRanking } from './challenge-ranking.js?v=challenge-rankings-v1';
+import { mountChallengeRanking } from './challenge-ranking.js?v=challenge-rankings-v2';
 import { createQuestionDeck, GAME, WIDTH, HEIGHT } from './quadrilateral-model.js';
 
 const $ = id => document.getElementById(id);

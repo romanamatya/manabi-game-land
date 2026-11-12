@@ -1,4 +1,4 @@
-import { challengeRankingEnabled, mountChallengeRanking } from './challenge-ranking.js?v=challenge-rankings-v1';
+import { challengeRankingEnabled, mountChallengeRanking } from './challenge-ranking.js?v=challenge-rankings-v2';
 import { openLineQuizRanking } from './line-quiz-online.js';
 
 const $ = id => document.getElementById(id);
