@@ -135,7 +135,7 @@ export function mountChallengeRanking({ game, read, titles, button = document.ge
       if (request === requestId) status.textContent = 'ランキングを読み込めませんでした。接続を確認して更新してください。';
     }
   }
-  button.onclick = () => { if (!dialog.open) dialog.show(); void show(); void sync(); };
+  button.onclick = () => { if (!dialog.open) dialog.showModal(); void show(); void sync(); };
   refresh.onclick = show;
   close.onclick = () => { dialog.close(); button.focus(); };
   dialog.addEventListener('close', () => { requestId++; });

@@ -1,4 +1,4 @@
-import {challengeRankingEnabled,openChallengeRanking} from './challenge-ranking.js?v=challenge-rankings-v1';
+import {challengeRankingEnabled,openChallengeRanking} from './challenge-ranking.js?v=challenge-rankings-v2';
 import {publishedChampionGames} from './champion-visibility.js?v=home-champions-visibility-v1';
 
 export async function startProductionHome(storage){
