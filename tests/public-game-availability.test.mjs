@@ -55,6 +55,11 @@ test('all 11 root game pages load the safe availability guard before settings; p
    assert.match(html,/economy\.js/,'shared math wallet');assert.match(html,/challenge120-core\.js/,'common challenge state machine');assert.doesNotMatch(html,/social-score-sync\.js|ranking-sync-client\.js/,'does not start global game synchronization');
    continue;
   }
+  if(filename==='quadrilateral.html'){
+   assert.doesNotMatch(html,/public-firebase-session\.js|public-game-availability\.js|ranking-sync\.js/,'the preview-only game has no Firebase dependency');
+   assert.match(html,/challenge120-core\.js/);
+   continue;
+  }
   if(filename==='suichoku.html'){
    assert.doesNotMatch(html,/public-firebase-session\.js|public-game-availability\.js|social-score-sync\.js/,'early-release game remains outside managed-game availability and campaign sync');
    assert.ok(html.indexOf('economy-core.js')>=0&&html.indexOf('economy.js')>html.indexOf('economy-core.js'),'early-release game uses the shared point wallet');
