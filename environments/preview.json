@@ -33,6 +33,7 @@
     "suichoku",
     "verticalParallel"
   ],
+  "challengeRankingGameIds": ["parallelPair", "verticalParallel", "quadrilateral"],
   "rankingGameIds": [
     "keisan",
     "pref-name",

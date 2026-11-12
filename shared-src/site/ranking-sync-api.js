@@ -14,7 +14,7 @@ function assertConfig(c){
  if(c.missingAlphabetRankingSyncEnabled===true&&(c.rankingSyncEnabled===true||c.playerNameSyncEnabled===true||!c.rankingGameIds?.includes('missingAlphabet')))throw err('global-ranking-sync-must-remain-disabled');
  if(typeof window!=='undefined'&&(window.MANABI_ENV?.preview!==false||window.MANABI_ENV?.expectedProjectId!=='manabi-game-land'))throw err('production-environment-mismatch');
 }
-export async function createProductionRankingClient(c,[App,A,F]){
+export async function createProductionRankingClient(c,[App,A,F],{challenge=false}={}){
  assertConfig(c);
  const scopedMissingAlphabet=c.missingAlphabetRankingSyncEnabled===true;
  const appName='manabi-production-ranking-v1';
@@ -24,7 +24,8 @@ export async function createProductionRankingClient(c,[App,A,F]){
  await A.setPersistence(auth,A.browserLocalPersistence);await auth.authStateReady();
  if(!auth.currentUser)await A.signInAnonymously(auth);
  if(!auth.currentUser?.isAnonymous)throw err('anonymous-player-required');
- const uid=auth.currentUser.uid,allowed=new Set(scopedMissingAlphabet?['missingAlphabet']:(c.rankingGameIds||GAME_IDS.filter(x=>x!=='parallelPair')).filter(x=>GAME_IDS.includes(x)&&x!=='missingAlphabet'&&(x!=='parallelPair'||c.parallelPairRankingEnabled===true)));
+ const bucket=challenge?'challengeGames':'games';
+ const uid=auth.currentUser.uid,allowed=new Set(challenge?c.challengeRankingGameIds.filter(id=>['parallelPair','verticalParallel','quadrilateral'].includes(id)):scopedMissingAlphabet?['missingAlphabet']:(c.rankingGameIds||GAME_IDS.filter(x=>x!=='parallelPair')).filter(x=>GAME_IDS.includes(x)&&x!=='missingAlphabet'&&(x!=='parallelPair'||c.parallelPairRankingEnabled===true)));
  let profileUid=null,profileDb=null;
  if(c.playerNameSyncEnabled===true||scopedMissingAlphabet){
   const profileApp=App.getApps().find(x=>x.name==='[DEFAULT]')||App.initializeApp(c.firebase);
@@ -34,12 +35,12 @@ export async function createProductionRankingClient(c,[App,A,F]){
   if(!profileAuth.currentUser?.isAnonymous)throw err('anonymous-player-required');
   profileUid=profileAuth.currentUser.uid;profileDb=F.getFirestore(profileApp);
  }
- const ref=game=>{if(!allowed.has(game))throw err('invalid-ranking-game');return F.doc(db,'productionRankings','v1','games',game,'players',uid)};
+ const ref=game=>{if(!allowed.has(game))throw err('invalid-ranking-game');return F.doc(db,'productionRankings','v1',bucket,game,'players',uid)};
  const playerRef=()=>{if(!profileUid)throw err('player-name-sync-disabled');return F.doc(profileDb,'players',profileUid)};
  const linkRef=()=>F.doc(db,'productionRankings','v1','identityLinks',uid);
  const validNickname=value=>typeof value==='string'&&value===value.trim()&&value.length>=1&&value.length<=12&&!/[<>\r\n]/.test(value);
  const clean=input=>{
-  if(!input||Object.keys(input).some(k=>!['game','bestStreak','nickname','icon','frame','title','badge'].includes(k))||!allowed.has(input.game)||!Number.isSafeInteger(input.bestStreak)||input.bestStreak<1||input.bestStreak>100000)throw err('invalid-ranking');
+  if(!input||Object.keys(input).some(k=>!['game','bestStreak','nickname','icon','frame','title','badge'].includes(k))||!allowed.has(input.game)||!Number.isSafeInteger(input.bestStreak)||input.bestStreak<(challenge?26:1)||input.bestStreak>100000)throw err('invalid-ranking');
   const nickname=typeof input.nickname==='string'?input.nickname.trim():'';
   const icon=typeof input.icon==='string'?input.icon:'cat',frame=typeof input.frame==='string'?input.frame:'plain';
   const title=validLabel(input.title)?input.title:null,badge=validLabel(input.badge)?input.badge:null;
@@ -95,7 +96,7 @@ export async function createProductionRankingClient(c,[App,A,F]){
  }
  async function queryGame(game,count){
   if(!allowed.has(game))throw err('invalid-ranking-game');
-  const col=F.collection(db,'productionRankings','v1','games',game,'players');
+  const col=F.collection(db,'productionRankings','v1',bucket,game,'players');
   const q=F.query(col,F.orderBy('bestStreak','desc'),F.limit(count));
   const snap=await F.getDocsFromServer(q);
   return snap.docs.map(d=>({id:d.id,row:d.data()})).filter(x=>x.id===x.row.uid&&x.row.game===game&&Number.isSafeInteger(x.row.bestStreak)&&x.row.bestStreak>0).map(x=>x.row);
@@ -119,4 +120,14 @@ export function missingAlphabetClient(){
   .then(sdks=>createProductionRankingClient({...config,rankingSyncEnabled:false,playerNameSyncEnabled:false,rankingGameIds:['missingAlphabet']},sdks))
   .catch(error=>{missingAlphabetPending=null;throw error});
  return missingAlphabetPending;
+}
+
+let challengeRankingPending;
+export function challengeRankingClient(){
+ const c=window.MANABI_BACKEND_CONFIG;
+ if(!c?.challengeRankingGameIds?.length||c.playerNameSyncEnabled!==true)return Promise.reject(err('challenge-ranking-disabled'));
+ if(!challengeRankingPending)challengeRankingPending=Promise.all(['app','auth','firestore'].map(n=>import('https://www.gstatic.com/firebasejs/13.1.0/firebase-'+n+'.js')))
+  .then(sdks=>createProductionRankingClient({...c,missingAlphabetRankingSyncEnabled:false},sdks,{challenge:true}))
+  .catch(error=>{challengeRankingPending=null;throw error});
+ return challengeRankingPending;
 }

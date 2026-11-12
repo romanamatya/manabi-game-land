@@ -1,3 +1,4 @@
+import { challengeRankingEnabled, mountChallengeRanking } from './challenge-ranking.js?v=challenge-rankings-v1';
 import { openLineQuizRanking } from './line-quiz-online.js';
 
 const $ = id => document.getElementById(id);
@@ -23,6 +24,7 @@ if (!preview && !production) {
   $('question').textContent = 'このゲームは現在非公開です。';
   throw Error('line-quiz-unavailable');
 }
+const challengeRanks = challengeRankingEnabled(game);
 const ranking = preview ? openLineQuizRanking({ storage, titles: titleList }) : null;
 
 let question, mode, attempt, level, transition;
@@ -178,7 +180,8 @@ $('confirm').onclick = async () => {
     if (result.title) window.ManabiCelebrations.showTitle(result.title);
     else window.ManabiCelebrations.showCorrect();
     transition = setTimeout(next, result.title ? 1000 : 500);
-    void ranking?.publish(record.best);
+    if (challengeRanks) void challengeRanking.sync();
+    else void ranking?.publish(record.best);
   } else if (record.challenge.phase === 'training') {
     selected.clear();
     attempt = progress.begin(question);
@@ -241,7 +244,7 @@ function tick() {
 }
 window.addEventListener('storage', () => { tick(); paintStats(progress.read()); });
 window.addEventListener('manabi-economy-change', () => paintStats(progress.read()));
-window.addEventListener('online', () => { void ranking?.publish(progress.read().best); });
+if (!challengeRanks) window.addEventListener('online', () => { void ranking?.publish(progress.read().best); });
 document.addEventListener('visibilitychange', tick);
 setInterval(tick, 200);
 ranking?.watchAvailability(published => {
@@ -250,4 +253,6 @@ ranking?.watchAvailability(published => {
   if (phase !== 'checking') next();
 });
 next();
-void ranking?.publish(progress.read().best);
+if (!challengeRanks) void ranking?.publish(progress.read().best);
+
+const challengeRanking = challengeRanks ? mountChallengeRanking({ game, read: progress.read, titles: titleList }) : null;

@@ -1,3 +1,4 @@
+import { mountChallengeRanking } from './challenge-ranking.js?v=challenge-rankings-v1';
 import { createQuestionDeck, GAME, WIDTH, HEIGHT } from './quadrilateral-model.js';
 
 const $ = id => document.getElementById(id);
@@ -20,6 +21,7 @@ function runGame() {
   const savedChallenge = progress.read().challenge;
   let deck = createQuestionDeck(Math.random, savedChallenge.phase === 'running' ? savedChallenge.sequence : 0);
   let question, attempt;
+  const ranking = mountChallengeRanking({ game: GAME, read: progress.read, titles });
   let input = '';
   let phase = 'closed';
   let timer;
@@ -161,6 +163,7 @@ function runGame() {
       paintStats(record);
       if (!result.accepted) return next();
       if (result.correct) {
+        void ranking?.sync();
         phase = 'correct';
         if (result.title) window.ManabiCelebrations.showTitle(result.title);
         else window.ManabiCelebrations.showCorrect();

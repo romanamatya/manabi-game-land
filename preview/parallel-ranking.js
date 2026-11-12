@@ -1,4 +1,5 @@
-import {client} from './ranking-sync-api.js?v=6609f7cdc911';
+import {challengeRankingEnabled,mountChallengeRanking} from './challenge-ranking.js?v=b721f383bed3';
+import {client} from './ranking-sync-api.js?v=b721f383bed3';
 const GAME='parallelPair';
 export function parallelRankingEnabled(config,env){return env?.preview===false&&env.expectedProjectId==='manabi-game-land'&&config?.mode==='production'&&config.firebase?.projectId==='manabi-game-land'&&config.rankingSyncEnabled===true&&config.parallelPairRankingEnabled===true&&config.playerNameSyncEnabled===true&&config.rankingGameIds?.includes(GAME)===true;}
 // One pending best, one acknowledgement per ranking UID. No answer data is stored.
@@ -18,6 +19,10 @@ export function createParallelRankingSync({api,storage,record,titles,appearance=
 }
 if(typeof window!=='undefined'&&typeof document!=='undefined'){
  const $=id=>document.getElementById(id),cfg=window.MANABI_BACKEND_CONFIG,env=window.MANABI_ENV,storage=window.manabiStorage||localStorage,local=window.ManabiParallelLocal;
+ if(challengeRankingEnabled(GAME)){
+  const challenge=mountChallengeRanking({game:GAME,read:local.read,titles:local.titles});
+  window.addEventListener('manabi-parallel-record-change',challenge.sync);
+ } else {
  let sync=null,connecting=null;
  const enabled=parallelRankingEnabled(cfg,env)&&!new URL(location.href).searchParams.has('adminTest');
  const access=()=>cfg?.accountAccessEnabled!==true||window.ManabiPlayerAccess?.canPlay?.()===true;
@@ -31,4 +36,5 @@ if(typeof window!=='undefined'&&typeof document!=='undefined'){
  $('ranking-open').onclick=show;$('ranking-refresh').onclick=show;$('ranking-close').onclick=()=>{$('parallel-ranking').hidden=true};
  status(enabled?'ランキング接続待ち':'記録は端末に保存されています。');
  window.addEventListener('manabi-parallel-record-change',request);window.addEventListener('online',request);window.addEventListener('pageshow',request);window.addEventListener('manabi-account-access',request);setInterval(request,15000);void request();
+ }
 }
