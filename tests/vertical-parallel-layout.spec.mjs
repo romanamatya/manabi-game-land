@@ -183,7 +183,7 @@ test('the preview management game list exposes the line quiz controls', async ({
   await expect(row.getByRole('cell', { name: '公開中', exact: true })).toBeVisible();
 });
 
-test('the production game preserves progress and awards points while ranking is paused', async ({ page }) => {
+test('the production game preserves progress and awards points when ranking cannot connect', async ({ page }) => {
   await page.setViewportSize(viewports[0]);
   await page.addInitScript(() => {
     if (sessionStorage.getItem('line-quiz-fixture')) return;
@@ -219,8 +219,9 @@ test('the production game preserves progress and awards points while ranking is 
   await expect(page.locator('#daily')).toHaveText('今日 1 / 50pt');
   await expect(page.locator('#tower .earned')).toHaveCount(5);
   await page.locator('#ranking-open').tap();
-  await expect(page.locator('#ranking-message')).toHaveText('共有ランキングは準備中です。端末の最高記録は 25問です。');
-  await page.locator('#ranking-close').tap();
+  const ranking = page.getByRole('dialog', { name: '共有ランキング' });
+  await expect(ranking.getByRole('status')).toContainText('接続を確認');
+  await ranking.getByRole('button', { name: '閉じる' }).tap();
   await page.locator('#challenge-start').tap();
   await expect(page.locator('#challenge-clock')).toHaveText(/残り (2:00|1:59)/);
   await page.reload();
