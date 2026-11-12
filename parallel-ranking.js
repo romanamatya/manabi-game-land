@@ -1,4 +1,4 @@
-import {challengeRankingEnabled,mountChallengeRanking} from './challenge-ranking.js?v=challenge-rankings-v1';
+import {challengeRankingEnabled,mountChallengeRanking} from './challenge-ranking.js?v=challenge-rankings-v2';
 import {client} from './ranking-sync-api.js';
 const GAME='parallelPair';
 export function parallelRankingEnabled(config,env){return env?.preview===false&&env.expectedProjectId==='manabi-game-land'&&config?.mode==='production'&&config.firebase?.projectId==='manabi-game-land'&&config.rankingSyncEnabled===true&&config.parallelPairRankingEnabled===true&&config.playerNameSyncEnabled===true&&config.rankingGameIds?.includes(GAME)===true;}
