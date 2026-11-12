@@ -5,7 +5,22 @@ if(window.MANABI_BACKEND_CONFIG?.staticLocalGameIds?.includes('verticalParallel'
 if(window.MANABI_BACKEND_CONFIG?.staticLocalGameIds?.includes('quadrilateral'))units.find(unit=>unit.id==='geometry').games.push('quadrilateral');
 window.ManabiMathUnits=Object.freeze(units);const root=document.getElementById('mathCards'),unitId=document.body.dataset.unit,inUnit=units.some(u=>u.id===unitId);
 function card(title,description,href,rank){const article=document.createElement('article');article.className='unit-card';const a=document.createElement('a');a.className='game-start';a.href=testLink(href);const h=document.createElement('h2'),p=document.createElement('p');h.textContent=title;p.textContent=description;a.append(h,p);article.append(a);if(rank){const link=document.createElement('a');link.className='rank-button';link.href=testLink(rank);link.textContent='ゲーム最高連続ランキング（この端末）';article.append(link)}return article}
-if(!inUnit){for(const u of units)root.append(card(u.name,u.description,u.page));return}
+const newGameIds = new Set(['parallelPair', 'verticalParallel', 'quadrilateral']);
+function markNew(card) {
+ const badge = document.createElement('span');
+ badge.className = 'new-game-badge';
+ badge.textContent = 'NEW';
+ card.classList.add('has-new-game');
+ card.append(badge);
+}
+if(!inUnit){
+ for(const u of units){
+  const unitCard = card(u.name,u.description,u.page);
+  if(u.games.some(id => newGameIds.has(id))) markNew(unitCard);
+  root.append(unitCard);
+ }
+ return;
+}
 const displayNames={parallelPair:'平行な2本を見つけよう！',keisan:'計算の順番',multiplicationProperties:'掛け算の性質',shapeExpressions:'図形と式',suichoku:'垂直を見つけよう！',keisanSummary:'2分間チャレンジ'};
 const descriptions={quadrilateral:'平行四辺形とひし形の辺の長さや角を見つけよう',verticalParallel:'赤い基準線を見て、垂直・平行な線を選ぼう',parallelPair:'7本の直線から平行な2本を見つけよう',keisan:'計算する順番を考えよう',distribution:'100を使って式を変え、計算しよう',distribution2:'共通する数をまとめて計算しよう',exchangeAssociation:'計算しやすい組み合わせを見つけよう',multiplicationProperties:'かける数が変わると、積はどう変わる？',shapeExpressions:'図の囲み方を式に表そう',suichoku:'2本の直線が垂直に交わる組を見つけよう',keisanSummary:'7つの問題形式で総復習。30問連続で最高称号！'};
 for(const id of (units.find(u=>u.id===unitId)?.games||[])){
@@ -16,7 +31,9 @@ for(const id of (units.find(u=>u.id===unitId)?.games||[])){
  const actions=document.createElement('div');actions.className='game-actions';
  const play=document.createElement('button');play.type='button';play.className='play-button';play.dataset.gamePlay='';play.dataset.gameId=id;play.dataset.gameHref=testLink('games/'+id+'.html');play.disabled=true;play.textContent='確認中…';actions.append(play);
  if(id!=='verticalParallel'&&id!=='quadrilateral'){const rank=document.createElement('a');rank.className='rank-button';rank.dataset.gameRanking='';rank.href=testLink(id==='keisanSummary'?'summary-ranking.html':'ranking.html?game='+id);rank.textContent='ランキング';actions.append(rank)}
- item.append(summary,badge,actions);root.append(item);
+ item.append(summary,badge,actions);
+ if(newGameIds.has(id)) markNew(item);
+ root.append(item);
 }
 window.ManabiGameSelection?.initialize();
 })();
