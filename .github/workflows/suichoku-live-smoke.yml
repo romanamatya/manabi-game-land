@@ -119,6 +119,8 @@ jobs:
       MGL_EXPECT_LIVE: ${{ github.event_name == 'push' && '1' || '0' }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -141,3 +143,16 @@ jobs:
       - name: Check the line quiz with iPad-sized touch input
         if: github.event_name == 'pull_request'
         run: npx playwright test tests/vertical-parallel-layout.spec.mjs --browser webkit
+
+      - name: Verify the three title towers and award illustrations in WebKit
+        if: github.event_name == 'pull_request'
+        env:
+          MGL_BADGE_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: npx playwright test tests/title-art-layout.spec.mjs --browser webkit
+      - name: Upload title illustration comparisons
+        if: always() && github.event_name == 'pull_request'
+        uses: actions/upload-artifact@v4
+        with:
+          name: title-illustration-comparisons
+          path: badge-display-screenshots/
+          if-no-files-found: ignore
