@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="robots" content="noindex,nofollow">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; object-src 'none'; base-uri 'self'">
+  <title>四角形のひみつ！｜マナビクエスト</title>
+  <link rel="stylesheet" href="../suichoku.css?v=d295aef08d78">
+  <link rel="stylesheet" href="../game-home.css?v=d295aef08d78">
+  <link rel="stylesheet" href="../quadrilateral.css?v=d295aef08d78">
+  <script src="../environment.js?v=d295aef08d78"></script>
+  <script src="../environment-runtime.js?v=d295aef08d78"></script>
+  <script src="../profile-catalog.js?v=d295aef08d78"></script>
+  <script src="../economy-core.js?v=d295aef08d78"></script><script src="../storage-adapters.js?v=d295aef08d78"></script>
+  <script src="../economy.js?v=d295aef08d78"></script>
+  <script src="../challenge120-core.js?v=d295aef08d78"></script>
+  <script src="../celebration-effects.js?v=d295aef08d78"></script>
+  <script src="../line-quiz-progress.js?v=d295aef08d78"></script>
+  <script type="module" src="../quadrilateral-game.js?v=d295aef08d78"></script>
+</head>
+<body>
+  <div class="sq-wrap">
+    <header class="sq-header">
+      <a href="../math.html">← 算数へ</a>
+      <h1>四角形のひみつ！</h1>
+      <a class="mq-game-home" href="../index.html" aria-label="マナビクエストのトップへ戻る"><img src="../assets/title.png" alt="マナビクエスト"></a>
+    </header>
+    <div class="sq-layout quad-layout">
+      <aside class="sq-panel sq-stats" aria-label="記録と数字入力">
+        <div class="quad-stats">
+          <div class="sq-stat">算数ポイント<b id="points">0</b><small id="daily">今日 0 / 50pt</small></div>
+          <div class="sq-stat">連続正解<b id="streak">0</b></div>
+          <div class="sq-stat">最高記録<b id="best">0</b></div>
+        </div>
+        <strong id="clock" role="timer">時間制限なし</strong>
+        <div id="keypad" aria-label="数字入力">
+          <output id="answer" aria-label="入力した答え"><span id="digits">—</span> <span id="unit"></span></output>
+          <div id="keys"></div>
+          <button id="confirm" type="button" disabled>決定！</button>
+        </div>
+        <small id="storage-status" role="status"></small>
+      </aside>
+      <main class="sq-panel sq-main">
+        <h2 id="shape-name"></h2>
+        <div class="quad-mission"><b id="kind"></b><p id="question"></p></div>
+        <div id="diagram"></div>
+        <p id="hint" role="status">数字を入力して「決定！」を押そう。</p>
+        <section id="challenge-gate" hidden aria-labelledby="challenge-heading">
+          <h2 id="challenge-heading"></h2>
+          <p id="challenge-message"></p>
+          <button id="challenge-start" type="button">120秒チャレンジを始める</button>
+        </section>
+      </main>
+      <aside class="sq-panel sq-titles">
+        <h2>称号タワー</h2>
+        <ol id="tower" aria-label="称号と獲得状況"></ol>
+      </aside>
+    </div>
+  </div>
+</body>
+</html>

@@ -47,7 +47,8 @@
     "shapeExpressions"
   ],
   "staticLocalGameIds": [
-    "suichoku"
+    "suichoku",
+    "quadrilateral"
   ]
 }
 

@@ -1,0 +1,32 @@
+name: Quadrilateral preview browser
+
+on:
+  pull_request:
+    paths:
+      - 'shared-src/site/**/quadrilateral*'
+      - 'shared-src/site/assets/quadrilateral-titles/**'
+      - 'tests/quadrilateral*'
+      - '.github/workflows/quadrilateral-browser.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  webkit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm install --no-save --no-package-lock @playwright/test@1.56.1
+      - run: npx playwright install --with-deps webkit
+      - run: node tools/suichoku-smoke-server.mjs > /tmp/quadrilateral-server.log 2>&1 &
+      - run: npx playwright test tests/quadrilateral-layout.spec.mjs --browser webkit
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: quadrilateral-ipad-landscape
+          path: quadrilateral-screenshots/
+          if-no-files-found: ignore

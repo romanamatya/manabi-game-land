@@ -9,3 +9,18 @@ window.ManabiProfileCatalog.push({"id":"parallelPair","name":"平行な2本を�
 window.ManabiProfileCatalog.push({id:'missingAlphabet',name:'ぬけたアルファベットを当てよう！',subject:'english',page:'language.html',field:'missingAlphabetBestStreak',rankingEnabled:true,titles:[{id:'missingAlphabet:5',standalone:true,at:5,name:'アルファベットさがし隊',image:'assets/missing-alphabet-titles/title_05.png',viewport:[0,0,512,512]},{id:'missingAlphabet:8',standalone:true,at:8,name:'もじならべ名人',image:'assets/missing-alphabet-titles/title_08.png',viewport:[0,0,512,512]},{id:'missingAlphabet:12',standalone:true,at:12,name:'アルファベットはかせ',image:'assets/missing-alphabet-titles/title_12.png',viewport:[0,0,512,512]},{id:'missingAlphabet:16',standalone:true,at:16,name:'ぬけもじハンター',image:'assets/missing-alphabet-titles/title_16.png',viewport:[0,0,512,512]},{id:'missingAlphabet:20',standalone:true,at:20,name:'アルファベットコンプリート王',image:'assets/missing-alphabet-titles/title_20.png',viewport:[0,0,512,512]}]});
 
 window.ManabiProfileCatalog.push({"id":"verticalParallel","name":"垂直・平行ラインクイズ！","subject":"math","page":"math.html","field":"verticalParallelBestStreak","titles":[{"id":"verticalParallel:3","standalone":true,"at":3,"name":"垂直・平行ルーキー","image":"assets/vertical-parallel-titles/01_rookie_512.png","viewport":[0,0,512,512]},{"id":"verticalParallel:5","standalone":true,"at":5,"name":"垂直・平行ハンター","image":"assets/vertical-parallel-titles/02_hunter_512.png","viewport":[0,0,512,512]},{"id":"verticalParallel:10","standalone":true,"at":10,"name":"垂直・平行マスター","image":"assets/vertical-parallel-titles/03_master_512.png","viewport":[0,0,512,512]},{"id":"verticalParallel:15","standalone":true,"at":15,"name":"垂直・平行の達人","image":"assets/vertical-parallel-titles/04_tatsujin_512.png","viewport":[0,0,512,512]},{"id":"verticalParallel:25","standalone":true,"at":25,"name":"垂直・平行の覇王","image":"assets/vertical-parallel-titles/05_haou_512.png","viewport":[0,0,512,512]}]});
+
+window.ManabiProfileCatalog.push({
+  id: 'quadrilateral', name: '四角形のひみつ！', subject: 'math', page: 'math.html',
+  field: 'quadrilateralBestStreak', rankingEnabled: false,
+  titles: [
+    [3, '四角形ルーキー', '01_rookie'],
+    [5, '四角形ハンター', '02_hunter'],
+    [10, '四角形マスター', '03_master'],
+    [15, '四角形の達人', '04_tatsujin'],
+    [25, '四角形の覇王', '05_haou'],
+  ].map(([at, name, asset]) => ({
+    id: 'quadrilateral:' + at, at, name, image: 'assets/quadrilateral-titles/' + asset + '_512.png',
+    standalone: true,
+  })),
+});

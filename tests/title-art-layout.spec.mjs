@@ -162,7 +162,9 @@ for (const game of games) {
       await expect(page.locator('#best')).toHaveText(String(answer));
     }
     const art = page.locator('.mgl-celebration--title .mgl-celebration__art');
-    await expect(art.locator(game.id === 'missingAlphabet' ? 'svg image' : 'img')).toBeVisible();
+    const standalone = game.id !== 'missingAlphabet' || await page.evaluate(() =>
+      window.ManabiProfileCatalog.find(item => item.id === 'missingAlphabet').titles[0].standalone === true);
+    await expect(art.locator(standalone ? 'img' : 'svg image')).toBeVisible();
     await page.screenshot({ path: `${output}/${game.id}-before-award.png` });
     expect(errorList.get(page)).toEqual([]);
   });
