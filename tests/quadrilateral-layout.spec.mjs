@@ -49,9 +49,11 @@ async function checkDiagram(page) {
       });
       return distances[0] > 18 && distances.every(r => Math.abs(r - distances[0]) < .05);
     });
-    return { contained, separate, arcs, count: boxes.length };
+    return { contained, separate, arcs, count: boxes.length, unknown: text.filter(node => node.hasAttribute('data-unknown')).length };
   });
-  expect(valid).toEqual({ contained: true, separate: true, arcs: true, count: 7 });
+  const singleLength = await page.locator('#shape-name').getAttribute('data-shape') === 'r'
+    && await page.locator('#kind').textContent() === '辺の長さ';
+  expect(valid).toEqual({ contained: true, separate: true, arcs: true, count: singleLength ? 6 : 7, unknown: 1 });
 }
 
 test('iPad landscape fits the complete game and opens from the preview math list', async ({ page }) => {
