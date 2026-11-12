@@ -101,6 +101,11 @@ async function assertTower(page, game) {
     .toEqual(await page.evaluate(() => [innerWidth, innerHeight]));
 }
 
+async function holdAwardArtworkStill(page) {
+  // Capture the fully visible card inside the real one-second award window.
+  await page.addStyleTag({ content: '.mgl-celebration__title-card { animation: none !important; }' });
+}
+
 for (const game of games) {
   const url = new URL('games/' + game.id + '.html?adminTest=1', base).href;
   test(`${game.id}: all five approved title images fit and appear when earned`, async ({ page }) => {
@@ -111,6 +116,7 @@ for (const game of games) {
       await assertTower(page, game);
       await page.screenshot({ path: `${output}/${game.id}-after-tower-${viewport.width}.png` });
     }
+    await holdAwardArtworkStill(page);
     const overlay = page.locator('.mgl-celebration--title');
     const img = overlay.locator('.mgl-celebration__art img');
     for (let answer = 1; answer <= game.thresholds.at(-1); answer++) {
@@ -145,6 +151,7 @@ for (const game of games) {
     await expect(tower).toHaveCount(5);
     for (const img of await tower.all()) await img.evaluate(image => image.decode().then(() => null));
     await page.screenshot({ path: `${output}/${game.id}-before-tower-${viewports[1].width}.png` });
+    await holdAwardArtworkStill(page);
     for (let answer = 1; answer <= game.thresholds[0]; answer++) {
       await solve(page, game);
       await expect(page.locator('#best')).toHaveText(String(answer));
@@ -157,7 +164,9 @@ for (const game of games) {
 }
 
 test('the shared badge renderer uses the complete PNG for all 15 titles', async ({ page }) => {
-  await page.goto(new URL('games/missingAlphabet.html?adminTest=1', base).href);
+  const url = new URL('games/missingAlphabet.html?adminTest=1', base).href;
+  await page.setViewportSize(viewports[1]);
+  await page.goto(url);
   for (const game of games) {
     for (const [i, threshold] of game.thresholds.entries()) {
       expect(await page.evaluate(async ({ id, threshold }) => {
@@ -169,4 +178,32 @@ test('the shared badge renderer uses the complete PNG for all 15 titles', async 
       }, { id: game.id, threshold })).toEqual([new URL(asset(game, i), base).pathname, 512, 512, 'contain']);
     }
   }
+  const capture = async label => {
+    await page.evaluate(games => {
+      const panel = document.createElement('section');
+      panel.id = 'badge-comparison';
+      panel.style.cssText = 'position:fixed;inset:40px 80px;z-index:1000;background:white;padding:32px;display:grid;align-items:center';
+      for (const game of games) {
+        const group = document.createElement('div');
+        const heading = document.createElement('h2');
+        heading.textContent = window.ManabiProfileCatalog.find(item => item.id === game.id).name;
+        group.append(heading);
+        const row = document.createElement('div');
+        row.style.cssText = 'display:grid;grid-template-columns:repeat(5,1fr);justify-items:center';
+        for (const at of game.thresholds) row.append(window.ManabiIdentity.badge(game.id + ':' + at, 100));
+        group.append(row);
+        panel.append(group);
+      }
+      document.body.append(panel);
+    }, games);
+    await page.locator('#badge-comparison').screenshot({ path: `${output}/shared-badges-${label}.png` });
+  };
+  await capture('after');
+  if (!baseline) return;
+  await page.route(request => request.pathname === new URL('profile-catalog.js', base).pathname, route => route.fulfill({
+    contentType: 'text/javascript; charset=utf-8',
+    body: execFileSync('git', ['show', `${baseline}:profile-catalog.js`]),
+  }));
+  await page.goto(url);
+  await capture('before');
 });
