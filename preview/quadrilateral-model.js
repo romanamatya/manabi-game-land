@@ -67,7 +67,7 @@ function layoutFits(vertices, labels, arcs) {
 }
 
 function drawData(prompt, rotation, zoom) {
-  const { kind, target, values } = prompt;
+  const { shape, kind, target, values } = prompt;
   const u = point(rotation, prompt.u);
   const v = point(rotation + radians(prompt.angle), prompt.v);
   const raw = [[0, 0], u, add(u, v), v];
@@ -81,7 +81,8 @@ function drawData(prompt, rotation, zoom) {
   const corners = vertices.map((_, index) => arcAt(vertices, index, zoom));
   const vertexLabels = corners.map(({ center, bisector, index }) =>
     label(add(center, mul(bisector, -46)), NAMES[index], 24, { index }));
-  const indices = [target, indexAfter(target, 2), indexAfter(target)];
+  const indices = [target, indexAfter(target, 2)];
+  if (shape !== 'r' || kind !== 'length') indices.push(indexAfter(target));
   const arcs = kind === 'angle' ? indices.map(i => corners[i]) : [];
   const candidates = indices.map(index => {
     const known = index !== target;

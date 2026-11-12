@@ -69,8 +69,10 @@ test('15,000 seeded quadrilaterals preserve measurement, rotation, alternation a
       assert.equal(unknown.text, '？');
       assert.equal(unknown.known, false);
       assert.equal(opposite.index, (q.target + 2) % 4);
-      assert.equal(adjacent.index, (q.target + 1) % 4);
-      for (const item of [opposite, adjacent]) {
+      const singleLength = q.shape === 'r' && q.kind === 'length';
+      assert.equal(q.measureLabels.length, singleLength ? 2 : 3);
+      assert.equal(adjacent?.index, singleLength ? undefined : (q.target + 1) % 4);
+      for (const item of q.measureLabels.slice(1)) {
         assert.equal(item.known, true);
         assert.equal(item.text, Math.round(values[item.index]) + (q.kind === 'length' ? ' cm' : '°'));
       }
