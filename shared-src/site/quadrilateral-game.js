@@ -2,8 +2,8 @@ import { createQuestionDeck, GAME, WIDTH, HEIGHT } from './quadrilateral-model.j
 
 const $ = id => document.getElementById(id);
 const config = window.MANABI_BACKEND_CONFIG;
-if (window.MANABI_ENV?.preview !== true || !config?.staticLocalGameIds?.includes(GAME)) {
-  $('hint').textContent = 'このゲームは確認用サイトで遊べます。';
+if (!window.MANABI_ENV || config?.mode !== window.MANABI_ENV.environment || !config.staticLocalGameIds?.includes(GAME)) {
+  $('hint').textContent = 'このゲームは現在公開されていません。';
 } else {
   runGame();
 }

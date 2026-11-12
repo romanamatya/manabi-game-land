@@ -1,4 +1,4 @@
-import { openLineQuizRanking } from './line-quiz-online.js?v=abf1c0c577c2';
+import { openLineQuizRanking } from './line-quiz-online.js?v=6609f7cdc911';
 
 const $ = id => document.getElementById(id);
 const model = window.ManabiLineQuiz;

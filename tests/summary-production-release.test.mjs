@@ -13,16 +13,16 @@ function load(file, context = { window: {}, structuredClone }) {
   return context.window;
 }
 
-test('production lists all 15 games and preserves the original profile records', () => {
+test('production lists all 16 games and preserves the original profile records', () => {
   const before = load('tests/fixtures/profile-catalog-before-production-summary.js').ManabiProfileCatalog;
   const after = load('profile-catalog.js').ManabiProfileCatalog;
-  const addedIds = ['keisanSummary', 'suichoku', 'parallelPair', 'missingAlphabet', 'verticalParallel'];
+  const addedIds = ['keisanSummary', 'suichoku', 'parallelPair', 'missingAlphabet', 'verticalParallel', 'quadrilateral'];
   const config = load('environment.js', { window: {}, location: { pathname: '/' } }).MANABI_BACKEND_CONFIG;
   const legacyMathIds = ['multiplicationProperties', 'shapeExpressions'];
   const releasedIds = [...before.map(game => game.id), ...addedIds, ...legacyMathIds].sort();
-  assert.equal(releasedIds.length, 15);
+  assert.equal(releasedIds.length, 16);
   assert.deepEqual([...config.gameIds, ...config.staticLocalGameIds].sort(), releasedIds);
-  assert.deepEqual([...config.rankingGameIds].sort(), releasedIds.filter(id => id !== 'verticalParallel'));
+  assert.deepEqual([...config.rankingGameIds].sort(), releasedIds.filter(id => !['verticalParallel', 'quadrilateral'].includes(id)));
   assert.deepEqual(fs.readdirSync('games').filter(file => file.endsWith('.html'))
     .map(file => file.slice(0, -5)).sort(), releasedIds);
   assert.deepEqual(Array.from(after, game => game.id).sort(),
@@ -131,8 +131,10 @@ test('the geometry list includes the new game only when its standalone release i
   cards.children = [];
   load('environment.js', { window, location: { pathname: '/math-geometry.html' } });
   load('math-navigation.js', { window, document, URL, location: { href: 'https://example.invalid/math-geometry.html' } });
-  assert.deepEqual(cards.children.map(card => card.dataset.gameCard), [...geometryIds, 'verticalParallel']);
-  const [play, ranking] = cards.children.at(-1).children[2].children;
-  assert.equal(play.dataset.gameHref, 'games/verticalParallel.html');
-  assert.equal(ranking, undefined);
+  assert.deepEqual(cards.children.map(card => card.dataset.gameCard), [...geometryIds, 'verticalParallel', 'quadrilateral']);
+  for (const id of ['verticalParallel', 'quadrilateral']) {
+    const [play, ranking] = cards.children.find(card => card.dataset.gameCard === id).children[2].children;
+    assert.equal(play.dataset.gameHref, 'games/' + id + '.html');
+    assert.equal(ranking, undefined);
+  }
 });

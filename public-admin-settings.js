@@ -2,7 +2,7 @@
 // release flags are approved. This is a UI guard, not authorization for legacy clients.
 (()=>{
  const cfg=window.MANABI_BACKEND_CONFIG;if(!cfg)return;
- const games=['keisan','pref-name','pref-place','alphabet','missingAlphabet','distribution','distribution2','exchangeAssociation','kotowaza','multiplicationProperties','shapeExpressions','keisanSummary','parallelPair','suichoku','verticalParallel'];
+ const games=['keisan','pref-name','pref-place','alphabet','missingAlphabet','distribution','distribution2','exchangeAssociation','kotowaza','multiplicationProperties','shapeExpressions','keisanSummary','parallelPair','suichoku','verticalParallel','quadrilateral'];
  const settingsRoot=cfg.environment==='productionAdmin/v1'?'productionAdmin/v1':cfg.environment==='previewSpark/v1'?'previewSpark/v1':null;
  const staticLocalGames=new Set(cfg.staticLocalGameIds||[]);
  const staticPublished=id=>staticLocalGames.has(id);
