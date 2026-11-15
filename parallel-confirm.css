@@ -1,0 +1,23 @@
+#confirm {
+  border: 0;
+  border-radius: 12px;
+  background: #426bd9;
+  color: white;
+  min-width: 220px;
+  min-height: 54px;
+  font-size: 25px;
+  font-weight: 850;
+  touch-action: manipulation;
+  box-shadow: 0 4px 0 #294eae;
+}
+#confirm:disabled {
+  background: #c9d6e6;
+  box-shadow: none;
+  color: #647b94;
+}
+@media (max-height: 580px) and (orientation: landscape) {
+  #confirm { min-height: 44px; font-size: 22px; }
+}
+@media (max-width: 720px) and (orientation: portrait) {
+  #confirm { min-width: 160px; }
+}

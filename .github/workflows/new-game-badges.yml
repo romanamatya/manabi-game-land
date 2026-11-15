@@ -8,6 +8,8 @@ on:
       - 'math-geometry.html'
       - 'math-navigation.js'
       - 'new-game-badge.css'
+      - 'new-game-badge.js'
+      - 'latest-game.js'
       - 'tests/new-game-badges-layout.spec.mjs'
       - '.github/workflows/new-game-badges.yml'
 

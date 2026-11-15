@@ -6,18 +6,10 @@ if(window.MANABI_BACKEND_CONFIG?.staticLocalGameIds?.includes('quadrilateral'))u
 if(window.MANABI_BACKEND_CONFIG?.staticLocalGameIds?.includes('heikouPair'))units.find(unit=>unit.id==='geometry').games.push('heikouPair');
 window.ManabiMathUnits=Object.freeze(units);const root=document.getElementById('mathCards'),unitId=document.body.dataset.unit,inUnit=units.some(u=>u.id===unitId);
 function card(title,description,href,rank){const article=document.createElement('article');article.className='unit-card';const a=document.createElement('a');a.className='game-start';a.href=testLink(href);const h=document.createElement('h2'),p=document.createElement('p');h.textContent=title;p.textContent=description;a.append(h,p);article.append(a);if(rank){const link=document.createElement('a');link.className='rank-button';link.href=testLink(rank);link.textContent='ゲーム最高連続ランキング（この端末）';article.append(link)}return article}
-const newGameIds = new Set(['parallelPair', 'verticalParallel', 'quadrilateral', 'heikouPair']);
-function markNew(card) {
- const badge = document.createElement('span');
- badge.className = 'new-game-badge';
- badge.textContent = 'NEW';
- card.classList.add('has-new-game');
- card.append(badge);
-}
 if(!inUnit){
  for(const u of units){
   const unitCard = card(u.name,u.description,u.page);
-  if(u.games.some(id => newGameIds.has(id))) markNew(unitCard);
+  unitCard.dataset.unitGames=u.games.join(' ');
   root.append(unitCard);
  }
  return;
@@ -33,7 +25,6 @@ for(const id of (units.find(u=>u.id===unitId)?.games||[])){
  const play=document.createElement('button');play.type='button';play.className='play-button';play.dataset.gamePlay='';play.dataset.gameId=id;play.dataset.gameHref=testLink('games/'+id+'.html');play.disabled=true;play.textContent='確認中…';actions.append(play);
  if(id!=='verticalParallel'&&id!=='quadrilateral'&&g?.rankingPending!==true){const rank=document.createElement('a');rank.className='rank-button';rank.dataset.gameRanking='';rank.href=testLink(id==='keisanSummary'?'summary-ranking.html':'ranking.html?game='+id);rank.textContent='ランキング';actions.append(rank)}
  item.append(summary,badge,actions);
- if(newGameIds.has(id)) markNew(item);
  root.append(item);
 }
 window.ManabiGameSelection?.initialize();
