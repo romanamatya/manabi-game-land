@@ -30,6 +30,12 @@ async function drawing(page) {
       const a=vector(candidates[i]),b=vector(candidates[j]);
       if(Math.abs(a[0]*b[1]-a[1]*b[0])<1e-6)answer.push(i,j);
     }
+    const headings=candidates.map(line=>{
+      const [x,y]=vector(line);
+      return Math.atan2(y,x)*180/Math.PI;
+    });
+    const spread=Math.max(...headings)-Math.min(...headings);
+    const values=Array.from(svg.querySelectorAll('.hp-angle'), label=>Number.parseInt(label.textContent,10));
     const matrix=svg.getScreenCTM();
     const at=(x,y)=>{
       const point=new DOMPoint(x,y).matrixTransform(matrix);
@@ -37,7 +43,7 @@ async function drawing(page) {
     };
     const target=candidates.map(([x1,y1,x2,y2])=>at(.82*x1+.18*x2,.82*y1+.18*y2));
     const crossings=candidates.map(([x1,y1,x2,y2])=>at((x1+x2)/2,(y1+y2)/2));
-    return {answer,target,crossings,signature:svg.innerHTML.replaceAll(/ aria-(?:pressed|disabled)="[^"]+"/g,'')};
+    return {answer,target,crossings,spread,values,signature:svg.innerHTML.replaceAll(/ aria-(?:pressed|disabled)="[^"]+"/g,'')};
   });
 }
 async function submit(page, geometry, indexes=geometry.answer) {
@@ -109,7 +115,13 @@ test('touch selection, retry, all title images and timed play persist in the bro
   for(let n=1;n<=25;n++){
     await expect(page.locator('[data-line][aria-disabled="false"]')).toHaveCount(4);
     if(n<=4) await expect(page.locator('#level')).toHaveText(['初級','中級','中級','上級'][n-1]);
-    await submit(page,await drawing(page));
+    const next=await drawing(page);
+    if(!production){
+      expect(next.spread).toBeLessThanOrEqual(8.000001);
+      expect(new Set(next.values).size).toBe(4);
+      expect(next.values.filter((value,i)=>next.values.slice(i+1).includes(180-value))).toHaveLength(2);
+    }
+    await submit(page,next);
     await expect(page.locator('#practice-best')).toHaveText(String(n));
     await expect(page.locator('#points')).toHaveText(String(initialPoints+n));
     if(titles.has(n)){

@@ -19,26 +19,42 @@ function rng(seed) {
   return () => ((seed = (1664525 * seed + 1013904223) >>> 0) / 2**32);
 }
 
-test('18,000 seeded diagrams: unique parallel pair, exact angle rays, clear layout and balanced answers', () => {
-  for (const [index, level] of [[0,'easy'],[1,'medium'],[3,'hard']]) {
+test('18,000 seeded diagrams: close slopes, four distinct angles, and a unique answer after comparing angle positions', () => {
+  for (const [index, level, range] of [[0,'easy',8],[1,'medium',6],[3,'hard',4]]) {
     const deck = createDeck(model, rng(97+index));
     const counts = new Map();
-    const tilts = new Set();
+    const tilts = new Set(), intersections = new Set();
     let last = null;
     for (let n=0;n<6000;n++) {
       const q = deck.next(index);
       assert.equal(q.level, level);
       assert.ok(clearDiagram(q));
-      const answers = [];
+      const headings = q.candidates.map(c => Math.atan2(c.direction[1],c.direction[0])*180/Math.PI);
+      assert.ok(Math.max(...headings)-Math.min(...headings) <= range+1e-8);
+      const values = q.candidates.map(c=>c.angle.value);
+      assert.equal(new Set(values).size,4);
+      // Move every displayed angle to the sector between the right-facing
+      // transversal ray and the downward candidate ray. Exactly one left/right
+      // or up/down flip changes the measurement to its supplement.
+      const sameSector = q.candidates.map(({angle}) =>
+        (angle.rays[0][0]>0)===(angle.rays[1][1]>0) ? angle.value : 180-angle.value);
+      const answers = [], byPosition = [], byNumbers = [];
+
       for (let i=0;i<4;i++) for (let j=i+1;j<4;j++) {
         const a=q.candidates[i], b=q.candidates[j];
         if (Math.abs(cross(a.direction,b.direction)) <= model.epsilon) {
           assert.ok(Math.abs(cross(a.direction,vector(b.point,a.point))) > 100);
           answers.push([i,j]);
         }
+        if (sameSector[i]===sameSector[j]) byPosition.push([i,j]);
+        if (values[i]+values[j]===180) byNumbers.push([i,j]);
         assert.equal(core.correct(GAME,q.prompt,{selection:[i,j]}), q.answer.join() === [i,j].join());
       }
       assert.deepEqual(answers,[q.answer]);
+      assert.deepEqual(byPosition,[q.answer]);
+      assert.equal(byNumbers.length,2);
+      assert.ok(byNumbers.some(pair=>pair.join()===q.answer.join()));
+      intersections.add(q.prompt.offsets.join());
       assert.ok(core.correct(GAME,q.prompt,{selection:[...q.answer].reverse()}));
       const key=q.answer.join();
       assert.notEqual(key,last);
@@ -66,13 +82,11 @@ test('18,000 seeded diagrams: unique parallel pair, exact angle rays, clear layo
           assert.equal(hitCandidate(q,center.map((v,k)=>v+100*direction*c.direction[k])),i);
         }
       }
-      if (level==='easy') assert.equal(q.candidates[q.answer[0]].angle.value,q.candidates[q.answer[1]].angle.value);
-      else assert.equal(q.candidates[q.answer[0]].angle.value+q.candidates[q.answer[1]].angle.value,180);
-      if (level==='hard') assert.ok(q.candidates.some((c,i)=>!q.answer.includes(i)&&c.angle.value===q.candidates[q.answer[0]].angle.value));
     }
     assert.equal(counts.size,6);
     assert.deepEqual([...new Set(counts.values())],[1000]);
-    assert.equal(tilts.size,level==='easy'?1:14);
+    assert.equal(tilts.size,{easy:6,medium:8,hard:10}[level]);
+    assert.ok(intersections.size>5000);
   }
   assert.deepEqual([0,1,2,3].map(i=>difficulty(i,false)),['easy','medium','medium','hard']);
   assert.deepEqual([0,1,2,3,4].map(i=>difficulty(i,true)),['hard','hard','hard','hard','medium']);
@@ -138,7 +152,7 @@ test('separate progress, five titles, 120-second expiry, and the shared 50-point
   assert.equal(storage.getItem('mgl_parallelPair'),'{"best":17}');
 });
 
-test('production and preview use the same model, game, styles and approved artwork', () => {
+test('preview updates only question generation and guidance while production stays on the approved model', () => {
   const hashes=[
     ['01_rookie','b22b1b282b6dba56a6b12486e8519ea349f375b852ac3d149e2a284cd8a4734a'],
     ['02_hunter','fec71baf3baa54d1d7cf26b588eb01fc054f8770a2b2f21e616bd3e44e4aab51'],
@@ -155,9 +169,12 @@ test('production and preview use the same model, game, styles and approved artwo
     assert.deepEqual(image,open(path));
   }
   assert.match(open('preview/math.html').toString(),/id="geometry"[^]*?href="games\/heikouPair\.html"/);
-  for (const path of ['heikou-pair-model.js','heikou-pair-game.js','heikou-pair.css']) {
+  for (const path of ['heikou-pair-game.js','heikou-pair.css']) {
     assert.deepEqual(open(path),open('shared-src/site/'+path));
   }
+  assert.deepEqual(open('preview/heikou-pair-model.js'),open('shared-src/site/heikou-pair-model.js'));
+  assert.equal(createHash('sha256').update(open('heikou-pair-model.js')).digest('hex'),
+    'b8e78e64972063323165ae8d097cf0399f5a634a275ebaf5f8c20237785bc514');
   const geometryBlock = path => open(path).toString().split('const heikouPair = ')[1].split('const subjects=')[0];
   assert.equal(geometryBlock('economy-core.js'),geometryBlock('shared-src/site/economy-core.js'));
   assert.match(open('environment.js').toString(),/"staticLocalGameIds":\[[^\]]*"heikouPair"/);
