@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {readFileSync, existsSync} from 'node:fs';
+import {readFileSync} from 'node:fs';
 import {createHash} from 'node:crypto';
 import '../shared-src/site/economy-core.js';
 import '../shared-src/site/challenge120-core.js';
@@ -138,7 +138,7 @@ test('separate progress, five titles, 120-second expiry, and the shared 50-point
   assert.equal(storage.getItem('mgl_parallelPair'),'{"best":17}');
 });
 
-test('approved art is intact and the new route and game are preview-only', () => {
+test('production and preview use the same model, game, styles and approved artwork', () => {
   const hashes=[
     ['01_rookie','b22b1b282b6dba56a6b12486e8519ea349f375b852ac3d149e2a284cd8a4734a'],
     ['02_hunter','fec71baf3baa54d1d7cf26b588eb01fc054f8770a2b2f21e616bd3e44e4aab51'],
@@ -152,10 +152,14 @@ test('approved art is intact and the new route and game are preview-only', () =>
     assert.equal(createHash('sha256').update(image).digest('hex'),sha);
     assert.deepEqual([image.readUInt32BE(16),image.readUInt32BE(20),image[25]],[512,512,6]);
     assert.deepEqual(image,open('shared-src/site/'+path));
+    assert.deepEqual(image,open(path));
   }
   assert.match(open('preview/math.html').toString(),/id="geometry"[^]*?href="games\/heikouPair\.html"/);
-  assert.doesNotMatch(open('environment.js').toString(),/heikouPair/);
-  assert.doesNotMatch(open('math-geometry.html').toString(),/heikouPair/);
-  assert.equal(existsSync(new URL('../games/heikouPair.html',import.meta.url)),false);
-  assert.doesNotMatch(open('.release/production/math.html').toString(),/href="games\/heikouPair\.html"/);
+  for (const path of ['heikou-pair-model.js','heikou-pair-game.js','heikou-pair.css']) {
+    assert.deepEqual(open(path),open('shared-src/site/'+path));
+  }
+  assert.match(open('environment.js').toString(),/"staticLocalGameIds":\[[^\]]*"heikouPair"/);
+  assert.doesNotMatch(open('environment.js').toString(),/"rankingGameIds":\[[^\]]*"heikouPair"/);
+  assert.match(open('games/heikouPair.html').toString(),/href="\.\.\/math-geometry\.html"/);
+  assert.doesNotMatch(open('games/heikouPair.html').toString(),/firebase-session|ranking-sync/);
 });

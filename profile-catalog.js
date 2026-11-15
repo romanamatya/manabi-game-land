@@ -19,3 +19,18 @@ window.ManabiProfileCatalog.push({
     standalone: true,
   })),
 });
+
+window.ManabiProfileCatalog.push({
+  id: 'heikouPair', name: '平行ペアを見つけよう！', subject: 'math', page: 'math-geometry.html',
+  field: 'heikouPairBestStreak', rankingEnabled: false, rankingPending: true,
+  titles: [
+    [3, '平行ペアルーキー', '01_rookie'],
+    [5, '平行ペアハンター', '02_hunter'],
+    [10, '平行ペアマスター', '03_master'],
+    [15, '平行ペアの達人', '04_tatsujin'],
+    [25, '平行ペアの覇王', '05_haou'],
+  ].map(([at, name, asset]) => ({
+    id: 'heikouPair:' + at, at, name, image: 'assets/heikou-pair-titles/' + asset + '_512.png',
+    standalone: true,
+  })),
+});

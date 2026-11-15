@@ -1,16 +1,23 @@
 import { expect, test } from '@playwright/test';
 
 const base = process.env.MGL_BASE_URL || 'http://127.0.0.1:4173/';
-const game = new URL('preview/games/heikouPair.html', base).href;
+const production = process.env.MGL_HEIKOU_PAIR_PRODUCTION === '1';
+const prefix = production ? '' : 'preview/';
+const game = new URL(prefix + 'games/heikouPair.html', base).href;
 const viewports = [{width:1024,height:768},{width:1194,height:834},{width:960,height:540}];
 const titles = new Map([[3,'01_rookie'],[5,'02_hunter'],[10,'03_master'],[15,'04_tatsujin'],[25,'05_haou']]);
 test.use({hasTouch:true,isMobile:true});
 test.beforeEach(async ({page}) => {
   await page.route('https://**/*', route=>route.abort());
-  await page.addInitScript(()=>{
-    localStorage.setItem('manabi_public_preview:mgl_nickname','図形テスト');
-    localStorage.setItem('manabi_public_preview:mgl_profile','{"icon":"rabbit"}');
-  });
+  await page.addInitScript(scope=>{
+    localStorage.setItem(scope+'mgl_nickname','図形テスト');
+    localStorage.setItem(scope+'mgl_profile','{"icon":"rabbit"}');
+    if (!scope && !sessionStorage.getItem('heikou-pair-fixture')) {
+      sessionStorage.setItem('heikou-pair-fixture','1');
+      localStorage.setItem('mgl_parallelPair','{"best":23}');
+      localStorage.setItem('mgl_points','7');
+    }
+  },production ? '' : 'manabi_public_preview:');
 });
 
 async function drawing(page) {
@@ -42,12 +49,13 @@ test('the new math route and all visual elements fit three landscape WebKit view
   const errors=[];
   page.on('pageerror',e=>errors.push(e.message));
   await page.setViewportSize(viewports[0]);
-  await page.goto(new URL('preview/index.html',base).href);
+  await page.goto(new URL(prefix+'index.html',base).href);
   await page.locator('a[href="math.html"]').click();
-  await page.getByRole('link',{name:'四角形・垂直と平行へ'}).click();
-  const card=page.locator('#heikou-pair-card');
+  await page.getByRole('link',{name:/四角形・垂直と平行/}).click();
+  const card=page.locator(production ? '[data-game-card="heikouPair"]' : '#heikou-pair-card');
   await expect(card.getByText('NEW',{exact:true})).toBeVisible();
-  await card.getByRole('link',{name:'プレイ'}).click();
+  await expect(card.getByRole('link',{name:'ランキング'})).toHaveCount(0);
+  await card.getByRole(production ? 'button' : 'link',{name:'プレイ',exact:true}).click();
   await expect(page).toHaveURL(game);
   for(const viewport of viewports){
     await page.setViewportSize(viewport);
@@ -96,13 +104,14 @@ test('touch selection, retry, all title images and timed play persist in the bro
   await submit(page,q,[q.answer[0],[0,1,2,3].find(i=>!q.answer.includes(i))]);
   await expect(page.locator('#hint')).toContainText('同じ図');
   expect((await drawing(page)).signature).toBe(q.signature);
-  await expect(page.locator('#points')).toHaveText('0');
+  const initialPoints=production ? 7 : 0;
+  await expect(page.locator('#points')).toHaveText(String(initialPoints));
   for(let n=1;n<=25;n++){
     await expect(page.locator('[data-line][aria-disabled="false"]')).toHaveCount(4);
     if(n<=4) await expect(page.locator('#level')).toHaveText(['初級','中級','中級','上級'][n-1]);
     await submit(page,await drawing(page));
     await expect(page.locator('#practice-best')).toHaveText(String(n));
-    await expect(page.locator('#points')).toHaveText(String(n));
+    await expect(page.locator('#points')).toHaveText(String(initialPoints+n));
     if(titles.has(n)){
       const badge=page.locator('.mgl-celebration--title .mgl-celebration__art img');
       await expect(badge).toHaveAttribute('src',new RegExp(titles.get(n)+'_512\\.png$'));
@@ -122,7 +131,8 @@ test('touch selection, retry, all title images and timed play persist in the bro
   await page.reload();
   await expect(page.locator('#practice-best')).toHaveText('25');
   await expect(page.locator('#challenge-best')).toHaveText('26');
-  await expect(page.locator('#points')).toHaveText('26');
+  await expect(page.locator('#points')).toHaveText(String(initialPoints+26));
+  if (production) expect(await page.evaluate(()=>JSON.parse(localStorage.getItem('mgl_parallelPair')).best)).toBe(23);
   await expect(page.locator('#clock')).toContainText('残り');
   await page.clock.fastForward(120000);
   await expect(page.locator('#challenge-message')).toContainText('時間切れ');
