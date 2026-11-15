@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="robots" content="noindex,nofollow">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; object-src 'none'; base-uri 'self'">
+  <title>平行ペアを見つけよう！｜マナビクエスト</title>
+  <link rel="stylesheet" href="../suichoku.css?v=c27d28edcf1e">
+  <link rel="stylesheet" href="../game-home.css?v=c27d28edcf1e">
+  <link rel="stylesheet" href="../profile.css?v=c27d28edcf1e">
+  <link rel="stylesheet" href="../heikou-pair.css?v=c27d28edcf1e">
+  <script src="../environment.js?v=c27d28edcf1e"></script>
+  <script src="../environment-runtime.js?v=c27d28edcf1e"></script>
+  <script src="../profile-catalog.js?v=c27d28edcf1e"></script>
+  <script src="../economy-core.js?v=c27d28edcf1e"></script><script src="../storage-adapters.js?v=c27d28edcf1e"></script>
+  <script src="../economy.js?v=c27d28edcf1e"></script>
+  <script src="../profile-model.js?v=c27d28edcf1e"></script>
+  <script src="../identity-view.js?v=c27d28edcf1e"></script>
+  <script src="../challenge120-core.js?v=c27d28edcf1e"></script>
+  <script src="../line-quiz-progress.js?v=c27d28edcf1e"></script>
+  <script src="../celebration-effects.js?v=c27d28edcf1e"></script>
+  <script type="module" src="../heikou-pair-game.js?v=c27d28edcf1e"></script>
+</head>
+<body>
+  <div class="sq-wrap hp-wrap">
+    <header class="sq-header">
+      <a href="../math.html#geometry">← 算数へ</a>
+      <h1>平行ペアを見つけよう！</h1>
+      <a class="mq-game-home" href="../index.html" aria-label="マナビクエストのトップへ戻る"><img src="../assets/title.png" alt="マナビクエスト"></a>
+    </header>
+    <div class="sq-layout hp-layout">
+      <aside class="sq-panel sq-stats hp-stats" aria-label="記録">
+        <div id="player" class="hp-player"></div>
+        <div class="sq-stat">算数ポイント<b id="points">0</b><small id="daily">今日 0 / 50pt</small></div>
+        <div class="sq-stat">連続正解<b id="streak">0</b></div>
+        <div class="sq-stat">練習の最高<b id="practice-best">0</b></div>
+        <div class="sq-stat">チャレンジの最高<b id="challenge-best">—</b></div>
+        <strong id="clock" role="timer">時間制限なし</strong>
+        <small id="storage-status" role="status"></small>
+      </aside>
+      <main class="sq-panel sq-main hp-main">
+        <div class="hp-mission">
+          <span id="level"></span>
+          <h2>平行な直線を2本選ぼう！</h2>
+          <p>角の大きさと、角がある場所をくらべよう。</p>
+        </div>
+        <div id="diagram"></div>
+        <div class="hp-controls">
+          <p id="hint" role="status">青い直線を2本タップしよう。</p>
+          <button id="confirm" type="button" disabled>決定！</button>
+        </div>
+        <section id="challenge-gate" class="parallel-gate" hidden aria-labelledby="challenge-heading">
+          <h2 id="challenge-heading"></h2>
+          <p id="challenge-message"></p>
+          <button id="challenge-start" type="button">120秒チャレンジを始める</button>
+        </section>
+      </main>
+      <aside class="sq-panel sq-titles hp-titles">
+        <h2>称号タワー</h2>
+        <ol id="tower" aria-label="称号と獲得状況"></ol>
+      </aside>
+    </div>
+  </div>
+</body>
+</html>

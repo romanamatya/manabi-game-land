@@ -1,0 +1,38 @@
+.has-new-game {
+  position: relative;
+}
+
+.new-game-badge {
+  position: absolute;
+  z-index: 1;
+  inset: 8px 8px auto auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 7px;
+  border-radius: 10px 10px 10px 3px;
+  background: #b43b1a;
+  color: white;
+  box-shadow: 0 2px 0 #f2b23c;
+  font: 800 11px/1.15 system-ui, sans-serif;
+  letter-spacing: .04em;
+  pointer-events: none;
+}
+
+.new-game-badge::before {
+  content: "";
+  inline-size: 5px;
+  block-size: 5px;
+  border-radius: 1px;
+  background: #ffe180;
+  transform: rotate(45deg);
+}
+
+.unit-card.has-new-game h2 {
+  padding-inline-end: 51px;
+}
+
+.subject-card.has-new-game img {
+  box-sizing: border-box;
+  padding-block-start: 16px;
+}
