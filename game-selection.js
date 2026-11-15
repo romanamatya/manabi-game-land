@@ -1,4 +1,4 @@
-import {bindGameAvailability} from './game-selection-model.js?v=availability-read-fix-20261102';
+import {bindGameAvailability} from './game-selection-model.js?v=managed-games-v1';
 const initialized=new WeakSet();
 function addMissingAlphabetCard(){
  const config=window.MANABI_BACKEND_CONFIG;
@@ -23,7 +23,7 @@ function initialize(){
   if(initialized.has(card))continue;initialized.add(card);
   const button=card.querySelector('[data-game-play]');
   if(button)button.addEventListener('click',()=>{if(card.dataset.gameAvailability==='published'&&!button.disabled&&button.dataset.gameHref)location.assign(button.dataset.gameHref)});
-  const binding=bindGameAvailability(card,{enabled:window.MANABI_BACKEND_CONFIG?.availabilityEnabled===true,settings:window.ManabiPublicSettings});
+  const binding=bindGameAvailability(card,{enabled:window.MANABI_BACKEND_CONFIG?.availabilityEnabled===true,settings:window.ManabiPublicSettings,hideHidden:window.MANABI_BACKEND_CONFIG?.managedVisibilityGameIds?.includes(card.dataset.gameCard)});
   window.addEventListener('pagehide',binding.dispose,{once:true});
  }
 }

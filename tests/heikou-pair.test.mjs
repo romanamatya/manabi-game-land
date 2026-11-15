@@ -181,5 +181,5 @@ test('the published game uses the reviewed question model, button and approved a
   assert.match(open('environment.js').toString(),/"staticLocalGameIds":\[[^\]]*"heikouPair"/);
   assert.doesNotMatch(open('environment.js').toString(),/"rankingGameIds":\[[^\]]*"heikouPair"/);
   assert.match(open('games/heikouPair.html').toString(),/href="\.\.\/math-geometry\.html"/);
-  assert.doesNotMatch(open('games/heikouPair.html').toString(),/firebase-session|ranking-sync/);
+  assert.doesNotMatch(open('games/heikouPair.html').toString(),/ranking-sync/);
 });

@@ -1,4 +1,5 @@
 import { mkdir } from 'node:fs/promises';
+import { mockPublicVisibility } from './fixtures/public-visibility-browser.mjs';
 import { expect, test } from '@playwright/test';
 
 const base = process.env.MGL_BASE_URL || 'http://127.0.0.1:4173/';
@@ -12,6 +13,7 @@ const awards = new Map([[3, '01_rookie'], [5, '02_hunter'], [10, '03_master'], [
 test.use({ hasTouch: true, isMobile: true });
 test.beforeEach(async ({ page }) => {
   await page.route('https://**/*', route => route.abort());
+  if (production) await mockPublicVisibility(page, { quadrilateral: null });
   await page.addInitScript(() => {
     localStorage.setItem('manabi_public_preview:mgl_nickname', '図形テスト');
     localStorage.setItem('mgl_nickname', '図形テスト');

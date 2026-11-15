@@ -61,6 +61,8 @@ test('parallelPair files and settings match the reviewed release candidate', asy
   }
   assert.equal(settings.missingAlphabetRankingSyncEnabled,true);
   assert.deepEqual([...settings.challenge120GameIds],['missingAlphabet']);
+  assert.deepEqual([...settings.managedVisibilityGameIds], ['parallelPair','missingAlphabet','verticalParallel','quadrilateral','heikouPair']);
+  delete settings.managedVisibilityGameIds;
   delete settings.missingAlphabetRankingSyncEnabled;
   delete settings.challenge120GameIds;
   const prior = environment.replace(/MANABI_BACKEND_CONFIG=Object.freeze\(\{[^\n]+?\}\);/, 'MANABI_BACKEND_CONFIG=Object.freeze('+JSON.stringify(settings)+');');

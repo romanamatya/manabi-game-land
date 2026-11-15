@@ -11,6 +11,9 @@ on:
       - 'new-game-badge.js'
       - 'latest-game.js'
       - 'tests/new-game-badges-layout.spec.mjs'
+      - 'tests/recent-game-visibility.spec.mjs'
+      - 'tests/fixtures/public-visibility-browser.mjs'
+      - 'public-admin-settings.js'
       - '.github/workflows/new-game-badges.yml'
 
 permissions:
@@ -29,3 +32,4 @@ jobs:
       - run: npx playwright install --with-deps webkit
       - run: node tools/suichoku-smoke-server.mjs > /tmp/new-game-badges-server.log 2>&1 &
       - run: npx playwright test tests/new-game-badges-layout.spec.mjs --browser webkit
+      - run: npx playwright test tests/recent-game-visibility.spec.mjs --browser webkit

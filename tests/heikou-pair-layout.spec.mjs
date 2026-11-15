@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { mockPublicVisibility } from './fixtures/public-visibility-browser.mjs';
 
 const base = process.env.MGL_BASE_URL || 'http://127.0.0.1:4173/';
 const production = process.env.MGL_HEIKOU_PAIR_PRODUCTION === '1';
@@ -9,6 +10,7 @@ const titles = new Map([[3,'01_rookie'],[5,'02_hunter'],[10,'03_master'],[15,'04
 test.use({hasTouch:true,isMobile:true});
 test.beforeEach(async ({page}) => {
   await page.route('https://**/*', route=>route.abort());
+  if (production) await mockPublicVisibility(page, { heikouPair: null });
   await page.addInitScript(scope=>{
     localStorage.setItem(scope+'mgl_nickname','図形テスト');
     localStorage.setItem(scope+'mgl_profile','{"icon":"rabbit"}');

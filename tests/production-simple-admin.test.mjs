@@ -1,7 +1,7 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
-import {AUDIT_REASON,GAME_IDS,policyFor,visibilityStatus,checkedInput} from '../management-model.js';
+import {AUDIT_REASON,ADDITIONAL_VISIBILITY_GAME_IDS,GAME_IDS,policyFor,visibilityStatus,checkedInput} from '../management-model.js';
 import '../economy-core.js';
 const core=globalThis.ManabiEconomyCore;
 
@@ -34,7 +34,13 @@ test('campaign and visibility inputs are validated; other admin actions are excl
  assert.throws(()=>checkedInput('visibilityBatch',{games:[],status:'hidden'}),/invalid-visibility-batch/);
  assert.throws(()=>checkedInput('visibilityBatch',{games:['keisan','keisan'],status:'hidden'}),/invalid-visibility-batch/);
  assert.throws(()=>checkedInput('visibilityBatch',{games:['keisan'],status:'paused'}),/invalid-visibility-batch/);
- assert.equal(checkedInput('visibilityBatch',{games:GAME_IDS,status:'preparing'}).games.length,GAME_IDS.length);
+ const bulkGames=GAME_IDS.filter(id=>!['parallelPair','missingAlphabet',...ADDITIONAL_VISIBILITY_GAME_IDS].includes(id));
+ assert.equal(checkedInput('visibilityBatch',{games:bulkGames,status:'preparing'}).games.length,11);
+ for(const game of ADDITIONAL_VISIBILITY_GAME_IDS){
+  assert.deepEqual(checkedInput('visibilityBatch',{games:[game],status:'hidden'}).games,[game]);
+  assert.throws(()=>checkedInput('visibilityBatch',{games:[game,'keisan'],status:'hidden'}),/invalid-visibility-batch/);
+  assert.throws(()=>checkedInput('campaign',{games:[game],enabled:true,startAt:1,endAt:2}),/invalid-games/);
+ }
  for(const action of ['reset','rankingBackup','setPlayerAccess','switchSeason'])assert.throws(()=>checkedInput(action,{game:'keisan'}),/unknown-management-action/);
  assert.equal(visibilityStatus({published:false}),'hidden');
  assert.equal(visibilityStatus({status:'preparing',published:true}),'preparing');
