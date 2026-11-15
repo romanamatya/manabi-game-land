@@ -23,9 +23,9 @@ test('parallelPair files and settings match the reviewed release candidate', asy
         .replace("verticalParallel:'赤い基準線を見て、垂直・平行な線を選ぼう',", '')
         .replace("if(id!=='verticalParallel'&&id!=='quadrilateral'&&g?.rankingPending!==true){const rank", 'const rank')
         .replace('actions.append(rank)}', 'actions.append(rank)')
-        .replace(/const newGameIds = [\s\S]*?(?=const displayNames=)/,
+        .replace(/if\(!inUnit\)\{[\s\S]*?(?=const displayNames=)/,
           'if(!inUnit){for(const u of units)root.append(card(u.name,u.description,u.page));return}\n')
-        .replace(' item.append(summary,badge,actions);\n if(newGameIds.has(id)) markNew(item);\n root.append(item);',
+        .replace(' item.append(summary,badge,actions);\n root.append(item);',
           ' item.append(summary,badge,actions);root.append(item);'));
     }
     if (file.path === 'parallel-ranking.js') {

@@ -36,3 +36,7 @@
   box-sizing: border-box;
   padding-block-start: 16px;
 }
+
+.card.game-card.has-new-game .game-summary {
+  padding-inline-end: 51px;
+}

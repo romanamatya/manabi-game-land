@@ -70,19 +70,17 @@ test('the new math route and all visual elements fit three landscape WebKit view
     }
     expect(await page.evaluate(()=>[document.documentElement.scrollWidth,document.documentElement.scrollHeight]))
       .toEqual([viewport.width,viewport.height]);
-    if (!production) {
-      const confirm=page.getByRole('button',{name:'決定！',exact:true});
-      await expect(confirm).toBeDisabled();
-      await expect(confirm).toHaveCSS('min-width','220px');
-      await expect(confirm).toHaveCSS('min-height',viewport.height<=580 ? '44px' : '54px');
-      await expect(confirm).toHaveCSS('font-size',viewport.height<=580 ? '22px' : '25px');
-      await expect(confirm).toHaveCSS('background-color','rgb(201, 214, 230)');
-      const button=await confirm.boundingBox();
-      const hint=await page.locator('#hint').boundingBox();
-      const diagram=await page.locator('#diagram').boundingBox();
-      expect(hint.x+hint.width).toBeLessThanOrEqual(button.x);
-      expect(diagram.y+diagram.height).toBeLessThanOrEqual(button.y);
-    }
+    const confirm=page.getByRole('button',{name:'決定！',exact:true});
+    await expect(confirm).toBeDisabled();
+    await expect(confirm).toHaveCSS('min-width','220px');
+    await expect(confirm).toHaveCSS('min-height',viewport.height<=580 ? '44px' : '54px');
+    await expect(confirm).toHaveCSS('font-size',viewport.height<=580 ? '22px' : '25px');
+    await expect(confirm).toHaveCSS('background-color','rgb(201, 214, 230)');
+    const button=await confirm.boundingBox();
+    const hint=await page.locator('#hint').boundingBox();
+    const diagram=await page.locator('#diagram').boundingBox();
+    expect(hint.x+hint.width).toBeLessThanOrEqual(button.x);
+    expect(diagram.y+diagram.height).toBeLessThanOrEqual(button.y);
     await expect(page.locator('.hp-angle')).toHaveCount(4);
     await expect(page.locator('.hp-letter')).toHaveText([...'ABCD']);
     for(const img of await page.locator('#tower img').all()){
@@ -124,13 +122,11 @@ test('touch selection, retry, all title images and timed play persist in the bro
     await page.touchscreen.tap(q.target[i].x,q.target[i].y);
   }
   await expect(confirm).toBeEnabled();
-  if (!production) {
-    await expect(confirm).toHaveCSS('background-color','rgb(66, 107, 217)');
-    await expect(confirm).toHaveCSS('color','rgb(255, 255, 255)');
-    await expect(confirm).toHaveCSS('border-radius','12px');
-    await expect(confirm).toHaveCSS('font-weight','850');
-    await expect(confirm).toHaveCSS('box-shadow','rgb(41, 78, 174) 0px 4px 0px 0px');
-  }
+  await expect(confirm).toHaveCSS('background-color','rgb(66, 107, 217)');
+  await expect(confirm).toHaveCSS('color','rgb(255, 255, 255)');
+  await expect(confirm).toHaveCSS('border-radius','12px');
+  await expect(confirm).toHaveCSS('font-weight','850');
+  await expect(confirm).toHaveCSS('box-shadow','rgb(41, 78, 174) 0px 4px 0px 0px');
   await confirm.tap();
   await expect(page.locator('#hint')).toContainText('同じ図');
   expect((await drawing(page)).signature).toBe(q.signature);
@@ -140,11 +136,9 @@ test('touch selection, retry, all title images and timed play persist in the bro
     await expect(page.locator('[data-line][aria-disabled="false"]')).toHaveCount(4);
     if(n<=4) await expect(page.locator('#level')).toHaveText(['初級','中級','中級','上級'][n-1]);
     const next=await drawing(page);
-    if(!production){
-      expect(next.spread).toBeLessThanOrEqual(8.000001);
-      expect(new Set(next.values).size).toBe(4);
-      expect(next.values.filter((value,i)=>next.values.slice(i+1).includes(180-value))).toHaveLength(2);
-    }
+    expect(next.spread).toBeLessThanOrEqual(8.000001);
+    expect(new Set(next.values).size).toBe(4);
+    expect(next.values.filter((value,i)=>next.values.slice(i+1).includes(180-value))).toHaveLength(2);
     await submit(page,next);
     await expect(page.locator('#practice-best')).toHaveText(String(n));
     await expect(page.locator('#points')).toHaveText(String(initialPoints+n));
