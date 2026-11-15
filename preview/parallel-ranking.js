@@ -1,5 +1,5 @@
-import {challengeRankingEnabled,mountChallengeRanking} from './challenge-ranking.js?v=66148e108847';
-import {client} from './ranking-sync-api.js?v=66148e108847';
+import {challengeRankingEnabled,mountChallengeRanking} from './challenge-ranking.js?v=594e82df0682';
+import {client} from './ranking-sync-api.js?v=594e82df0682';
 const GAME='parallelPair';
 export function parallelRankingEnabled(config,env){return env?.preview===false&&env.expectedProjectId==='manabi-game-land'&&config?.mode==='production'&&config.firebase?.projectId==='manabi-game-land'&&config.rankingSyncEnabled===true&&config.parallelPairRankingEnabled===true&&config.playerNameSyncEnabled===true&&config.rankingGameIds?.includes(GAME)===true;}
 // One pending best, one acknowledgement per ranking UID. No answer data is stored.
