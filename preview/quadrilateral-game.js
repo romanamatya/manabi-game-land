@@ -1,5 +1,5 @@
-import { mountChallengeRanking } from './challenge-ranking.js?v=5c79b69352a6';
-import { createQuestionDeck, GAME, WIDTH, HEIGHT } from './quadrilateral-model.js?v=5c79b69352a6';
+import { mountChallengeRanking } from './challenge-ranking.js?v=c27d28edcf1e';
+import { createQuestionDeck, GAME, WIDTH, HEIGHT } from './quadrilateral-model.js?v=c27d28edcf1e';
 
 const $ = id => document.getElementById(id);
 const config = window.MANABI_BACKEND_CONFIG;
