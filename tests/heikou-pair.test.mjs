@@ -152,7 +152,7 @@ test('separate progress, five titles, 120-second expiry, and the shared 50-point
   assert.equal(storage.getItem('mgl_parallelPair'),'{"best":17}');
 });
 
-test('preview updates only question generation and guidance while production stays on the approved model', () => {
+test('preview changes stay isolated from the published game and preserve approved artwork', () => {
   const hashes=[
     ['01_rookie','b22b1b282b6dba56a6b12486e8519ea349f375b852ac3d149e2a284cd8a4734a'],
     ['02_hunter','fec71baf3baa54d1d7cf26b588eb01fc054f8770a2b2f21e616bd3e44e4aab51'],
@@ -169,9 +169,10 @@ test('preview updates only question generation and guidance while production sta
     assert.deepEqual(image,open(path));
   }
   assert.match(open('preview/math.html').toString(),/id="geometry"[^]*?href="games\/heikouPair\.html"/);
-  for (const path of ['heikou-pair-game.js','heikou-pair.css']) {
-    assert.deepEqual(open(path),open('shared-src/site/'+path));
-  }
+  assert.deepEqual(open('heikou-pair-game.js'),open('shared-src/site/heikou-pair-game.js'));
+  assert.equal(createHash('sha256').update(open('heikou-pair.css')).digest('hex'),
+    'b786e08bb2ef60ac07abb6ff9b1a0eefd65b6fc38fb74d214f4960971e169d2b');
+  assert.doesNotMatch(open('games/heikouPair.html').toString(),/parallel-confirm\.css/);
   assert.deepEqual(open('preview/heikou-pair-model.js'),open('shared-src/site/heikou-pair-model.js'));
   assert.equal(createHash('sha256').update(open('heikou-pair-model.js')).digest('hex'),
     'b8e78e64972063323165ae8d097cf0399f5a634a275ebaf5f8c20237785bc514');
