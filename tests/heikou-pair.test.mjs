@@ -158,6 +158,8 @@ test('production and preview use the same model, game, styles and approved artwo
   for (const path of ['heikou-pair-model.js','heikou-pair-game.js','heikou-pair.css']) {
     assert.deepEqual(open(path),open('shared-src/site/'+path));
   }
+  const geometryBlock = path => open(path).toString().split('const heikouPair = ')[1].split('const subjects=')[0];
+  assert.equal(geometryBlock('economy-core.js'),geometryBlock('shared-src/site/economy-core.js'));
   assert.match(open('environment.js').toString(),/"staticLocalGameIds":\[[^\]]*"heikouPair"/);
   assert.doesNotMatch(open('environment.js').toString(),/"rankingGameIds":\[[^\]]*"heikouPair"/);
   assert.match(open('games/heikouPair.html').toString(),/href="\.\.\/math-geometry\.html"/);
