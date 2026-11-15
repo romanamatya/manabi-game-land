@@ -57,11 +57,11 @@ test('individual management hides cards, gates direct play and keeps local recor
     const toggle = async status => {
       await row.getByRole('combobox').selectOption(status);
       await admin.locator('#execute').click();
-      await expect(row.getByRole('cell',{name:status==='hidden'?'非公開':'公開中',exact:true})).toBeVisible();
+      await expect(row.locator('td').nth(2)).toHaveText(status==='hidden'?'非公開':'公開中');
     };
     await toggle('hidden');
     await openSettings();
-    await expect(row.getByRole('cell',{name:'非公開',exact:true})).toBeVisible();
+    await expect(row.locator('td').nth(2)).toHaveText('非公開');
     const card = student.locator(`[data-game-card="${id}"]`);
     await visit(student,list);
     await expect(card).toBeHidden();
