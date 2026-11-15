@@ -84,27 +84,30 @@ function assemble(core, id, level, tilt, offsets, bearings, sectors) {
   return { prompt, transversal, crossing, candidates, answer, level };
 }
 
-function bearingsFor(level, pair, random) {
-  const base = level === 'easy' ? [65, 75, 95, 105, 115]
-    : level === 'medium' ? [70, 75, 80, 100, 105, 110] : [72, 75, 78, 80, 100, 102, 105, 108];
-  const [repeated, ...others] = shuffle(base, random);
-  const different = level === 'hard'
-    ? [180 - repeated, repeated + (repeated < 90 ? 4 : -4)]
-    : others.slice(0, 2);
-  return Array.from({ length: 4 }, (_, i) => pair.includes(i) ? repeated : different.shift());
-}
+// Each level uses distinct distances from 90°. Doubling the distractor's
+// distance bounds the overall bearing spread to 8°, 6°, and 4° respectively.
+const distractorDeviation = { easy: [3, 4], medium: [2, 3], hard: [2] };
+const tiltRange = { easy: [1, 3], medium: [4, 7], hard: [6, 10] };
+const choose = (options, random) => options[Math.floor(random() * options.length)];
 
-function sectorsFor(level, pair, random) {
+function arrangement(level, pair, random) {
+  const deviation = choose(distractorDeviation[level], random);
+  const offset = 1 + Math.floor(random() * (deviation - 1));
+  const parallelBearing = 90 + choose([-1, 1], random) * offset;
+  const distractorBearings = shuffle([90 - deviation, 90 + deviation], random);
+  const bearings = Array.from({ length: 4 }, (_, i) => pair.includes(i) ? parallelBearing : distractorBearings.shift());
+
   const first = Math.floor(random() * 4);
-  if (level === 'easy') return pair.includes(0) && random() < .25 ? [first ^ 3, first, first, first] : Array(4).fill(first);
-  const sectors = Array.from({ length: 4 }, () => Math.floor(random() * 4));
-  sectors[pair[0]] = first;
-  sectors[pair[1]] = first ^ (random() < .5 ? 1 : 2);
-  if (level === 'hard') {
-    // The mirrored distractor has the same printed value in a different sector.
-    sectors[sectors.findIndex((_, i) => !pair.includes(i))] = first ^ 1;
-  }
-  return sectors;
+  const otherRay = level === 'easy' ? 2 : choose([1, 2], random);
+  const distractorSector = level === 'easy' ? first : Math.floor(random() * 4);
+  const distractorSectors = [distractorSector, level === 'hard' ? distractorSector ^ 3 : distractorSector];
+  // Flipping one ray gives a supplementary angle. Flipping both gives a
+  // vertical angle, leaving the number unchanged for a given bearing.
+  // The distractors have mirrored bearings but the same sector parity, so
+  // their displayed numbers also sum to 180°, without the right positions.
+  const sectors = Array.from({ length: 4 }, (_, i) =>
+    i === pair[0] ? first : i === pair[1] ? first ^ otherRay : distractorSectors.shift());
+  return { bearings, sectors };
 }
 
 export function difficulty(index, timed) {
@@ -127,15 +130,15 @@ export function createDeck(core, random = Math.random) {
       last = pair;
       const id = 'heikou-' + (sequence++).toString(36) + '-' + Math.floor(random() * 2 ** 32).toString(36);
       for (let attempt = 0; attempt < 24; attempt++) {
-        const tilt = level === 'easy' ? 0 : (random() < .5 ? -1 : 1) * (4 + Math.floor(random() * 7));
+        const [low, high] = tiltRange[level];
+        const tilt = choose([-1, 1], random) * (low + Math.floor(random() * (high - low + 1)));
         const offsets = distances.map(d => d + Math.floor(random() * 25) - 12);
-        const question = assemble(core, id, level, tilt, offsets, bearingsFor(level, pair, random),
-          sectorsFor(level, pair, random));
+        const { bearings, sectors } = arrangement(level, pair, random);
+        const question = assemble(core, id, level, tilt, offsets, bearings, sectors);
         if (clearDiagram(question)) return question;
       }
-      const bearings = bearingsFor(level, pair, () => .4);
-      const sectors = sectorsFor(level, pair, () => .4);
-      const fallback = assemble(core, id, level, level === 'easy' ? 0 : 4, distances, bearings, sectors);
+      const { bearings, sectors } = arrangement(level, pair, () => .4);
+      const fallback = assemble(core, id, level, tiltRange[level][0], distances, bearings, sectors);
       if (!clearDiagram(fallback)) throw Error('no safe diagram');
       return fallback;
     },
