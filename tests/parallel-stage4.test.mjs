@@ -17,9 +17,11 @@ test('parallelPair files and settings match the reviewed release candidate', asy
       bytes = Buffer.from(bytes.toString('utf8')
         .replace("if(window.MANABI_BACKEND_CONFIG?.staticLocalGameIds?.includes('verticalParallel'))units.find(unit=>unit.id==='geometry').games.push('verticalParallel');\r\n", '')
         .replace("if(window.MANABI_BACKEND_CONFIG?.staticLocalGameIds?.includes('quadrilateral'))units.find(unit=>unit.id==='geometry').games.push('quadrilateral');\r\n", '')
+        .replace("if(window.MANABI_BACKEND_CONFIG?.staticLocalGameIds?.includes('heikouPair'))units.find(unit=>unit.id==='geometry').games.push('heikouPair');\r\n", '')
+        .replace("heikouPair:'角の大きさと場所をくらべて、平行な直線を見つけよう',", '')
         .replace("quadrilateral:'平行四辺形とひし形の辺の長さや角を見つけよう',", '')
         .replace("verticalParallel:'赤い基準線を見て、垂直・平行な線を選ぼう',", '')
-        .replace("if(id!=='verticalParallel'&&id!=='quadrilateral'){const rank", 'const rank')
+        .replace("if(id!=='verticalParallel'&&id!=='quadrilateral'&&g?.rankingPending!==true){const rank", 'const rank')
         .replace('actions.append(rank)}', 'actions.append(rank)')
         .replace(/const newGameIds = [\s\S]*?(?=const displayNames=)/,
           'if(!inUnit){for(const u of units)root.append(card(u.name,u.description,u.page));return}\n')
@@ -52,7 +54,7 @@ test('parallelPair files and settings match the reviewed release candidate', asy
 
   const settings = {...config};
   assert.equal(settings.staticLocalGameIds.filter(id=>id==='verticalParallel').length,1);
-  settings.staticLocalGameIds=settings.staticLocalGameIds.filter(id=>!['verticalParallel','quadrilateral'].includes(id));
+  settings.staticLocalGameIds=settings.staticLocalGameIds.filter(id=>!['verticalParallel','quadrilateral','heikouPair'].includes(id));
   for (const key of ['gameIds','rankingGameIds']) {
     assert.equal(settings[key].filter(id=>id==='missingAlphabet').length,1);
     settings[key]=settings[key].filter(id=>id!=='missingAlphabet');

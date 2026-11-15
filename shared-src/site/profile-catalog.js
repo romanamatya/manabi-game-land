@@ -27,7 +27,7 @@ window.ManabiProfileCatalog.push({
 
 window.ManabiProfileCatalog.push({
   id: 'heikouPair', name: '平行ペアを見つけよう！', subject: 'math', page: 'math.html#geometry',
-  field: 'heikouPairBestStreak', rankingEnabled: false,
+  field: 'heikouPairBestStreak', rankingEnabled: false, rankingPending: true,
   titles: [
     [3, '平行ペアルーキー', '01_rookie'],
     [5, '平行ペアハンター', '02_hunter'],

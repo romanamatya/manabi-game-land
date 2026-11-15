@@ -1,10 +1,12 @@
-import { GAME, WIDTH, HEIGHT, LABELS, createDeck, hitCandidate } from './heikou-pair-model.js?v=c27d28edcf1e';
+import { GAME, WIDTH, HEIGHT, LABELS, createDeck, hitCandidate } from './heikou-pair-model.js?v=594e82df0682';
 
 const $ = id => document.getElementById(id);
-if (window.MANABI_ENV?.preview === true && window.MANABI_BACKEND_CONFIG?.staticLocalGameIds.includes(GAME)) {
+const environment = window.MANABI_ENV;
+const config = window.MANABI_BACKEND_CONFIG;
+if (environment && config?.mode === environment.environment && config.staticLocalGameIds?.includes(GAME)) {
   play();
 } else {
-  $('hint').textContent = 'このゲームは確認用サイトで遊べます。';
+  $('hint').textContent = 'このゲームは現在公開されていません。';
 }
 
 function play() {

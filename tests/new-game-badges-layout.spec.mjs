@@ -56,7 +56,7 @@ for (const size of [{ width: 1024, height: 768 }, { width: 1194, height: 834 }])
 
     await page.getByRole('link', { name: /四角形・垂直と平行/ }).tap();
     await expect(page).toHaveURL(/\/math-geometry\.html$/);
-    await checkBadges(page, ['平行な2本を見つけよう！', '垂直・平行ラインクイズ！', '四角形のひみつ！']);
+    await checkBadges(page, ['平行な2本を見つけよう！', '垂直・平行ラインクイズ！', '四角形のひみつ！', '平行ペアを見つけよう！']);
     await expect(page.locator('[data-game-card="suichoku"] .new-game-badge')).toHaveCount(0);
     expect(await page.evaluate(() => [document.documentElement.scrollWidth, document.documentElement.scrollHeight]))
       .toEqual([size.width, size.height]);
