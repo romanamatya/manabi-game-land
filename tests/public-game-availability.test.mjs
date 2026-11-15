@@ -138,3 +138,21 @@ test('read failures distinguish network, authentication, permission, and unknown
  assert.equal(api.failureType({code:'permission-denied'}),'permission');
  assert.equal(api.failureType(new Error('other')),'unknown');
 });
+
+test('a marked answer keypad in the record sidebar obeys the gate',async()=>{
+ const {api,document,back}=setup();
+ const sidebar=document.createElement('aside');
+ const keypad=document.createElement('div');
+ keypad.setAttribute('data-game-area','');
+ const digit=keypad.append(document.createElement('button'));
+ const shop=sidebar.append(document.createElement('button'));
+ sidebar.append(keypad);document.body.append(sidebar);
+ const gate=api.create(document);
+ await gate.check(async()=>({status:'hidden'}));
+ assert.equal(attempt(document,'click',digit).defaultPrevented,true);
+ assert.equal(attempt(document,'click',shop).defaultPrevented,false);
+ assert.equal(attempt(document,'click',back).defaultPrevented,false);
+ await gate.check(async()=>({status:'published'}));
+ assert.equal(attempt(document,'click',digit).defaultPrevented,false);
+ gate.dispose();
+});

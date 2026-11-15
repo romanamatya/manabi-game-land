@@ -12,7 +12,7 @@
   <script src="../environment.js?v=managed-games-v1"></script>
   <script src="../environment-runtime.js?v=quadrilateral-release-v1"></script>
   <script src="../public-firebase-session.js?v=shared-firebase-session-v1"></script>
-  <script src="../public-game-availability.js?v=firebase-session-recovery-v1"></script>
+  <script src="../public-game-availability.js?v=managed-games-v1"></script>
   <script src="../public-admin-settings.js?v=managed-games-v1"></script>
   <script src="../profile-catalog.js?v=heikou-pair-release-v1"></script>
   <script src="../economy-core.js?v=heikou-pair-release-v1"></script>
@@ -38,7 +38,7 @@
           <div class="sq-stat">最高記録<b id="best">0</b></div>
         </div>
         <strong id="clock" role="timer">時間制限なし</strong>
-        <div id="keypad" aria-label="数字入力">
+        <div id="keypad" aria-label="数字入力" data-game-area>
           <output id="answer" aria-label="入力した答え"><span id="digits">—</span> <span id="unit"></span></output>
           <div id="keys"></div>
           <button id="confirm" type="button" disabled>決定！</button>

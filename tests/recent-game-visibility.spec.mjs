@@ -81,7 +81,7 @@ test('individual management hides cards, gates direct play and keeps local recor
         element.dispatchEvent(event);
         return event.defaultPrevented;
       });
-      expect(cancelled).toBe(true);
+      expect(cancelled, id).toBe(true);
     }
 
     await toggle('published');
