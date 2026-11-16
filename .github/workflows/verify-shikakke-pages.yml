@@ -30,7 +30,6 @@ jobs:
           cat > tests/shikakke-live-check.spec.mjs <<'EOF'
           import { test, expect } from '@playwright/test';
           import { mockPublicVisibility } from './fixtures/public-visibility-browser.mjs';
-          import { readFileSync } from 'node:fs';
           test('open Shikakke from the geometry catalog and answer with local-only progress', async ({ page }) => {
             const origin = new URL(process.env.MGL_BASE_URL).origin;
             await page.route('**/*', route => new URL(route.request().url()).origin === origin ? route.continue() : route.abort());
@@ -42,12 +41,22 @@ jobs:
             await page.locator('[data-game-card="shikakkeSecrets"]').getByRole('button', {name:'プレイ', exact:true}).click();
             await expect(page).toHaveURL(/\/games\/shikakkeSecrets\.html/);
             await expect(page.locator('[data-shape]')).toHaveCount(5);
-            const script = readFileSync('games/shikakkeSecrets.html', 'utf8');
-            const confirm = [...script.matchAll(/<button[^>]*id="([^"]+)"[^>]*>/g)].find(match => /confirm|judge|submit/.test(match[1]));
-            await page.locator('[data-shape]').first().click();
-            if (confirm) await page.locator('#' + confirm[1]).click();
-            else await page.getByRole('button', {name:/決定/}).click();
+            const question = await page.evaluate(() => ManabiEconomyCore.shikakkeQuestions.find(item => item.text === document.querySelector('#question').textContent));
+            for (const shape of await page.locator('[data-shape]').all()) await shape.click();
+            await page.locator('#confirm').click();
+            await expect(page.locator('#hint')).toContainText('同じ問題');
+            for (const id of question.answers) await page.locator('[data-shape="' + id + '"]').click();
+            await page.locator('#confirm').click();
+            await expect(page.locator('#practice-best')).toHaveText('1');
             expect(errors).toEqual([]);
           });
           EOF
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('tests/recent-game-visibility.spec.mjs')
+          text = p.read_text()
+          text = text.replace("route('https://**/*', route => route.abort())", "route('**/*', route => new URL(route.request().url()).origin === new URL(base).origin ? route.continue() : route.abort())")
+          text = text.replace("\n];\ntest(", "\n].filter(([id]) => id === 'shikakkeSecrets');\ntest(", 1)
+          p.write_text(text)
+          PY
           npx playwright test tests/shikakke-live-check.spec.mjs tests/recent-game-visibility.spec.mjs --reporter=list
