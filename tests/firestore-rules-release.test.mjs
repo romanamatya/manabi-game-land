@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { assertApprovedPlan, createRulesClient, digest, publishVerified, rehearsePreview, verifyPublished } from '../tools/firestore-rules-release.mjs';
+import { assertApprovedPlan, compareReviewedSource, createRulesClient, digest, publishVerified, rehearsePreview, verifyPublished } from '../tools/firestore-rules-release.mjs';
 
 const project = 'manabi-game-landcheck';
 const root = `projects/${project}`;
@@ -150,4 +150,43 @@ test('a stale approved preview snapshot stops before any mutation', async () => 
     client, approved, validate: async () => assert.fail('Unexpected validation'),
   }), /approved plan/);
   assert.ok(calls.every(([method]) => method === 'GET'));
+});
+
+test('reviewed-source inspection distinguishes line endings and one final newline from substantive changes', async () => {
+  for (const [source, match] of [
+    ['a\nb\n', 'exact'],
+    ['a\r\nb\r\n', 'line-endings-only'],
+    ['a\r\nb', 'single-final-newline-only'],
+    ['a\nb\n\n', 'single-final-newline-only'],
+    ['a\nb\n\n\n', 'mismatch'],
+    ['a\nb \n', 'mismatch'],
+    ['a\nB\n', 'mismatch'],
+  ]) {
+    const calls = [];
+    const client = createRulesClient('manabi-game-land', 'fixture-token', async (url, { method }) => {
+      calls.push(method);
+      const root = 'projects/manabi-game-land';
+      const ruleset = root + '/rulesets/published';
+      return new Response(JSON.stringify(url.endsWith('/releases/cloud.firestore')
+        ? { name: root + '/releases/cloud.firestore', rulesetName: ruleset }
+        : { name: ruleset, source: { files: [{ content: source }] } }));
+    });
+    const result = await compareReviewedSource(client, 'a\nb\n');
+    assert.equal(result.match, match);
+    assert.equal(result.ruleset, 'projects/manabi-game-land/rulesets/published');
+    assert.equal(result.sha256, digest(source));
+    assert.equal(result.candidateSha256, digest('a\nb\n'));
+    assert.deepEqual(calls, ['GET', 'GET', 'GET', 'GET', 'GET']);
+    assert.ok(!Object.hasOwn(result, 'source'));
+  }
+});
+
+test('reviewed-source inspection rejects a release that changes during the read', async () => {
+  const state = { ruleset: 'projects/manabi-game-land/rulesets/first', sha256: digest('candidate'), updatedAt: null };
+  let reads = 0;
+  const client = {
+    active: async () => reads++ === 0 ? state : { ...state, ruleset: state.ruleset + '-changed' },
+    readRuleset: async () => ({ source: 'candidate' }),
+  };
+  await assert.rejects(compareReviewedSource(client, 'candidate'), /changed during verification/);
 });

@@ -21,7 +21,7 @@ on:
       operation:
         description: Publish or restore requires approval. Rehearse is preview-only.
         type: choice
-        options: [inspect, plan, deploy, rollback, rehearse]
+        options: [inspect, inspect-pr67, plan, deploy, rollback, rehearse]
         default: inspect
       rollback_ruleset:
         description: Previous immutable Ruleset name from the backup receipt
@@ -57,6 +57,11 @@ jobs:
               baseline=firebase/production-release-baseline.rules
               source=firebase/production-release-candidate.rules
               ;;
+            production/inspect-pr67)
+              project=manabi-game-land
+              baseline=
+              source=
+              ;;
             preview/test|preview/rehearse)
               project=manabi-game-landcheck
               baseline=
@@ -85,7 +90,7 @@ jobs:
 
   test:
     needs: select
-    if: github.event_name == 'pull_request' || (inputs.operation != 'inspect' && inputs.operation != 'rehearse')
+    if: github.event_name == 'pull_request' || (inputs.operation != 'inspect' && inputs.operation != 'inspect-pr67' && inputs.operation != 'rehearse')
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -126,7 +131,7 @@ jobs:
     if: >-
       ${{ !cancelled() && github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main'
           && needs.select.result == 'success'
-          && (needs.test.result == 'success' || ((inputs.operation == 'inspect' || inputs.operation == 'rehearse') && needs.test.result == 'skipped')) }}
+          && (needs.test.result == 'success' || ((inputs.operation == 'inspect' || inputs.operation == 'inspect-pr67' || inputs.operation == 'rehearse') && needs.test.result == 'skipped')) }}
     runs-on: ubuntu-latest
     timeout-minutes: 5
     environment: firebase-rules-${{ inputs.target }}-read
@@ -139,6 +144,9 @@ jobs:
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
+      - name: Fetch the immutable PR 67 source
+        if: inputs.operation == 'inspect-pr67'
+        run: git fetch --no-tags --depth=1 origin e5c8ae5e22286e844c5ca865c96170b227bd9f6c
       - id: auth
         uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3
         with:
@@ -164,13 +172,19 @@ jobs:
             if [[ "$PROJECT" == manabi-game-landcheck ]]; then BASELINE=; fi
           elif [[ "$OPERATION" == rehearse ]]; then
             mode=rehearse-plan
+          elif [[ "$OPERATION" == inspect-pr67 ]]; then
+            mode=inspect-pr67
           fi
-          node tools/firestore-rules-release.mjs "$mode" "$PROJECT" "$BASELINE" "$CANDIDATE" > rules-backup.json
-          printf 'plan=%s\n' "$(cat rules-backup.json)" >> "$GITHUB_OUTPUT"
+          result=0
+          node tools/firestore-rules-release.mjs "$mode" "$PROJECT" "$BASELINE" "$CANDIDATE" > rules-backup.json || result=$?
           printf 'Commit: `%s`\n\n```json\n' "$GITHUB_SHA" >> "$GITHUB_STEP_SUMMARY"
           cat rules-backup.json >> "$GITHUB_STEP_SUMMARY"
           printf '```\n' >> "$GITHUB_STEP_SUMMARY"
+          if [[ -s rules-backup.json ]]; then printf 'has_receipt=true\n' >> "$GITHUB_OUTPUT"; fi
+          if (( result != 0 )); then exit "$result"; fi
+          printf 'plan=%s\n' "$(cat rules-backup.json)" >> "$GITHUB_OUTPUT"
       - uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() && steps.compare.outputs.has_receipt == 'true' }}
         with:
           name: firestore-rules-backup-receipt
           path: rules-backup.json
