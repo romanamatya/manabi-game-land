@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { mockPublicVisibility } from './fixtures/public-visibility-browser.mjs';
 
 const base = process.env.MGL_BASE_URL || 'http://127.0.0.1:4173/';
 const game = new URL('preview/games/verticalParallel.html', base).href;
@@ -201,6 +202,7 @@ test('the production game preserves progress and awards points while ranking is 
       },
     }));
   });
+  await mockPublicVisibility(page, { verticalParallel: null });
   await page.goto(new URL('math-geometry.html', base).href);
   const card = page.locator('[data-game-card="verticalParallel"]');
   await expect(card.getByRole('button', { name: 'プレイ' })).toBeEnabled();

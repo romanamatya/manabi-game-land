@@ -53,3 +53,9 @@ jobs:
           ./node_modules/.bin/firebase emulators:exec --project demo-manabi-vertical-parallel \
             --only firestore --config firebase/rules-release-emulator.json \
             "node --test tests/rules/vertical-parallel-preview.test.mjs"
+
+      - name: Verify individual visibility on the production Rules candidate
+        run: |
+          ./node_modules/.bin/firebase emulators:exec --project demo-manabi-recent-visibility \
+            --only firestore --config firebase/rules-release-emulator.json \
+            "node --test tests/rules/recent-game-visibility.test.mjs"

@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { mockPublicVisibility } from './fixtures/public-visibility-browser.mjs';
 
 const base = process.env.MGL_BASE_URL || 'http://127.0.0.1:4173/';
 
@@ -48,6 +49,7 @@ for (const size of [{ width: 1024, height: 768 }, { width: 1194, height: 834 }])
   test(`NEW badges follow the math path and fit a landscape tablet at ${size.width}px`, async ({ page }) => {
     await page.setViewportSize(size);
     await page.route('https://**/*', route => route.abort());
+    await mockPublicVisibility(page, { heikouPair: null });
     await page.addInitScript(() => localStorage.setItem('mgl_nickname', '図形テスト'));
     await page.goto(new URL('index.html', base).href);
     await checkBadges(page, ['算数']);

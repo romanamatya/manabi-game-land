@@ -40,3 +40,5 @@
 .card.game-card.has-new-game .game-summary {
   padding-inline-end: 51px;
 }
+
+.game-card[hidden] { display: none; }

@@ -46,7 +46,9 @@
   function guard(event){
    if(state==='published')return;
    const target=event.target,control=target?.closest?.(CONTROL);
-   if(!control||control.closest?.(EXEMPT)||!control.closest?.(SURFACE))return;
+   if(!control||!control.closest?.(SURFACE))return;
+   const exempt=control.closest(EXEMPT);
+   if(exempt&&!(exempt.matches('aside')&&control.closest('[data-game-area]')))return;
    event.preventDefault();event.stopImmediatePropagation();
   }
   for(const type of ['click','pointerdown','keydown','submit'])documentRef.addEventListener(type,guard,true);
