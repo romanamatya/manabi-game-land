@@ -27,14 +27,14 @@ function connect(rules, projectId=base) {
     .then(rules => initializeTestEnvironment({projectId,firestore:{rules}}));
 }
 before(async () => {
-  env=await connect('production-recent-game-visibility-candidate.rules');
+  env=await connect('production-shikakke-visibility-candidate.rules');
   await seed(env);
   admin=env.authenticatedContext(adminUid,signedIn).firestore();
   child=env.authenticatedContext('visibility-child',learner).firestore();
 });
 after(async () => { await env?.cleanup(); });
 
-test('the production baseline denies a management write for all three previously static games', async () => {
+test('the production baseline denies a management write for all scoped visibility IDs', async () => {
   const baseline=await connect('production-release-baseline.rules',base+'-baseline');
   try {
     await seed(baseline);
@@ -44,7 +44,7 @@ test('the production baseline denies a management write for all three previously
   } finally { await baseline.cleanup(); }
 });
 
-test('the existing admin store lists five distinct games and preserves published defaults and saved state', async () => {
+test('the existing admin store lists six distinct games and preserves published defaults and saved state', async () => {
   const ids=['parallelPair','missingAlphabet',...recent];
   assert.equal(new Set(GAME_IDS).size,GAME_IDS.length);
   const store=()=>createManagementStore('production',F,admin);
@@ -98,6 +98,8 @@ test('campaign, extra fields and mixed visibility batches cannot alter the new d
   await assertFails(commit(['heikouPair','keisan'],{}));
   await assertFails(commit(['heikouPair'],{campaign:{enabled:true}}));
   await assertFails(commit(['heikouPair'],{nickname:'変更'}));
+  await assertFails(commit(['shikakkeSecrets'],{campaign:{enabled:true}}));
+  await assertFails(commit(['shikakkeSecrets','keisan'],{}));
   assert.equal((await F.getDoc(setting(admin,'heikouPair'))).data().status,'published');
   assert.equal((await F.getDoc(setting(admin,'keisan'))).data().status,'published');
 });

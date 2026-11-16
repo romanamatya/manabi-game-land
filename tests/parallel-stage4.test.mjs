@@ -18,6 +18,8 @@ test('parallelPair files and settings match the reviewed release candidate', asy
         .replace("if(window.MANABI_BACKEND_CONFIG?.staticLocalGameIds?.includes('verticalParallel'))units.find(unit=>unit.id==='geometry').games.push('verticalParallel');\r\n", '')
         .replace("if(window.MANABI_BACKEND_CONFIG?.staticLocalGameIds?.includes('quadrilateral'))units.find(unit=>unit.id==='geometry').games.push('quadrilateral');\r\n", '')
         .replace("if(window.MANABI_BACKEND_CONFIG?.staticLocalGameIds?.includes('heikouPair'))units.find(unit=>unit.id==='geometry').games.push('heikouPair');\r\n", '')
+        .replace("if(window.MANABI_BACKEND_CONFIG?.staticLocalGameIds?.includes('shikakkeSecrets'))units.find(unit=>unit.id==='geometry').games.push('shikakkeSecrets');\r\n", '')
+        .replace("shikakkeSecrets:'対角線・垂直・平行のひみつを見つけよう',", '')
         .replace("heikouPair:'角の大きさと場所をくらべて、平行な直線を見つけよう',", '')
         .replace("quadrilateral:'平行四辺形とひし形の辺の長さや角を見つけよう',", '')
         .replace("verticalParallel:'赤い基準線を見て、垂直・平行な線を選ぼう',", '')
@@ -54,14 +56,14 @@ test('parallelPair files and settings match the reviewed release candidate', asy
 
   const settings = {...config};
   assert.equal(settings.staticLocalGameIds.filter(id=>id==='verticalParallel').length,1);
-  settings.staticLocalGameIds=settings.staticLocalGameIds.filter(id=>!['verticalParallel','quadrilateral','heikouPair'].includes(id));
+  settings.staticLocalGameIds=settings.staticLocalGameIds.filter(id=>!['verticalParallel','quadrilateral','heikouPair','shikakkeSecrets'].includes(id));
   for (const key of ['gameIds','rankingGameIds']) {
     assert.equal(settings[key].filter(id=>id==='missingAlphabet').length,1);
     settings[key]=settings[key].filter(id=>id!=='missingAlphabet');
   }
   assert.equal(settings.missingAlphabetRankingSyncEnabled,true);
   assert.deepEqual([...settings.challenge120GameIds],['missingAlphabet']);
-  assert.deepEqual([...settings.managedVisibilityGameIds], ['parallelPair','missingAlphabet','verticalParallel','quadrilateral','heikouPair']);
+  assert.deepEqual([...settings.managedVisibilityGameIds], ['parallelPair','missingAlphabet','verticalParallel','quadrilateral','heikouPair','shikakkeSecrets']);
   delete settings.managedVisibilityGameIds;
   delete settings.missingAlphabetRankingSyncEnabled;
   delete settings.challenge120GameIds;
