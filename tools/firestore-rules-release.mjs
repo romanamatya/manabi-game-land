@@ -12,6 +12,8 @@ const previewProject = 'manabi-game-landcheck';
 const pr67Commit = 'e5c8ae5e22286e844c5ca865c96170b227bd9f6c';
 const pr67Candidate = 'firebase/production-recent-game-visibility-candidate.rules';
 const pr67Hash = '82021f5bb2e78c603fbe44dd2c911c6247cbfeaf664cd8f4655a1af555b9e59e';
+const shikakkeCandidate = 'firebase/production-shikakke-visibility-candidate.rules';
+const shikakkeHash = '6090f40844af1f33bfcfb0d5a75eb6dd7bb65aa03d080e0af135461dde448483';
 const rawDigest = source => createHash('sha256').update(source).digest('hex');
 const rehearsalMarker = '\n// manabi-preview-rules-rehearsal\n';
 const exec = promisify(execFile);
@@ -219,7 +221,7 @@ async function validateWithEmulator(source) {
 
 async function main() {
   const [mode, project, baselinePath, candidatePath] = process.argv.slice(2);
-  if (!['inspect', 'plan', 'deploy', 'rollback', 'rehearse', 'rehearse-plan', 'verify', 'inspect-pr67'].includes(mode)) throw new Error('Unknown mode');
+  if (!['inspect', 'plan', 'deploy', 'rollback', 'rehearse', 'rehearse-plan', 'verify', 'inspect-pr67', 'inspect-shikakke'].includes(mode)) throw new Error('Unknown mode');
   const writing = mode === 'deploy' || mode === 'rollback';
   const productionWrite = writing && project === productionProject
     && process.env.RULES_PRODUCTION_WRITE_ENABLED === 'true'
@@ -228,13 +230,20 @@ async function main() {
     throw new Error('Production writes are disabled');
   }
   const client = createRulesClient(project, process.env.RULES_ACCESS_TOKEN, fetch, { productionWrite });
-  if (mode === 'inspect-pr67') {
-    if (project !== productionProject) throw new Error('PR #67 verification is production-only');
-    const { stdout: candidate } = await exec('git', ['show', `${pr67Commit}:${pr67Candidate}`]);
-    if (rawDigest(candidate) !== pr67Hash) throw new Error('Approved PR #67 source hash mismatch');
+  if (mode === 'inspect-pr67' || mode === 'inspect-shikakke') {
+    if (project !== productionProject) throw new Error('Reviewed source verification is production-only');
+    const previous = mode === 'inspect-pr67';
+    const candidate = previous
+      ? (await exec('git', ['show', `${pr67Commit}:${pr67Candidate}`])).stdout
+      : await readFile(shikakkeCandidate, 'utf8');
+    if (rawDigest(candidate) !== (previous ? pr67Hash : shikakkeHash)) {
+      throw new Error('Reviewed candidate source hash mismatch');
+    }
     const result = await compareReviewedSource(client, candidate);
-    console.log(JSON.stringify({ project, candidateCommit: pr67Commit, ...result }));
-    if (result.match === 'mismatch') throw new Error('Active Rules contain differences from PR #67');
+    console.log(JSON.stringify({
+      project, candidateCommit: previous ? pr67Commit : process.env.GITHUB_SHA ?? null, ...result,
+    }));
+    if (result.match === 'mismatch') throw new Error('Active Rules contain differences from the reviewed candidate');
     return;
   }
   if (mode === 'rehearse') {

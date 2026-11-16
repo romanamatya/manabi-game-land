@@ -1,4 +1,4 @@
-import { GAME, WIDTH, HEIGHT, LABELS, createDeck, hitCandidate } from './heikou-pair-model.js?v=61afc3080c31';
+import { GAME, WIDTH, HEIGHT, LABELS, createDeck, hitCandidate } from './heikou-pair-model.js?v=4dec013b969a';
 
 const $ = id => document.getElementById(id);
 const environment = window.MANABI_ENV;
