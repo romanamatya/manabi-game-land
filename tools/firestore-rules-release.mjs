@@ -9,6 +9,10 @@ import { setTimeout as delay } from 'node:timers/promises';
 
 const productionProject = 'manabi-game-land';
 const previewProject = 'manabi-game-landcheck';
+const pr67Commit = 'e5c8ae5e22286e844c5ca865c96170b227bd9f6c';
+const pr67Candidate = 'firebase/production-recent-game-visibility-candidate.rules';
+const pr67Hash = '82021f5bb2e78c603fbe44dd2c911c6247cbfeaf664cd8f4655a1af555b9e59e';
+const rawDigest = source => createHash('sha256').update(source).digest('hex');
 const rehearsalMarker = '\n// manabi-preview-rules-rehearsal\n';
 const exec = promisify(execFile);
 
@@ -95,6 +99,23 @@ export function assertApprovedPlan(approved, currentPlan) {
       || !sameRelease(currentPlan.backup, approved.backup)) {
     throw new Error('Current plan does not match the approved plan');
   }
+}
+
+export async function compareReviewedSource(client, candidate) {
+  const active = await client.active();
+  const { source } = await client.readRuleset(active.ruleset);
+  if (digest(source) !== active.sha256 || !sameRelease(await client.active(), active)) {
+    throw new Error('Active Rules changed during verification');
+  }
+  const live = source.replace(/\r\n/g, '\n');
+  const expected = candidate.replace(/\r\n/g, '\n');
+  let match = 'mismatch';
+  if (source === candidate) match = 'exact';
+  else if (live === expected) match = 'line-endings-only';
+  else if (live + '\n' === expected || live === expected + '\n') match = 'single-final-newline-only';
+  return {
+    ...active, rawSha256: rawDigest(source), candidateSha256: rawDigest(candidate), match,
+  };
 }
 
 export async function verifyPublished(client, expected) {
@@ -198,7 +219,7 @@ async function validateWithEmulator(source) {
 
 async function main() {
   const [mode, project, baselinePath, candidatePath] = process.argv.slice(2);
-  if (!['inspect', 'plan', 'deploy', 'rollback', 'rehearse', 'rehearse-plan', 'verify'].includes(mode)) throw new Error('Unknown mode');
+  if (!['inspect', 'plan', 'deploy', 'rollback', 'rehearse', 'rehearse-plan', 'verify', 'inspect-pr67'].includes(mode)) throw new Error('Unknown mode');
   const writing = mode === 'deploy' || mode === 'rollback';
   const productionWrite = writing && project === productionProject
     && process.env.RULES_PRODUCTION_WRITE_ENABLED === 'true'
@@ -207,6 +228,15 @@ async function main() {
     throw new Error('Production writes are disabled');
   }
   const client = createRulesClient(project, process.env.RULES_ACCESS_TOKEN, fetch, { productionWrite });
+  if (mode === 'inspect-pr67') {
+    if (project !== productionProject) throw new Error('PR #67 verification is production-only');
+    const { stdout: candidate } = await exec('git', ['show', `${pr67Commit}:${pr67Candidate}`]);
+    if (rawDigest(candidate) !== pr67Hash) throw new Error('Approved PR #67 source hash mismatch');
+    const result = await compareReviewedSource(client, candidate);
+    console.log(JSON.stringify({ project, candidateCommit: pr67Commit, ...result }));
+    if (result.match === 'mismatch') throw new Error('Active Rules contain differences from PR #67');
+    return;
+  }
   if (mode === 'rehearse') {
     await rehearsePreview({
       client, validate: validateWithEmulator, exerciseDrift: true,
