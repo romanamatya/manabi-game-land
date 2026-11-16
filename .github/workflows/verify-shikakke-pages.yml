@@ -1,0 +1,53 @@
+name: Verify live Shikakke release
+on:
+  push:
+    branches: [verify/shikakke-pages-2c8b0a08]
+permissions:
+  contents: read
+jobs:
+  live:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    env:
+      MGL_BASE_URL: https://romanamatya.github.io/manabi-game-land/
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Verify deployed responses
+        run: |
+          set -euo pipefail
+          for file in games/shikakkeSecrets.html math-geometry.html control-room.html math-navigation.js management-model.js shikakke-secrets-game.js; do
+            curl -fsSL --retry 2 --max-time 15 -w "%{http_code} %{url_effective}\n" "${MGL_BASE_URL}${file}" -o /tmp/manabi-response
+            diff -q --strip-trailing-cr "$file" /tmp/manabi-response
+          done
+      - name: Install browser
+        run: |
+          npm install --no-save --package-lock=false @playwright/test
+          npx playwright install --with-deps chromium
+      - name: Navigate and answer using deployed game code
+        run: |
+          cat > tests/shikakke-live-check.spec.mjs <<'EOF'
+          import { test, expect } from '@playwright/test';
+          import { mockPublicVisibility } from './fixtures/public-visibility-browser.mjs';
+          import { readFileSync } from 'node:fs';
+          test('open Shikakke from the geometry catalog and answer with local-only progress', async ({ page }) => {
+            const origin = new URL(process.env.MGL_BASE_URL).origin;
+            await page.route('**/*', route => new URL(route.request().url()).origin === origin ? route.continue() : route.abort());
+            await mockPublicVisibility(page, { shikakkeSecrets: null });
+            await page.addInitScript(() => localStorage.setItem('mgl_nickname', '配信確認'));
+            const errors = [];
+            page.on('pageerror', error => errors.push(error.message));
+            await page.goto(process.env.MGL_BASE_URL + 'math-geometry.html');
+            await page.locator('[data-game-card="shikakkeSecrets"]').getByRole('button', {name:'プレイ', exact:true}).click();
+            await expect(page).toHaveURL(/\/games\/shikakkeSecrets\.html/);
+            await expect(page.locator('[data-shape]')).toHaveCount(5);
+            const script = readFileSync('games/shikakkeSecrets.html', 'utf8');
+            const confirm = [...script.matchAll(/<button[^>]*id="([^"]+)"[^>]*>/g)].find(match => /confirm|judge|submit/.test(match[1]));
+            await page.locator('[data-shape]').first().click();
+            if (confirm) await page.locator('#' + confirm[1]).click();
+            else await page.getByRole('button', {name:/決定/}).click();
+            expect(errors).toEqual([]);
+          });
+          EOF
+          npx playwright test tests/shikakke-live-check.spec.mjs tests/recent-game-visibility.spec.mjs --reporter=list
