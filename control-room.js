@@ -1,5 +1,5 @@
-import {client,errorText} from './spark-auth.js?v=managed-games-v1';
-import { ADDITIONAL_VISIBILITY_GAME_IDS } from './management-model.js?v=managed-games-v1';
+import {client,errorText} from './spark-auth.js?v=shikakke-v1';
+import { ADDITIONAL_VISIBILITY_GAME_IDS } from './management-model.js?v=shikakke-v1';
 const cfg=window.MANABI_SPARK_CONFIG,renameEnabled=cfg?.adminFeatures?.playerRename===true,managementEnabled=cfg?.managementEnabled===true;
 const $=id=>document.getElementById(id),names=window.ManabiUpgradeShared?.names||{},catalog=(window.ManabiProfileCatalog||[]).filter(g=>g.id!=='suichoku');
 const individualOnly=new Set(['parallelPair','missingAlphabet',...ADDITIONAL_VISIBILITY_GAME_IDS]);

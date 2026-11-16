@@ -49,7 +49,7 @@ for (const size of [{ width: 1024, height: 768 }, { width: 1194, height: 834 }])
   test(`NEW badges follow the math path and fit a landscape tablet at ${size.width}px`, async ({ page }) => {
     await page.setViewportSize(size);
     await page.route('https://**/*', route => route.abort());
-    await mockPublicVisibility(page, { heikouPair: null });
+    await mockPublicVisibility(page, { shikakkeSecrets: null });
     await page.addInitScript(() => localStorage.setItem('mgl_nickname', '図形テスト'));
     await page.goto(new URL('index.html', base).href);
     await checkBadges(page, ['算数']);
@@ -60,8 +60,8 @@ for (const size of [{ width: 1024, height: 768 }, { width: 1194, height: 834 }])
 
     await page.getByRole('link', { name: /四角形・垂直と平行/ }).tap();
     await expect(page).toHaveURL(/\/math-geometry\.html$/);
-    await checkBadges(page, ['平行ペアを見つけよう！']);
-    await expect(page.locator('[data-game-card]:not([data-game-card="heikouPair"]) .new-game-badge')).toHaveCount(0);
+    await checkBadges(page, ['四角形のひみつを見やぶれ！']);
+    await expect(page.locator('[data-game-card]:not([data-game-card="shikakkeSecrets"]) .new-game-badge')).toHaveCount(0);
     expect(await page.evaluate(() => [document.documentElement.scrollWidth, document.documentElement.scrollHeight]))
       .toEqual([size.width, size.height]);
   });
