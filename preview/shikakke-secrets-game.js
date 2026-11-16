@@ -1,4 +1,4 @@
-import { GAME, SHAPES, createDeck } from './shikakke-secrets-model.js?v=430741743768';
+import { GAME, SHAPES, createDeck } from './shikakke-secrets-model.js?v=4dec013b969a';
 
 const $ = id => document.getElementById(id);
 const config = window.MANABI_BACKEND_CONFIG;
@@ -134,7 +134,9 @@ function play() {
       if (result.correct) {
         feedback('正解！');
         if (result.title) {
-          celebrations.showTitle({ ...result.title, image: result.title.image.replace('_512.png', '_1254.png') });
+          const { name, at, image } = result.title;
+          // Supplying explicit artwork selects it instead of the indexed 512px badge.
+          celebrations.showTitle({ name, at, image: image.replace('_512.png', '_1254.png') });
         } else celebrations.showCorrect();
         setTimeout(showQuestion, 500);
       } else {
