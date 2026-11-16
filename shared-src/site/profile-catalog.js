@@ -39,3 +39,18 @@ window.ManabiProfileCatalog.push({
     standalone: true,
   })),
 });
+
+window.ManabiProfileCatalog.push({
+  id: 'shikakkeSecrets', name: '四角形のひみつを見やぶれ！', subject: 'math', page: 'math.html#geometry',
+  field: 'shikakkeSecretsBestStreak', rankingEnabled: false, rankingPending: true,
+  titles: [
+    [3, '四角形たんけん隊', '01_tankentai'],
+    [5, '四角形ハンター', '02_hunter'],
+    [10, '四角形マスター', '03_master'],
+    [15, '四角形の伝説', '04_densetsu'],
+    [25, '四角形の神', '05_kami'],
+  ].map(([at, name, image]) => ({
+    id: 'shikakkeSecrets:' + at, standalone: true, at, name,
+    image: 'assets/shikakke-titles/' + image + '_512.png', viewport: [0, 0, 512, 512],
+  })),
+});

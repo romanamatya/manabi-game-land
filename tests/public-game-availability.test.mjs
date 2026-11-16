@@ -55,7 +55,7 @@ test('all 11 root game pages load the safe availability guard before settings; p
    assert.match(html,/economy\.js/,'shared math wallet');assert.match(html,/challenge120-core\.js/,'common challenge state machine');assert.doesNotMatch(html,/social-score-sync\.js|ranking-sync-client\.js/,'does not start global game synchronization');
    continue;
   }
-  if(filename==='heikouPair.html'){
+  if(['heikouPair.html','shikakkeSecrets.html'].includes(filename)){
    assert.doesNotMatch(html,/public-firebase-session\.js|public-game-availability\.js|ranking-sync\.js/,'the preview game uses local progress');
    assert.match(html,/economy\.js/);
    assert.match(html,/challenge120-core\.js/);
