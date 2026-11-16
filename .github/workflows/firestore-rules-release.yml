@@ -21,7 +21,7 @@ on:
       operation:
         description: Publish or restore requires approval. Rehearse is preview-only.
         type: choice
-        options: [inspect, inspect-pr67, plan, deploy, rollback, rehearse]
+        options: [inspect, inspect-pr67, inspect-shikakke, plan, deploy, rollback, rehearse]
         default: inspect
       rollback_ruleset:
         description: Previous immutable Ruleset name from the backup receipt
@@ -57,7 +57,7 @@ jobs:
               baseline=firebase/production-release-baseline.rules
               source=firebase/production-release-candidate.rules
               ;;
-            production/inspect-pr67)
+            production/inspect-pr67|production/inspect-shikakke)
               project=manabi-game-land
               baseline=
               source=
@@ -90,7 +90,7 @@ jobs:
 
   test:
     needs: select
-    if: github.event_name == 'pull_request' || (inputs.operation != 'inspect' && inputs.operation != 'inspect-pr67' && inputs.operation != 'rehearse')
+    if: github.event_name == 'pull_request' || (inputs.operation != 'inspect' && inputs.operation != 'inspect-pr67' && inputs.operation != 'inspect-shikakke' && inputs.operation != 'rehearse')
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -131,7 +131,7 @@ jobs:
     if: >-
       ${{ !cancelled() && github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main'
           && needs.select.result == 'success'
-          && (needs.test.result == 'success' || ((inputs.operation == 'inspect' || inputs.operation == 'inspect-pr67' || inputs.operation == 'rehearse') && needs.test.result == 'skipped')) }}
+          && (needs.test.result == 'success' || ((inputs.operation == 'inspect' || inputs.operation == 'inspect-pr67' || inputs.operation == 'inspect-shikakke' || inputs.operation == 'rehearse') && needs.test.result == 'skipped')) }}
     runs-on: ubuntu-latest
     timeout-minutes: 5
     environment: firebase-rules-${{ inputs.target }}-read
@@ -172,8 +172,8 @@ jobs:
             if [[ "$PROJECT" == manabi-game-landcheck ]]; then BASELINE=; fi
           elif [[ "$OPERATION" == rehearse ]]; then
             mode=rehearse-plan
-          elif [[ "$OPERATION" == inspect-pr67 ]]; then
-            mode=inspect-pr67
+          elif [[ "$OPERATION" == inspect-pr67 || "$OPERATION" == inspect-shikakke ]]; then
+            mode="$OPERATION"
           fi
           result=0
           node tools/firestore-rules-release.mjs "$mode" "$PROJECT" "$BASELINE" "$CANDIDATE" > rules-backup.json || result=$?
