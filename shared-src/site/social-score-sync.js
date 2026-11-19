@@ -2,7 +2,7 @@ import {validatePlayerBackend,GAME_FIELDS} from './data-contract.js';
 import {createFirestoreStore} from './firebase-store.js';
 const config=window.MANABI_SPARK_CONFIG,game=document.body?.dataset.scoreGame;
 // Preview synchronization and production's existing ranking service are independent switches.
-if(game!=='missingAlphabet'&&config?.mode==='production'&&config.legacyScoreSyncEnabled===true&&!new URL(location.href).searchParams.has('adminTest')&&config.rankingGameIds?.includes(game)&&GAME_FIELDS[game]){
+if(config?.rankingsRetired!==true&&game!=='missingAlphabet'&&config?.mode==='production'&&config.legacyScoreSyncEnabled===true&&!new URL(location.href).searchParams.has('adminTest')&&config.rankingGameIds?.includes(game)&&GAME_FIELDS[game]){
  validatePlayerBackend(config);
  const {legacyPlayerClient}=await import('./legacy-player-client.js');const client=await legacyPlayerClient(config),store=client.store;
  const storage=window.manabiStorage,uid=client.uid;let running=false,dirty=false;const status=document.createElement('p');status.id='rankingSyncStatus';status.setAttribute('role','status');document.body.append(status);

@@ -57,7 +57,7 @@ export async function openChallengeRanking(game, config = window.MANABI_BACKEND_
 }
 
 export function mountChallengeRanking({ game, read, titles, button = document.getElementById('ranking-open') }) {
-  if (!button) return null;
+  if (window.MANABI_BACKEND_CONFIG?.rankingsRetired || !button) return null;
   const params = new URL(location.href).searchParams;
   const enabled = challengeRankingEnabled(game) && !params.has('adminTest') && !params.has('syncTest');
   const storage = window.manabiStorage;

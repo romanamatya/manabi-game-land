@@ -39,3 +39,11 @@ test('retirement strips rank entry points without removing the title tower or ga
  assert.equal(transformTitleMode('games/verticalParallel.html',html,{rankingsRetired:false},''),html);
  assert.equal(removeElements('<div><div class="remove"><div>x</div></div><p>safe</p></div>',raw=>raw.includes('class="remove"')),'<div><p>safe</p></div>');
 });
+test('retired client entry points reject before importing SDKs even if old flags are present',async()=>{
+ const api=await import('../shared-src/site/ranking-sync-api.js');
+ const previous=globalThis.window;
+ globalThis.window={MANABI_BACKEND_CONFIG:{rankingsRetired:true,rankingSyncEnabled:true,missingAlphabetRankingSyncEnabled:true,playerNameSyncEnabled:true,rankingGameIds:['missingAlphabet'],challengeRankingGameIds:['parallelPair'],gameIds:['missingAlphabet']}};
+ try{
+  for(const client of [api.client,api.missingAlphabetClient,api.challengeRankingClient])await assert.rejects(client(),error=>error.code==='rankings-retired');
+ }finally{if(previous===undefined)delete globalThis.window;else globalThis.window=previous;}
+});
