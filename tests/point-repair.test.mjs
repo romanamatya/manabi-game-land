@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import vm from 'node:vm';
-import { planRecovery } from '../support/point-repair.js';
+import { planRecovery, recoveryEvidence } from '../support/point-repair.js';
 const context = { structuredClone, Date };
 vm.createContext(context);
 for (const path of ['economy-core.js', 'storage-adapters.js']) vm.runInContext(fs.readFileSync(new URL('../' + path, import.meta.url), 'utf8'), context);
@@ -174,4 +174,14 @@ test('paid historical journals without the later Japanese migration metadata can
   assert.equal(after.legacyJapaneseImported, true);
   assert.equal(after.balances.japanese, 20);
   assert.equal(after.balances.english, 40);
+});
+
+
+test('a refused recovery reports only receipt counts and comparison results', () => {
+  const { storage, values } = fixture();
+  values.set('mgl_nickname', 'private-test-name');
+  const report = recoveryEvidence(storage);
+  assert(report.includes('128/128件確認'));
+  assert(!report.includes('paid-'));
+  assert(!report.includes('private-test-name'));
 });

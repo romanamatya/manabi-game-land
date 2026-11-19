@@ -257,6 +257,21 @@ export async function recoverDevice({ storage, session, indexedDB, locks, id, co
   });
 }
 
+export function recoveryEvidence(storage) {
+  try {
+    const wallet = parse(storage.getItem(WALLET));
+    const journal = parse(storage.getItem(JOURNAL));
+    const next = parse(journal.nextWallet);
+    const known = new Set(claims(wallet.claimed));
+    const ids = claims(next.claimed);
+    const before = typeof journal.beforeWallet === 'string' ? parse(journal.beforeWallet) : null;
+    return '旧保存の元データ：' + (before ? 'あり' : 'なし')
+      + '、旧保存の受領ID：' + ids.filter(id => known.has(id)).length + '/' + ids.length + '件確認'
+      + '、所持品の確認：' + (next.owned.every(id => wallet.owned.includes(id)) ? '一致' : '不一致')
+      + '、現状と書込前：' + (before && journalState(before) === journalState(wallet) ? '一致' : '相違');
+  } catch { return '追加の照合情報を取得できませんでした。'; }
+}
+
 if (typeof document !== 'undefined') {
   const button = document.getElementById('repair');
   if (button) button.onclick = async () => {
@@ -270,7 +285,7 @@ if (typeof document !== 'undefined') {
         + '。加算済み識別子 ' + result.receiptCount + '件を保護しました。ホームへ戻ってゲームを確認してください。';
     } catch (error) {
       status.textContent = '復旧を保留しました。確認コード：' + (error.name === 'QuotaExceededError' ? 'storage-full' : error.message)
-        + '。この表示を先生に渡してください。';
+        + '。' + recoveryEvidence(localStorage) + '。この表示全体を先生に渡してください。';
       button.disabled = false;
     }
   };
