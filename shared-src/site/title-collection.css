@@ -8,3 +8,4 @@
 .title-game-row[hidden]{display:none!important}
 
 .collection-page,.collection-page *{box-sizing:border-box}
+.collection-art .mq-badge{background:none!important}
