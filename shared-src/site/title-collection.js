@@ -71,7 +71,7 @@ function paginate() {
   const cards = [...document.querySelectorAll('[data-game-card]')];
   if (!cards.length) return;
   const visible = cards.filter(card => !['hidden','preparing'].includes(statuses.get(card.dataset.gameCard)));
-  const top = Math.max(100, cards[0].getBoundingClientRect().top + window.scrollY);
+  const top = Math.max(100, cards[0].parentElement.getBoundingClientRect().top + window.scrollY);
   const capacity = Math.max(2, Math.floor((window.innerHeight - top - 66) / 88));
   const pages = Math.max(1, Math.ceil(visible.length / capacity));
   pageIndex = Math.min(pageIndex, pages - 1);

@@ -24,7 +24,8 @@ export function transformTitleMode(file, text, config, collectionPage) {
   if (/(?:^|\/)(ranking|summary-ranking)\.html$/.test(file)) text=collectionPage;
   const names=['leaderboard','social-score-sync','missing-alphabet-ranking-sync','parallel-ranking','ranking-page','summary-ranking','new-game-badge'];
   text=removeElements(text,(raw,tag)=>
-    tag==='script'&&names.some(name=>new RegExp('src="(?:\\.\\./)?'+name+'\\.js(?:[?" ])').test(raw))
+    tag==='a'&&/href="[^"]*(?:ranking|summary-ranking)\.html/.test(raw)
+    || tag==='script'&&names.some(name=>new RegExp('src="(?:\\.\\./)?'+name+'\\.js(?:[?" ])').test(raw))
     || /\bdata-game-ranking\b|\bdata-profile-panel="ranking"/.test(raw)
     || /\bclass="[^"]*\brank-button\b/.test(raw)
     || /\bid="(?:ranking-open|ranking-close|ranking-refresh|line-ranking|parallel-ranking|parallel-ranking-status)"/.test(raw));

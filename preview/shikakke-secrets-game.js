@@ -1,4 +1,4 @@
-import { GAME, SHAPES, createDeck } from './shikakke-secrets-model.js?v=e810582d0e6d';
+import { GAME, SHAPES, createDeck } from './shikakke-secrets-model.js?v=528a20abd71e';
 
 const $ = id => document.getElementById(id);
 const config = window.MANABI_BACKEND_CONFIG;
