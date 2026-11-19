@@ -66,21 +66,25 @@ function intendedReward(wallet, next, journal, storage, session, core) {
   fail('unverified-pending-answer');
 }
 
-function committed(wallet) {
-  return { ...wallet, legacyJapaneseImported: true,
-    legacyMirror: { math: wallet.balances.math, japanese: wallet.balances.japanese } };
+function journalState(wallet) {
+  const { legacyMirror, legacyJapaneseImported, ...state } = wallet;
+  return withoutClaims(state);
+}
+function validHistoricalMirror(wallet) {
+  return ['math', 'japanese'].every(subject => wallet.legacyMirror?.[subject] === undefined
+    || wallet.legacyMirror[subject] === wallet.balances[subject]);
 }
 function supersededJournal(wallet, next, journal, core) {
   if (!core || typeof journal.beforeWallet !== 'string') return false;
   const before = parse(journal.beforeWallet);
-  if (!validWallet(before)) return false;
+  if (!validWallet(before) || !validHistoricalMirror(before) || !validHistoricalMirror(next)) return false;
   const currentClaims = new Set(claims(wallet.claimed));
   const nextClaims = claims(next.claimed);
   if (!nextClaims.length || nextClaims.some(id => !currentClaims.has(id))
     || next.owned.some(id => !wallet.owned.includes(id))) return false;
   // A history-only journal is obsolete when the current wallet still confirms
   // all its receipts, even after later days and purchases changed the balances.
-  if (withoutClaims(committed(before)) === withoutClaims(next)) return true;
+  if (journalState(before) === journalState(next)) return true;
   const beforeClaims = new Set(claims(before.claimed));
   if (nextClaims.filter(id => !beforeClaims.has(id)).length !== 1) return false;
   // Only an ordinary reward transition is eligible. Never retire an unfinished
@@ -90,7 +94,7 @@ function supersededJournal(wallet, next, journal, core) {
       for (const correct of [false, true]) {
         try {
           const expected = core.reward(before, game, correct, next.daily.date, { multiplier, cap: 50 }).wallet;
-          if (withoutClaims(committed(expected)) === withoutClaims(next)) return true;
+          if (journalState(expected) === journalState(next)) return true;
         } catch { /* An invalid transition supplies no recovery evidence. */ }
       }
     }

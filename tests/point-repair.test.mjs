@@ -155,3 +155,23 @@ test('an old reward receipt absent from the current wallet remains unresolved', 
   assert.throws(() => planRecovery(storage, undefined, core), /journal-state-different/);
   assert.deepEqual([...values], original);
 });
+
+
+test('paid historical journals without the later Japanese migration metadata can be retired', () => {
+  const { storage, values, wallet } = fixture();
+  const before = structuredClone(wallet);
+  delete before.legacyJapaneseImported;
+  before.legacyMirror = { math: 80 };
+  before.balances.japanese = 0;
+  before.balances.english = 38;
+  before.claimed = before.claimed.slice(0, 207);
+  const next = core.reward(before, 'alphabet', true, before.daily.date).wallet;
+  next.claimed.push('paid-207');
+  values.set('mgl_economy_commit_v2', JSON.stringify({ beforeWallet: JSON.stringify(before),
+    nextWallet: JSON.stringify(next), nextMath: '80' }));
+  const plan = planRecovery(storage, undefined, core);
+  const after = JSON.parse(plan.entries.find(row => row.key === 'mgl_economy_v1').after);
+  assert.equal(after.legacyJapaneseImported, true);
+  assert.equal(after.balances.japanese, 20);
+  assert.equal(after.balances.english, 40);
+});
