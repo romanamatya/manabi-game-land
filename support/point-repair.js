@@ -66,6 +66,42 @@ function intendedReward(wallet, next, journal, storage, session, core) {
   fail('unverified-pending-answer');
 }
 
+function journalState(wallet) {
+  const { legacyMirror, legacyJapaneseImported, ...state } = wallet;
+  return withoutClaims(state);
+}
+function validHistoricalMirror(wallet) {
+  return ['math', 'japanese'].every(subject => wallet.legacyMirror?.[subject] === undefined
+    || wallet.legacyMirror[subject] === wallet.balances[subject]);
+}
+function supersededJournal(wallet, next, journal, core) {
+  if (!core || typeof journal.beforeWallet !== 'string') return false;
+  const before = parse(journal.beforeWallet);
+  if (!validWallet(before) || !validHistoricalMirror(before) || !validHistoricalMirror(next)) return false;
+  const currentClaims = new Set(claims(wallet.claimed));
+  const nextClaims = claims(next.claimed);
+  if (!nextClaims.length || nextClaims.some(id => !currentClaims.has(id))
+    || next.owned.some(id => !wallet.owned.includes(id))) return false;
+  // A history-only journal is obsolete when the current wallet still confirms
+  // all its receipts, even after later days and purchases changed the balances.
+  if (journalState(before) === journalState(next)) return true;
+  const beforeClaims = new Set(claims(before.claimed));
+  if (nextClaims.filter(id => !beforeClaims.has(id)).length !== 1) return false;
+  // Only an ordinary reward transition is eligible. Never retire an unfinished
+  // purchase merely because its pre-existing claim history is still present.
+  for (const game of Object.keys(core.games)) {
+    for (const multiplier of [1, 2]) {
+      for (const correct of [false, true]) {
+        try {
+          const expected = core.reward(before, game, correct, next.daily.date, { multiplier, cap: 50 }).wallet;
+          if (journalState(expected) === journalState(next)) return true;
+        } catch { /* An invalid transition supplies no recovery evidence. */ }
+      }
+    }
+  }
+  return false;
+}
+
 // A different balance is accepted only if the queued answer reproduces the
 // journal's intended reward exactly. Purchases and unknown conflicts stop here.
 export function planRecovery(storage, session, core) {
@@ -86,13 +122,19 @@ export function planRecovery(storage, session, core) {
   if (typeof journal.nextWallet !== 'string' || typeof journal.nextMath !== 'string') fail('invalid-journal');
   const next = parse(journal.nextWallet);
   if (!validWallet(next) || Number(journal.nextMath) !== next.balances.math) fail('invalid-journal');
-  const settled = withoutClaims(wallet) === withoutClaims(next)
+  const superseded = supersededJournal(wallet, next, journal, core);
+  const settled = withoutClaims(wallet) === withoutClaims(next) || superseded
     ? wallet : intendedReward(wallet, next, journal, storage, session, core);
   const japaneseAfter = { ...japanese, balance: settled.balances.japanese,
     date: settled.daily.date, used: settled.daily.games.kotowaza || 0 };
   if (journal.nextJapanese !== undefined) {
-    if (typeof journal.nextJapanese !== 'string'
-      || withoutClaims(japaneseAfter) !== withoutClaims(parse(journal.nextJapanese))) fail('journal-japanese-different');
+    if (typeof journal.nextJapanese !== 'string') fail('journal-japanese-different');
+    const recordedJapanese = parse(journal.nextJapanese);
+    if (superseded) {
+      if (recordedJapanese?.version !== 1 || recordedJapanese.balance !== next.balances.japanese
+        || recordedJapanese.date !== next.daily.date || recordedJapanese.used !== (next.daily.games.kotowaza || 0)
+        || claims(recordedJapanese.claims).some(id => !wallet.claimed.includes(id))) fail('journal-japanese-different');
+    } else if (withoutClaims(japaneseAfter) !== withoutClaims(recordedJapanese)) fail('journal-japanese-different');
   }
   const confirmed = new Set([...claims(wallet.claimed), ...claims(next.claimed)]);
   // The old writer appended the common claim list repeatedly. Do not mistake
@@ -215,6 +257,21 @@ export async function recoverDevice({ storage, session, indexedDB, locks, id, co
   });
 }
 
+export function recoveryEvidence(storage) {
+  try {
+    const wallet = parse(storage.getItem(WALLET));
+    const journal = parse(storage.getItem(JOURNAL));
+    const next = parse(journal.nextWallet);
+    const known = new Set(claims(wallet.claimed));
+    const ids = claims(next.claimed);
+    const before = typeof journal.beforeWallet === 'string' ? parse(journal.beforeWallet) : null;
+    return '旧保存の元データ：' + (before ? 'あり' : 'なし')
+      + '、旧保存の受領ID：' + ids.filter(id => known.has(id)).length + '/' + ids.length + '件確認'
+      + '、所持品の確認：' + (next.owned.every(id => wallet.owned.includes(id)) ? '一致' : '不一致')
+      + '、現状と書込前：' + (before && journalState(before) === journalState(wallet) ? '一致' : '相違');
+  } catch { return '追加の照合情報を取得できませんでした。'; }
+}
+
 if (typeof document !== 'undefined') {
   const button = document.getElementById('repair');
   if (button) button.onclick = async () => {
@@ -228,7 +285,7 @@ if (typeof document !== 'undefined') {
         + '。加算済み識別子 ' + result.receiptCount + '件を保護しました。ホームへ戻ってゲームを確認してください。';
     } catch (error) {
       status.textContent = '復旧を保留しました。確認コード：' + (error.name === 'QuotaExceededError' ? 'storage-full' : error.message)
-        + '。この表示を先生に渡してください。';
+        + '。' + recoveryEvidence(localStorage) + '。この表示全体を先生に渡してください。';
       button.disabled = false;
     }
   };
