@@ -53,3 +53,18 @@ test('all released games launch without ranking requests or controls',async({pag
  expect(errors).toEqual([]);expect(requests).toEqual([]);
  expect(await page.evaluate(scope=>localStorage.getItem(scope+'leaderboard_players'),scope)).toBe('[{"nickname":"過去の記録","bestStreak":12}]');
 });
+for(const size of sizes)test('all subject lists retain ordered title rows '+size.width+'x'+size.height,async({page},info)=>{
+ await page.setViewportSize(size);
+ for(const [route,count] of [['japanese',1],['social',2],['language',2],['math-calculation',7]]){
+  await page.goto(base+'preview/'+route+'.html');
+  await expect(page.locator('.title-game-row')).toHaveCount(count);
+  await clean(page);
+  const problems=await page.locator('.title-game-row:visible').evaluateAll(cards=>cards.flatMap(card=>{
+   const selectors=['.game-summary','.title-row-art','.title-row-percent','.title-row-best','.game-actions'];
+   const boxes=selectors.map(selector=>card.querySelector(selector).getBoundingClientRect());
+   return boxes.slice(1).flatMap((box,index)=>box.left<boxes[index].right-1?[card.dataset.gameCard+': columns overlap']:[]);
+  }));
+  expect(problems).toEqual([]);
+  await page.screenshot({path:info.outputPath(route+'.png'),fullPage:true});
+ }
+});
