@@ -1,0 +1,33 @@
+name: Game registration foundation (no deploy)
+on:
+  pull_request:
+    paths:
+      - 'config/game-registration.json'
+      - 'tools/game-registration*.mjs'
+      - 'firebase/production-game-registration-candidate.rules'
+      - 'tests/game-registration.test.mjs'
+      - 'tests/rules/game-registration.test.mjs'
+      - '.github/workflows/game-registration-foundation.yml'
+permissions:
+  contents: read
+jobs:
+  metadata-and-rules:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - run: npm ci --no-audit --no-fund
+      - run: node --test tests/game-registration.test.mjs
+      - run: node tools/game-registration.mjs preview --output .release/registry-preview
+      - run: node tools/game-registration.mjs production --output .release/registry-production
+      - run: ./node_modules/.bin/firebase emulators:exec --project demo-manabi-game-registration --only firestore --config firebase/rules-release-emulator.json "node --test tests/rules/game-registration.test.mjs"
