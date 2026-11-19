@@ -6,3 +6,5 @@
 .title-collection-picker main{height:auto!important;overflow:visible}
 .title-collection-picker #mathCards>.title-game-row{min-height:80px!important;max-height:80px!important}
 .title-game-row[hidden]{display:none!important}
+
+.collection-page,.collection-page *{box-sizing:border-box}

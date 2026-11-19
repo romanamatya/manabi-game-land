@@ -31,9 +31,20 @@ function artwork(game, title, size) {
   const wrap = node('span', undefined, 'collection-art' + (title.earned ? ' earned' : ' locked'));
   wrap.setAttribute('role', 'img');
   wrap.setAttribute('aria-label', title.name + '・' + (title.earned ? '獲得済み' : '未獲得'));
-  const badge = window.ManabiIdentity?.badge(title.id, size);
-  if (badge) wrap.append(badge);
-  else wrap.append(node('span', title.name, 'mq-title-text-only'));
+  // Full 512px PNGs are whole illustrations, not 1254px sprite sheets.
+  const fullPNG = title.image?.endsWith('.png') && (title.standalone ||
+    title.viewport?.every((value, index) => value === [0, 0, 512, 512][index]));
+  if (fullPNG) {
+    const badge = node('span', undefined, 'mq-badge');
+    badge.style.setProperty('--badge-size', size + 'px');
+    const image = document.createElement('img'); image.src = title.image;
+    image.alt = ''; image.style.cssText = 'display:block;width:100%;height:100%;object-fit:contain';
+    badge.append(image); wrap.append(badge);
+  } else {
+    const badge = window.ManabiIdentity?.badge(title.id, size);
+    if (badge) wrap.append(badge);
+    else wrap.append(node('span', title.name, 'mq-title-text-only'));
+  }
   wrap.title = title.name + '（' + title.at + '問連続）';
   return wrap;
 }

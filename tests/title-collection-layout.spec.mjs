@@ -2,6 +2,7 @@ import {test,expect} from '@playwright/test';
 import {mockPublicVisibility} from './fixtures/public-visibility-browser.mjs';
 const base=process.env.MGL_BASE_URL||'http://127.0.0.1:4173/';
 const scope='manabi_public_preview:';
+if(process.env.MGL_CHROME_CHANNEL)test.use({channel:process.env.MGL_CHROME_CHANNEL});
 const sizes=[{width:1024,height:768},{width:1194,height:834},{width:960,height:540}];
 test.beforeEach(async({page})=>{
  await page.route('https://**/*',route=>route.abort());
@@ -16,6 +17,7 @@ test.beforeEach(async({page})=>{
  },scope);
 });
 async function clean(page){
+ await expect.poll(()=>page.locator('img').evaluateAll(images=>images.every(image=>image.complete))).toBe(true);
  const result=await page.evaluate(()=>({width:innerWidth,height:innerHeight,scrollWidth:document.documentElement.scrollWidth,scrollHeight:document.documentElement.scrollHeight,broken:[...document.images].filter(img=>img.complete&&img.naturalWidth===0).map(img=>img.src)}));
  expect(result.scrollWidth).toBeLessThanOrEqual(result.width+1);expect(result.scrollHeight).toBeLessThanOrEqual(result.height+1);expect(result.broken).toEqual([]);
  await expect(page.getByText('今のチャンピオン',{exact:true})).toHaveCount(0);
@@ -30,6 +32,11 @@ for(const size of sizes)test('home, picker and collection '+size.width+'x'+size.
  await page.screenshot({path:info.outputPath('games.png'),fullPage:true});
  await page.goto(base+'preview/titles.html?game=parallelPair');await expect(page.locator('.collection-title-grid li')).toHaveCount(5);await expect(page.locator('.collection-title-grid li.earned')).toHaveCount(5);await clean(page);
  await page.screenshot({path:info.outputPath('collection.png'),fullPage:true});
+ await page.locator('#collectionGame').selectOption('suichoku');
+ await expect(page.locator('.collection-title-grid .collection-art img')).toHaveCount(5);
+ await expect(page.locator('.collection-title-grid .collection-art svg')).toHaveCount(0);
+ await clean(page);
+ await page.screenshot({path:info.outputPath('unearned-titles.png'),fullPage:true});
  await page.getByRole('button',{name:'理科 ―'}).click();await expect(page.getByText('この教科のゲームは準備中です。')).toBeVisible();
  expect(errors).toEqual([]);
  expect(await page.evaluate(scope=>localStorage.getItem(scope+'leaderboard_players'),scope)).toBe('[{"nickname":"過去の記録","bestStreak":12}]');
