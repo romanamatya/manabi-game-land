@@ -1,4 +1,4 @@
-import { subjects, geometryGames, gameProgress, collectionProgress } from './title-progress-model.js?v=a942ec926be0';
+import { subjects, geometryGames, gameProgress, collectionProgress } from './title-progress-model.js?v=fad2aa7d8a94';
 
 const storage = window.manabiStorage;
 const catalog = window.ManabiProfileCatalog || [];

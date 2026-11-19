@@ -132,7 +132,7 @@ test('the preview game card follows remote visibility without hiding other games
       };
     `,
   }));
-  await page.goto(new URL('preview/math.html', base).href);
+  await page.goto(new URL('preview/math-geometry.html', base).href);
   const quiz = page.locator('[data-game-card="verticalParallel"]');
   const previous = page.locator('[data-game-card="suichoku"]');
   await expect(quiz).toHaveAttribute('data-game-availability', 'hidden');
