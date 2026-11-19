@@ -7,9 +7,10 @@ const subjects=new Set(['japanese','math','social','science','english']);
 const safeId=/^[a-zA-Z][a-zA-Z0-9-]{0,63}$/;
 export function validateRegistration(registry){
  if(registry?.schema!==1||!Array.isArray(registry.games)||!registry.games.length)throw Error('invalid-game-registration');
- const ids=new Set(),titles=new Set();
+ const ids=new Set(),titles=new Set(),recordFields=new Set();
  for(const game of registry.games){
   if(!safeId.test(game.id)||ids.has(game.id))throw Error('duplicate-or-invalid-game-id');ids.add(game.id);
+  if(typeof game.field!=='string'||!/^[A-Za-z][A-Za-z0-9]*$/.test(game.field)||recordFields.has(game.field))throw Error('invalid-or-duplicate-record-field');recordFields.add(game.field);
   if(typeof game.name!=='string'||!game.name.trim()||game.name.length>80||!subjects.has(game.subject))throw Error('invalid-game-metadata');
   if(!['geometry','calculation','general'].includes(game.unit)||game.entry!=='games/'+game.id+'.html')throw Error('invalid-game-route');
   if(game.subject!=='math'&&game.unit!=='general')throw Error('invalid-game-unit');
@@ -40,7 +41,7 @@ export function registrationPlan(registry,channel){
   catalog:games.map(({id,name,subject,unit,entry,field,titles})=>({id,name,subject,unit,page:entry,field,titles,rankingEnabled:false})),
   units:Object.fromEntries([...new Set(games.map(game=>game.subject))].map(subject=>[subject,Object.fromEntries([...new Set(games.filter(g=>g.subject===subject).map(g=>g.unit))].map(unit=>[unit,games.filter(g=>g.subject===subject&&g.unit===unit).map(g=>g.id)]))])),
   economy:Object.fromEntries(games.map(g=>[g.id,{subject:g.subject,points:g.correctPoints,dailyCap:g.dailyPointCap}])),
-  bestRecords:Object.fromEntries(games.map(g=>[g.id,{field:g.field,key:g.id==='keisan'?'mgl_best':'mgl_'+g.id}])),
+  bestRecords:Object.fromEntries(games.map(g=>[g.id,{field:g.field,key:g.id==='keisan'?'mgl_best':'mgl_'+g.id,legacyKeys:g.legacyRecordKeys||[],challengeKey:'mgl_challenge120_v1:'+g.id}])),
   highestTitles:Object.fromEntries(games.map(g=>[g.id,g.titles.at(-1).at])),
   managementGameIds:games.map(g=>g.id),
   latestPublishedGameId:registry.latestPublishedGameId,

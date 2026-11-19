@@ -152,7 +152,10 @@
       "release": {
         "preview": true,
         "production": true
-      }
+      },
+      "legacyRecordKeys": [
+        "mq_pref_name"
+      ]
     },
     {
       "id": "pref-place",
@@ -264,7 +267,10 @@
       "release": {
         "preview": true,
         "production": true
-      }
+      },
+      "legacyRecordKeys": [
+        "mq_pref_place"
+      ]
     },
     {
       "id": "alphabet",
@@ -932,7 +938,10 @@
       "release": {
         "preview": true,
         "production": true
-      }
+      },
+      "legacyRecordKeys": [
+        "manabi_parallel_stage1:v1"
+      ]
     },
     {
       "id": "missingAlphabet",
