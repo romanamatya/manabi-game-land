@@ -62,7 +62,7 @@ test('the new math route and all visual elements fit three landscape WebKit view
   await page.getByRole('link',{name:/四角形・垂直と平行/}).click();
   const card=page.locator('[data-game-card="heikouPair"]');
   await expect(card.getByText('NEW',{exact:true})).toHaveCount(0);
-  if(!await card.isVisible())await page.getByRole('button',{name:'次へ',exact:true}).click();
+  await expect(card).toBeVisible();
   await expect(card.getByRole('link',{name:'ランキング'})).toHaveCount(0);
   await card.getByRole('button',{name:'プレイ',exact:true}).click();
   await expect(page).toHaveURL(game);
