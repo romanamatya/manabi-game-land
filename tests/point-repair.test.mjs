@@ -17,7 +17,7 @@ export function fixture() {
   wallet.owned = ['icon-005', 'frame-11'];
   wallet.custom = { title: 'retain' };
   const japanese = { version: 1, balance: 20, date: wallet.daily.date, used: 5,
-    claims: Array.from({ length: 21736 }, (_, index) => 'paid-' + index) };
+    claims: Array.from({ length: 21736 }, (_, index) => 'paid-' + (index % 209)) };
   const values = new Map([
     ['mgl_economy_v1', JSON.stringify(wallet)], ['mgl_points', '80'],
     ['mgl_kotowaza_points_v1', JSON.stringify(japanese)],
@@ -39,7 +39,7 @@ test('stale journal with 21,736 old claims is planned without changing balances,
   const before = [...values];
   const plan = planRecovery(storage);
   assert.deepEqual([...values], before);
-  assert.equal(plan.receipts.length, 21736);
+  assert.equal(plan.receipts.length, 209);
   const next = JSON.parse(plan.entries.find(row => row.key === 'mgl_economy_v1').after);
   assert.equal(next.claimed.length, 128);
   const { claimed, ...retained } = next;
@@ -103,4 +103,13 @@ test('an interrupted multi-key commit replays only the recorded before and after
     assert.equal(JSON.parse(storage.getItem('mgl_kotowaza_points_v1')).balance, 21);
     assert.equal(storage.getItem('mgl_economy_commit_v2'), null);
   }
+});
+
+test('legacy IDs without confirmation in the completed wallet are never treated as already paid', () => {
+  const { storage, values, japanese } = fixture();
+  japanese.claims.push('uncertain-reward');
+  values.set('mgl_kotowaza_points_v1', JSON.stringify(japanese));
+  const before = [...values];
+  assert.throws(() => planRecovery(storage), /legacy-claims-not-confirmed/);
+  assert.deepEqual([...values], before);
 });

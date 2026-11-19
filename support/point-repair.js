@@ -94,7 +94,11 @@ export function planRecovery(storage, session, core) {
     if (typeof journal.nextJapanese !== 'string'
       || withoutClaims(japaneseAfter) !== withoutClaims(parse(journal.nextJapanese))) fail('journal-japanese-different');
   }
-  const receipts = [...new Set([...claims(wallet.claimed), ...claims(japanese.claims), ...claims(next.claimed)])];
+  const confirmed = new Set([...claims(wallet.claimed), ...claims(next.claimed)]);
+  // The old writer appended the common claim list repeatedly. Do not mistake
+  // an unverified pre-written legacy ID for proof that its reward was saved.
+  if (claims(japanese.claims).some(id => !confirmed.has(id))) fail('legacy-claims-not-confirmed');
+  const receipts = [...confirmed];
   const nextWallet = JSON.stringify({ ...settled, claimed: [...claims(settled.claimed)].slice(-128) });
   const nextJapanese = JSON.stringify({ ...japaneseAfter, claims: japanese.claims.slice(-128) });
   const entries = [

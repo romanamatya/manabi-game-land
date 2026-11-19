@@ -15,7 +15,7 @@ async function seed(page) {
       legacyMirror: { math: 80, japanese: 20 }, legacyJapaneseImported: true,
       claimed: Array.from({ length: 209 }, (_, i) => 'paid-' + i), customTitles: ['keep-title'] };
     const japanese = { version: 1, balance: 20, date, used: 5,
-      claims: Array.from({ length: 21736 }, (_, i) => 'paid-' + i) };
+      claims: Array.from({ length: 21736 }, (_, i) => 'paid-' + (i % 209)) };
     localStorage.setItem('mgl_nickname', '保存復旧テスト');
     localStorage.setItem('mgl_points', '80');
     localStorage.setItem('mgl_economy_v1', JSON.stringify(wallet));
@@ -27,7 +27,7 @@ async function seed(page) {
     const answer = i => ({ id: 'paid-' + i, game: 'alphabet', prompt: 'A', answer: 'a',
       policy: { multiplier: 1, cap: 50 } });
     localStorage.setItem('mgl_economy_outbox_v1', JSON.stringify(Array.from({ length: 26 }, (_, i) => answer(i))));
-    for (let i = 1000; i < 1105; i++) localStorage.setItem('mgl_point_pending:economy:paid-' + i, JSON.stringify(answer(i)));
+    for (let i = 26; i < 131; i++) localStorage.setItem('mgl_point_pending:economy:paid-' + i, JSON.stringify(answer(i)));
     localStorage.setItem('mgl_verticalParallel', '{"best":25,"titles":["retained"]}');
     localStorage.setItem('mgl_profile', '{"icon":"icon-005","frame":"frame-11"}');
   });
@@ -75,7 +75,7 @@ test('back up and repair reported counts, drain 131 pending duplicates and keep 
   const backup = Object.entries(ledger).find(([key]) => key.startsWith('recovery-backup:'))[1];
   expect(JSON.parse(backup.local.find(([key]) => key === 'mgl_kotowaza_points_v1')[1]).claims).toHaveLength(21736);
   expect(ledger['answer:economy:paid-0']).toBe(1);
-  expect(ledger['answer:economy:paid-21735']).toBe(1);
+  expect(ledger['answer:economy:paid-208']).toBe(1);
   await openEconomy(page);
   await page.evaluate(() => window.ManabiEconomy.flush());
   await expect.poll(() => page.evaluate(() => Object.keys(localStorage).filter(key => key.startsWith('mgl_point_pending:')).length)).toBe(0);
@@ -124,7 +124,7 @@ test('an interrupted projection resumes from the durable backup and receipts', a
   expect(Object.keys(rows).filter(key => key.startsWith('recovery-backup:'))).toEqual(['recovery-backup:fixture-recovery']);
   expect(rows['recovery:active']).toBeUndefined();
   expect(rows.projection).toBeUndefined();
-  expect(rows['answer:economy:paid-21735']).toBe(1);
+  expect(rows['answer:economy:paid-208']).toBe(1);
 });
 
 test('an unexplained journal discrepancy stops before modifying any local records', async ({ page }) => {
