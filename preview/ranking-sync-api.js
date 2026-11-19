@@ -9,7 +9,7 @@ export function bestForSharedRanking(game,record,challenge){
  if(Number.isSafeInteger(challenge?.attemptBest))best=Math.max(best,challenge.attemptBest);
  return best;
 }
-function assertConfig(c){
+function assertConfig(c){if(c?.rankingsRetired)throw err('rankings-retired');
  if(!c||c.mode!=='production'||c.expectedProjectId!=='manabi-game-land'||(c.rankingSyncEnabled!==true&&c.missingAlphabetRankingSyncEnabled!==true)||c.firebase?.projectId!=='manabi-game-land')throw err('production-ranking-config-rejected');
  if(c.missingAlphabetRankingSyncEnabled===true&&(c.rankingSyncEnabled===true||c.playerNameSyncEnabled===true||!c.rankingGameIds?.includes('missingAlphabet')))throw err('global-ranking-sync-must-remain-disabled');
  if(typeof window!=='undefined'&&(window.MANABI_ENV?.preview!==false||window.MANABI_ENV?.expectedProjectId!=='manabi-game-land'))throw err('production-environment-mismatch');

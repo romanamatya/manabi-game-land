@@ -1,4 +1,5 @@
 import fs from 'node:fs/promises';
+import {transformTitleMode} from './title-mode.mjs';
 import path from 'node:path';
 import crypto from 'node:crypto';
 import vm from 'node:vm';
@@ -34,7 +35,7 @@ for (const rel of sourceFiles) {
   sourceDigests.set(rel, crypto.createHash('sha256').update(await fs.readFile(path.join(source, rel))).digest('hex'));
 }
 const buildId = crypto.createHash('sha256')
-  .update(JSON.stringify({mode, config, source: [...sourceDigests]}))
+  .update(JSON.stringify({mode, config, source: [...sourceDigests], titleMode:await fs.readFile(new URL('./title-mode.mjs',import.meta.url),'utf8')}))
   .digest('hex').slice(0, 12);
 
 const catalogContext = {window: {}};
@@ -63,7 +64,7 @@ for (const rel of sourceFiles) {
     continue;
   }
   const original = input.toString('utf8');
-  let text = original;
+  let text = transformTitleMode(rel, original, config, await fs.readFile(path.join(source,'titles.html'),'utf8'));
   if (rel === 'environment.js') text = environmentScript(config);
   if (rel === 'profile-catalog.js') {
     const games = catalogGameIds.map(id => ({...catalogById.get(id), rankingEnabled: config.rankingGameIds.includes(id)}));

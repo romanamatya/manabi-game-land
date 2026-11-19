@@ -3,7 +3,7 @@ const MAX_BEST = 100000;
 
 export function challengeRankingEnabled(game, config = window.MANABI_BACKEND_CONFIG, env = window.MANABI_ENV) {
   const project = env?.preview === true ? 'manabi-game-landcheck' : 'manabi-game-land';
-  return games.has(game) && env?.expectedProjectId === project && config?.firebase?.projectId === project
+  return config?.rankingsRetired!==true && games.has(game) && env?.expectedProjectId === project && config?.firebase?.projectId === project
     && config.mode === (env.preview ? 'preview' : 'production') && config.challengeRankingGameIds?.includes(game);
 }
 

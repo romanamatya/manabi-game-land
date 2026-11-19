@@ -1,5 +1,5 @@
 import {contractFor,normalizePlayer,legacyScorePatch,canonicalNickname,error} from './data-contract.js';
-export function createFirestoreStore(mode,F,db,{catalog=[],rankingGameIds=[]}={}){
+export function createFirestoreStore(mode,F,db,{catalog=[],rankingGameIds=[],rankingsRetired=globalThis.window?.MANABI_BACKEND_CONFIG?.rankingsRetired===true}={}){
  // Rules can reject a stale backup before a transaction conflict is retried.
  // Retry the complete read/write transaction; never relax validation or write outside it.
  async function transact(work){for(let attempt=0;attempt<3;attempt++){try{return await F.runTransaction(db,work)}catch(e){if(attempt===2||!['permission-denied','aborted'].includes(e.code))throw e;}}}
@@ -9,7 +9,7 @@ export function createFirestoreStore(mode,F,db,{catalog=[],rankingGameIds=[]}={}
   const nickname=typeof input.nickname==='string'?input.nickname.trim():'',reason='管理室からのニックネーム変更';
   if(!input.uid||input.uid===user.uid||nickname.length<1||nickname.length>12||/[<>\r\n]/.test(nickname)||typeof input.expectedNickname!=='string')throw error('invalid-input');
   const target=ref(input.uid),a=audit(),b=backup();
-  const linksQuery=mode==='production'?F.query(F.collection(db,'productionRankings','v1','identityLinks'),F.where('profileUid','==',input.uid),F.limit(11)):null;
+  const linksQuery=mode==='production'&&!rankingsRetired?F.query(F.collection(db,'productionRankings','v1','identityLinks'),F.where('profileUid','==',input.uid),F.limit(11)):null;
   const linkSnap=linksQuery?await F.getDocsFromServer(linksQuery):{docs:[]};
   if(linkSnap.size>10)throw error('player-ranking-link-review');
   const links=linkSnap.docs.map(d=>({uid:d.id,data:d.data(),ref:d.ref}));
@@ -37,8 +37,8 @@ export function createFirestoreStore(mode,F,db,{catalog=[],rankingGameIds=[]}={}
   const uid=input?.uid,status=input?.status,expected=input?.expectedStatus,reason=typeof input?.reason==='string'?input.reason.trim():'';
   if(typeof uid!=='string'||!uid||uid===user.uid||!['active','suspended'].includes(status)||!['active','suspended'].includes(expected)||reason.length<2||reason.length>300)throw error('invalid-input');
   const target=ref(uid),a=audit(),b=backup();
-  const linksQuery=F.query(F.collection(db,'productionRankings','v1','identityLinks'),F.where('profileUid','==',uid),F.limit(11));
-  const linkSnap=await F.getDocsFromServer(linksQuery);
+  const linksQuery=rankingsRetired?null:F.query(F.collection(db,'productionRankings','v1','identityLinks'),F.where('profileUid','==',uid),F.limit(11));
+  const linkSnap=linksQuery?await F.getDocsFromServer(linksQuery):{docs:[]};
   if(linkSnap.size>10)throw error('player-ranking-link-review');
   const links=linkSnap.docs.map(d=>({uid:d.id,data:d.data(),ref:d.ref}));
   if(links.some(x=>x.data.uid!==x.uid||x.data.profileUid!==uid))throw error('player-ranking-link-review');

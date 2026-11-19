@@ -31,27 +31,25 @@
     "multiplicationProperties",
     "shapeExpressions",
     "suichoku",
-    "verticalParallel"
+    "verticalParallel",
+    "parallelPair",
+    "keisanSummary"
   ],
-  "challengeRankingGameIds": ["parallelPair", "verticalParallel", "quadrilateral"],
-  "rankingGameIds": [
-    "keisan",
-    "pref-name",
-    "pref-place",
-    "alphabet",
-    "missingAlphabet",
-    "distribution",
-    "kotowaza",
-    "distribution2",
-    "exchangeAssociation",
-    "multiplicationProperties",
-    "shapeExpressions"
-  ],
+  "challengeRankingGameIds": [],
+  "rankingGameIds": [],
   "staticLocalGameIds": [
     "suichoku",
     "quadrilateral",
     "heikouPair",
-    "shikakkeSecrets"
+    "shikakkeSecrets",
+    "verticalParallel"
+  ],
+  "rankingsRetired": true,
+  "latestGameId": "shikakkeSecrets",
+  "visibilityGameIds": [
+    "verticalParallel"
+  ],
+  "managedVisibilityGameIds": [
+    "verticalParallel"
   ]
 }
-

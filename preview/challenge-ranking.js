@@ -3,7 +3,7 @@ const MAX_BEST = 100000;
 
 export function challengeRankingEnabled(game, config = window.MANABI_BACKEND_CONFIG, env = window.MANABI_ENV) {
   const project = env?.preview === true ? 'manabi-game-landcheck' : 'manabi-game-land';
-  return games.has(game) && env?.expectedProjectId === project && config?.firebase?.projectId === project
+  return config?.rankingsRetired!==true && games.has(game) && env?.expectedProjectId === project && config?.firebase?.projectId === project
     && config.mode === (env.preview ? 'preview' : 'production') && config.challengeRankingGameIds?.includes(game);
 }
 
@@ -37,7 +37,7 @@ export function createPreviewChallengeRanking(F, db, uid, game) {
 export async function openChallengeRanking(game, config = window.MANABI_BACKEND_CONFIG, env = window.MANABI_ENV) {
   if (!challengeRankingEnabled(game, config, env)) throw Error('challenge-ranking-disabled');
   if (!env.preview) {
-    const { challengeRankingClient } = await import('./ranking-sync-api.js?v=4dec013b969a');
+    const { challengeRankingClient } = await import('./ranking-sync-api.js?v=e810582d0e6d');
     const api = await challengeRankingClient();
     return {
       rows: () => api.rankings(game),

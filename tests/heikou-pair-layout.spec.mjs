@@ -60,10 +60,11 @@ test('the new math route and all visual elements fit three landscape WebKit view
   await page.goto(new URL(prefix+'index.html',base).href);
   await page.locator('a[href="math.html"]').click();
   await page.getByRole('link',{name:/四角形・垂直と平行/}).click();
-  const card=page.locator(production ? '[data-game-card="heikouPair"]' : '#heikou-pair-card');
-  await expect(card.getByText('NEW',{exact:true})).toBeVisible();
+  const card=page.locator('[data-game-card="heikouPair"]');
+  await expect(card.getByText('NEW',{exact:true})).toHaveCount(0);
+  if(!await card.isVisible())await page.getByRole('button',{name:'次へ',exact:true}).click();
   await expect(card.getByRole('link',{name:'ランキング'})).toHaveCount(0);
-  await card.getByRole(production ? 'button' : 'link',{name:'プレイ',exact:true}).click();
+  await card.getByRole('button',{name:'プレイ',exact:true}).click();
   await expect(page).toHaveURL(game);
   for(const viewport of viewports){
     await page.setViewportSize(viewport);
