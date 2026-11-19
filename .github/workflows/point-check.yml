@@ -3,7 +3,9 @@ on:
   pull_request:
     paths:
       - 'support/point-check*'
+      - 'support/point-repair*'
       - 'tests/point-check*'
+      - 'tests/point-repair*'
       - '.github/workflows/point-check.yml'
 permissions:
   contents: read
@@ -23,4 +25,4 @@ jobs:
       - name: Check diagnostic in the runner's installed Chrome
         run: |
           printf "export default { use: { channel: 'chrome' } };\\n" > point-check.config.mjs
-          npx playwright test tests/point-check.spec.mjs --config point-check.config.mjs --workers 1
+          npx playwright test tests/point-check.spec.mjs tests/point-repair.spec.mjs --config point-check.config.mjs --workers 1
