@@ -103,7 +103,7 @@ test('back up and repair reported counts, drain 131 pending duplicates and keep 
 test('an interrupted projection resumes from the durable backup and receipts', async ({ page }) => {
   await seed(page);
   const first = await page.evaluate(async () => {
-    const { recoverDevice } = await import('./point-repair.js?v=1');
+    const { recoverDevice } = await import('./point-repair.js?v=2');
     const set = Storage.prototype.setItem;
     let fail = true;
     Storage.prototype.setItem = function (key, value) {
@@ -141,4 +141,35 @@ test('an unexplained journal discrepancy stops before modifying any local record
   await page.getByRole('button', { name: 'バックアップして復旧する' }).click();
   await expect(page.locator('#status')).toContainText('復旧を保留しました');
   expect(await page.evaluate(() => JSON.stringify({ ...localStorage }))).toBe(before);
+});
+
+
+test('a paid older journal is archived without rolling later balances, daily caps or possessions back', async ({ page }) => {
+  await seed(page);
+  const original = await page.evaluate(() => {
+    const core = window.ManabiEconomyCore;
+    const wallet = JSON.parse(localStorage.getItem('mgl_economy_v1'));
+    wallet.daily.games.alphabet = 1;
+    localStorage.setItem('mgl_economy_v1', JSON.stringify(wallet));
+    const before = structuredClone(wallet);
+    before.balances.english = 38;
+    before.claimed = before.claimed.slice(0, 207);
+    const yesterday = core.dayKey(Date.now() - 86400000);
+    before.daily = { date: yesterday, games: { kotowaza: 0 } };
+    const next = core.reward(before, 'alphabet', true, yesterday, { multiplier: 1, cap: 50 }).wallet;
+    next.claimed.push('paid-207');
+    const japanese = JSON.parse(localStorage.getItem('mgl_kotowaza_points_v1'));
+    localStorage.setItem('mgl_economy_commit_v2', JSON.stringify({ beforeWallet: JSON.stringify(before),
+      nextWallet: JSON.stringify(next), beforeMath: '80', nextMath: '80',
+      nextJapanese: JSON.stringify({ ...japanese, date: yesterday, used: 0, claims: next.claimed }) }));
+    return { balances: wallet.balances, daily: wallet.daily, owned: wallet.owned };
+  });
+  await page.getByRole('button', { name: 'バックアップして復旧する' }).click();
+  await expect(page.locator('#status')).toContainText('保存データを整理しました', { timeout: 30000 });
+  const after = await page.evaluate(() => {
+    const wallet = JSON.parse(localStorage.getItem('mgl_economy_v1'));
+    return { balances: wallet.balances, daily: wallet.daily, owned: wallet.owned };
+  });
+  expect(after).toEqual(original);
+  expect(await page.evaluate(() => localStorage.getItem('mgl_economy_commit_v2'))).toBeNull();
 });

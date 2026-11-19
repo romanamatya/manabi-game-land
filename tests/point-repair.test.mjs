@@ -113,3 +113,45 @@ test('legacy IDs without confirmation in the completed wallet are never treated 
   assert.throws(() => planRecovery(storage), /legacy-claims-not-confirmed/);
   assert.deepEqual([...values], before);
 });
+
+test('a superseded reward journal confirmed by current receipts cannot roll current balances or daily caps back', () => {
+  const { storage, values, wallet, japanese } = fixture();
+  const before = structuredClone(wallet);
+  before.balances.english = 38;
+  before.claimed = before.claimed.slice(0, 207);
+  before.daily = { date: core.dayKey(Date.now() - 86400000), games: { kotowaza: 0 } };
+  const next = core.reward(before, 'alphabet', true, before.daily.date).wallet;
+  next.claimed.push('paid-207');
+  values.set('mgl_economy_commit_v2', JSON.stringify({ beforeWallet: JSON.stringify(before),
+    nextWallet: JSON.stringify(next), nextMath: '80',
+    nextJapanese: JSON.stringify({ ...japanese, date: before.daily.date, used: 0, claims: next.claimed }) }));
+  const plan = planRecovery(storage, undefined, core);
+  const repaired = JSON.parse(plan.entries.find(row => row.key === 'mgl_economy_v1').after);
+  assert.deepEqual(repaired.balances, JSON.parse(JSON.stringify(wallet.balances)));
+  assert.deepEqual(repaired.daily, JSON.parse(JSON.stringify(wallet.daily)));
+  assert.deepEqual(repaired.owned, wallet.owned);
+});
+test('a stale-looking unfinished purchase is never retired using an unrelated receipt', () => {
+  const { storage, values, wallet } = fixture();
+  const before = { ...wallet, balances: { ...wallet.balances, math: 180 },
+    legacyMirror: { math: 180, japanese: 20 }, owned: [] };
+  const next = core.purchase(before, core.catalog.find(item => item.id === 'icon-005'), 'math');
+  next.legacyMirror.math = next.balances.math;
+  values.set('mgl_economy_commit_v2', JSON.stringify({ beforeWallet: JSON.stringify(before),
+    nextWallet: JSON.stringify(next), nextMath: String(next.balances.math) }));
+  const original = [...values];
+  assert.throws(() => planRecovery(storage, undefined, core), /journal-state-different/);
+  assert.deepEqual([...values], original);
+});
+test('an old reward receipt absent from the current wallet remains unresolved', () => {
+  const { storage, values, wallet } = fixture();
+  const before = structuredClone(wallet);
+  before.balances.english = 38;
+  const next = core.reward(before, 'alphabet', true, wallet.daily.date).wallet;
+  next.claimed.push('not-confirmed');
+  values.set('mgl_economy_commit_v2', JSON.stringify({ beforeWallet: JSON.stringify(before),
+    nextWallet: JSON.stringify(next), nextMath: '80' }));
+  const original = [...values];
+  assert.throws(() => planRecovery(storage, undefined, core), /journal-state-different/);
+  assert.deepEqual([...values], original);
+});

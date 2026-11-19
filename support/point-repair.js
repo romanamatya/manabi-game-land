@@ -66,6 +66,38 @@ function intendedReward(wallet, next, journal, storage, session, core) {
   fail('unverified-pending-answer');
 }
 
+function committed(wallet) {
+  return { ...wallet, legacyJapaneseImported: true,
+    legacyMirror: { math: wallet.balances.math, japanese: wallet.balances.japanese } };
+}
+function supersededJournal(wallet, next, journal, core) {
+  if (!core || typeof journal.beforeWallet !== 'string') return false;
+  const before = parse(journal.beforeWallet);
+  if (!validWallet(before)) return false;
+  const currentClaims = new Set(claims(wallet.claimed));
+  const nextClaims = claims(next.claimed);
+  if (!nextClaims.length || nextClaims.some(id => !currentClaims.has(id))
+    || next.owned.some(id => !wallet.owned.includes(id))) return false;
+  // A history-only journal is obsolete when the current wallet still confirms
+  // all its receipts, even after later days and purchases changed the balances.
+  if (withoutClaims(committed(before)) === withoutClaims(next)) return true;
+  const beforeClaims = new Set(claims(before.claimed));
+  if (nextClaims.filter(id => !beforeClaims.has(id)).length !== 1) return false;
+  // Only an ordinary reward transition is eligible. Never retire an unfinished
+  // purchase merely because its pre-existing claim history is still present.
+  for (const game of Object.keys(core.games)) {
+    for (const multiplier of [1, 2]) {
+      for (const correct of [false, true]) {
+        try {
+          const expected = core.reward(before, game, correct, next.daily.date, { multiplier, cap: 50 }).wallet;
+          if (withoutClaims(committed(expected)) === withoutClaims(next)) return true;
+        } catch { /* An invalid transition supplies no recovery evidence. */ }
+      }
+    }
+  }
+  return false;
+}
+
 // A different balance is accepted only if the queued answer reproduces the
 // journal's intended reward exactly. Purchases and unknown conflicts stop here.
 export function planRecovery(storage, session, core) {
@@ -86,13 +118,19 @@ export function planRecovery(storage, session, core) {
   if (typeof journal.nextWallet !== 'string' || typeof journal.nextMath !== 'string') fail('invalid-journal');
   const next = parse(journal.nextWallet);
   if (!validWallet(next) || Number(journal.nextMath) !== next.balances.math) fail('invalid-journal');
-  const settled = withoutClaims(wallet) === withoutClaims(next)
+  const superseded = supersededJournal(wallet, next, journal, core);
+  const settled = withoutClaims(wallet) === withoutClaims(next) || superseded
     ? wallet : intendedReward(wallet, next, journal, storage, session, core);
   const japaneseAfter = { ...japanese, balance: settled.balances.japanese,
     date: settled.daily.date, used: settled.daily.games.kotowaza || 0 };
   if (journal.nextJapanese !== undefined) {
-    if (typeof journal.nextJapanese !== 'string'
-      || withoutClaims(japaneseAfter) !== withoutClaims(parse(journal.nextJapanese))) fail('journal-japanese-different');
+    if (typeof journal.nextJapanese !== 'string') fail('journal-japanese-different');
+    const recordedJapanese = parse(journal.nextJapanese);
+    if (superseded) {
+      if (recordedJapanese?.version !== 1 || recordedJapanese.balance !== next.balances.japanese
+        || recordedJapanese.date !== next.daily.date || recordedJapanese.used !== (next.daily.games.kotowaza || 0)
+        || claims(recordedJapanese.claims).some(id => !wallet.claimed.includes(id))) fail('journal-japanese-different');
+    } else if (withoutClaims(japaneseAfter) !== withoutClaims(recordedJapanese)) fail('journal-japanese-different');
   }
   const confirmed = new Set([...claims(wallet.claimed), ...claims(next.claimed)]);
   // The old writer appended the common claim list repeatedly. Do not mistake
