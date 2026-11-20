@@ -38,7 +38,8 @@ if (window.MANABI_ENV?.environment !== 'preview') {
     }
   });
   clockTimer = setInterval(tick, 200);
-  next();
+  if (best >= 25) { mode = 'waiting'; showGate(); }
+  else next();
 }
 
 function fractionHTML(text) {
