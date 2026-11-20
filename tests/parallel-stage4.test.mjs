@@ -23,6 +23,7 @@ test('parallelPair files and settings match the reviewed release candidate', asy
         .replace("heikouPair:'角の大きさと場所をくらべて、平行な直線を見つけよう',", '')
         .replace("quadrilateral:'平行四辺形とひし形の辺の長さや角を見つけよう',", '')
         .replace("verticalParallel:'赤い基準線を見て、垂直・平行な線を選ぼう',", '')
+        .replace('!window.MANABI_BACKEND_CONFIG?.rankingsRetired&&', '')
         .replace("if(id!=='verticalParallel'&&id!=='quadrilateral'&&g?.rankingPending!==true){const rank", 'const rank')
         .replace('actions.append(rank)}', 'actions.append(rank)')
         .replace(/if\(!inUnit\)\{[\s\S]*?(?=const displayNames=)/,
@@ -33,6 +34,7 @@ test('parallelPair files and settings match the reviewed release candidate', asy
     if (file.path === 'parallel-ranking.js') {
       // Isolate the legacy ranking path from the separately gated challenge ranking.
       bytes = Buffer.from(bytes.toString('utf8')
+        .replace('config?.rankingsRetired!==true&&', '')
         .replace(/^import .*challenge-ranking\.js[^\n]*\n/, '')
         .replace(/ if\(challengeRankingEnabled\(GAME\)\)\{[\s\S]*? \} else \{\n/, '')
         .replace(/ \}\n\}\n$/, '}\n'));
@@ -49,19 +51,24 @@ test('parallelPair files and settings match the reviewed release candidate', asy
   vm.runInNewContext(environment, {window, location: {pathname: '/games/parallelPair.html'}});
   const config = window.MANABI_BACKEND_CONFIG;
   assert.equal(config.expectedProjectId, 'manabi-game-land');
-  assert.equal(config.parallelPairRankingEnabled, true);
+  assert.equal(config.parallelPairRankingEnabled, false);
   assert.ok(config.gameIds.includes('parallelPair'));
-  assert.ok(config.rankingGameIds.includes('parallelPair'));
+  assert.equal(config.rankingsRetired, true);
+  assert.equal(config.rankingGameIds.length, 0);
   assert.ok(!config.staticLocalGameIds.includes('parallelPair'));
 
   const settings = {...config};
+  delete settings.rankingsRetired;
+  settings.rankingSyncEnabled=true;
+  settings.parallelPairRankingEnabled=true;
+  settings.rankingGameIds=['keisan','pref-name','pref-place','alphabet','distribution','distribution2','exchangeAssociation','kotowaza','multiplicationProperties','shapeExpressions','keisanSummary','suichoku','parallelPair','missingAlphabet'];
   assert.equal(settings.staticLocalGameIds.filter(id=>id==='verticalParallel').length,1);
   settings.staticLocalGameIds=settings.staticLocalGameIds.filter(id=>!['verticalParallel','quadrilateral','heikouPair','shikakkeSecrets'].includes(id));
   for (const key of ['gameIds','rankingGameIds']) {
     assert.equal(settings[key].filter(id=>id==='missingAlphabet').length,1);
     settings[key]=settings[key].filter(id=>id!=='missingAlphabet');
   }
-  assert.equal(settings.missingAlphabetRankingSyncEnabled,true);
+  assert.equal(settings.missingAlphabetRankingSyncEnabled,false);
   assert.deepEqual([...settings.challenge120GameIds],['missingAlphabet']);
   assert.deepEqual([...settings.managedVisibilityGameIds], ['parallelPair','missingAlphabet','verticalParallel','quadrilateral','heikouPair','shikakkeSecrets']);
   delete settings.managedVisibilityGameIds;

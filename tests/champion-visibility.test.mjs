@@ -16,18 +16,17 @@ test('unknown, missing, and failed reads stay hidden without affecting published
  assert.deepEqual(publishedChampionGames(games,statuses),[games[0]]);
 });
 
-test('production and preview home entrypoints subscribe per game and fail closed on errors',()=>{
- const production=fs.readFileSync(new URL('../home-data.js',import.meta.url),'utf8');
- const shared=fs.readFileSync(new URL('../shared-src/site/home-data.js',import.meta.url),'utf8');
- for(const source of [production,shared]){
+test('home title collection subscribes per game and fails closed on errors',()=>{
+ const production=fs.readFileSync(new URL('../title-collection.js',import.meta.url),'utf8');
+ for(const source of [production]){
   assert.match(source,/subscribeGame\(game\.id/);
-  assert.match(source,/statuses\.set\(game\.id,'unknown'\)/);
-  assert.match(source,/publishedChampionGames\(games,statuses\)/);
+  assert.match(source,/statuses\.set\(game\.id, 'unknown'\)/);
+  assert.match(source,/collectionProgress\(catalog, storage, statuses/);
  }
  for(const file of ['../index.html','../shared-src/site/index.html']){
   const html=fs.readFileSync(new URL(file,import.meta.url),'utf8');
   assert(html.indexOf('public-firebase-session.js')<html.indexOf('public-admin-settings.js'));
-  assert(html.indexOf('public-admin-settings.js')<html.indexOf('leaderboard.js'));
+  if(file==='../index.html'){assert.match(html,/id="titleCollectionHome"/);assert.doesNotMatch(html,/src="leaderboard\.js/);}
  }
 });
 
