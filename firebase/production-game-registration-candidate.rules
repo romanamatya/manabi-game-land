@@ -579,6 +579,7 @@ service cloud.firestore {
     function registryDocumentValid(gameId) {
       let d = request.resource.data;
       return registryIdValid(gameId)
+        && !(gameId in ['keisan', 'pref-name', 'pref-place', 'alphabet', 'missingAlphabet', 'distribution', 'distribution2', 'exchangeAssociation', 'kotowaza', 'multiplicationProperties', 'shapeExpressions', 'keisanSummary', 'parallelPair', 'suichoku', 'verticalParallel', 'quadrilateral', 'heikouPair', 'shikakkeSecrets'])
         && d.keys().hasOnly(['id','name','subject','unit','entry','enabled','manifestSHA256','updatedAt','lastAudit'])
         && d.id == gameId && d.name is string && d.name.size() > 0 && d.name.size() <= 80
         && d.subject in ['japanese','math','social','science','english']

@@ -19,3 +19,10 @@
 - 承認後、本番ルートを生成する工程と管理室の登録操作を有効にし、確認したコミットの配信を承認付きのActionsに接続する。登録用Rulesの初回反映と本番配信はこのPRで実行しない。
 
 候補Rulesは `firebase/preview-game-registration-candidate.rules` と `firebase/production-game-registration-candidate.rules`。確認用候補では、元ファイルで閉じ括弧が不足していた称号の条件式をコンパイルできる形に補正した。両候補ともEmulatorで検証する。
+
+## 2026-11-20 実環境との読み取り照合
+
+- 確認用の現行Rulesは `three-game-preview-candidate.rules` の末尾改行を除いた内容と一致。適用中のRulesを基準に登録用の許可を追記した。
+- 本番の現行Rulesは `production-shikakke-visibility-candidate.rules` と末尾改行のみの差。候補は新規ゲームの個別登録・公開設定・監査の権限に限定する。
+- 既存18ゲームのIDは新規登録から除外し、既存の公開設定に対する別経路を作らない。
+- 確認用Rulesの適用と実際の管理室での操作は、Firebase Consoleのセッションと確認用管理者の認証が必要。本番の適用は別途承認する。

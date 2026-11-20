@@ -9,6 +9,7 @@ const root=mode==='preview'?'previewSpark/v1':'productionAdmin/v1',adminUid='reg
 const password={firebase:{sign_in_provider:'password'},auth_time:200};
 const anonymous={firebase:{sign_in_provider:'anonymous'},auth_time:200};
 const ref=(db,group,id)=>F.doc(db,root+'/'+group+'/'+id);
+const player=(db,uid)=>F.doc(db,mode==='preview'?'previewSpark/v1/players/'+uid:'players/'+uid);
 const definition=id=>({id,name:'登録テスト',subject:'math',unit:'geometry',entry:'games/'+id+'.html',enabled:true,manifestSHA256:'a'.repeat(64)});
 before(async()=>{
  env=await initializeTestEnvironment({projectId:'demo-manabi-game-registration',firestore:{rules:await readFile('firebase/'+mode+'-game-registration-candidate.rules','utf8')}});
@@ -17,8 +18,8 @@ before(async()=>{
   await F.setDoc(ref(db,'private','admin'),{uid:adminUid,enabled:true,managementEnabled:true});
   await F.setDoc(ref(db,'private','revocation'),{after:F.Timestamp.fromMillis(1000)});
   await F.setDoc(ref(db,'gameSettings','keisan'),{status:'published',campaign:{enabled:false}});
-  await F.setDoc(F.doc(db,'players','registration-child'),{nickname:'テスト児童A',points:12,bestStreak:9});
-  await F.setDoc(F.doc(db,'players','registration-other'),{nickname:'テスト児童B',points:20,bestStreak:15});
+  await F.setDoc(player(db,'registration-child'),{nickname:'テスト児童A',points:12,bestStreak:9});
+  await F.setDoc(player(db,'registration-other'),{nickname:'テスト児童B',points:20,bestStreak:15});
  });
  admin=env.authenticatedContext(adminUid,password).firestore();
  child=env.authenticatedContext('registration-child',anonymous).firestore();
@@ -51,15 +52,17 @@ test('children and wrong or anonymous administrators cannot register or change v
 test('invalid registry metadata, unsigned direct writes and arbitrary settings fields are rejected',async()=>{
  const store=createRegistrationStore(F,admin,mode);
  await assertFails(F.setDoc(ref(admin,'gameRegistry','directFixture'),definition('directFixture')));
+ await assertFails(store.register({uid:adminUid},definition('keisan')));
+ await assertFails(store.register({uid:adminUid},definition('verticalParallel')));
  await assertFails(store.register({uid:adminUid},{...definition('badFixture'),entry:'games/keisan.html'}));
  await assertFails(F.updateDoc(ref(admin,'gameSettings','futureFixtureOne'),{campaign:{enabled:true},status:'hidden',updatedAt:F.serverTimestamp()}));
  await assertFails(F.deleteDoc(ref(admin,'gameRegistry','futureFixtureOne')));
  await assertFails(F.deleteDoc(ref(admin,'gameSettings','futureFixtureOne')));
 });
-test('profile get/list protection and all existing record fields remain unchanged', {skip:mode==='preview'},async()=>{
- const self=await assertSucceeds(F.getDoc(F.doc(child,'players','registration-child')));assert.equal(self.data().points,12);
- await assertFails(F.getDoc(F.doc(other,'players','registration-child')));
+test('profile get/list protection and all existing record fields remain unchanged',async()=>{
+ const self=await assertSucceeds(F.getDoc(player(child,'registration-child')));assert.equal(self.data().points,12);
+ await assertFails(F.getDoc(player(other,'registration-child')));
  await assertFails(F.getDocs(F.collection(child,'players')));
- const managed=await assertSucceeds(F.getDoc(F.doc(admin,'players','registration-child')));assert.deepEqual(managed.data(),{nickname:'テスト児童A',points:12,bestStreak:9});
+ const managed=await assertSucceeds(F.getDoc(player(admin,'registration-child')));assert.deepEqual(managed.data(),{nickname:'テスト児童A',points:12,bestStreak:9});
  assert.deepEqual((await F.getDoc(ref(admin,'gameSettings','keisan'))).data(),{status:'published',campaign:{enabled:false}});
 });
