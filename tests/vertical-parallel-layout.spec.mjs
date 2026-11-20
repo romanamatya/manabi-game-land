@@ -220,9 +220,7 @@ test('the production game preserves progress and awards points while ranking is 
   await expect(page.locator('#points')).toHaveText('8');
   await expect(page.locator('#daily')).toHaveText('今日 1 / 50pt');
   await expect(page.locator('#tower .earned')).toHaveCount(5);
-  await page.locator('#ranking-open').tap();
-  await expect(page.locator('#ranking-message')).toHaveText('共有ランキングは準備中です。端末の最高記録は 25問です。');
-  await page.locator('#ranking-close').tap();
+  await expect(page.locator('#ranking-open, #line-ranking')).toHaveCount(0);
   await page.locator('#challenge-start').tap();
   await expect(page.locator('#challenge-clock')).toHaveText(/残り (2:00|1:59)/);
   await page.reload();

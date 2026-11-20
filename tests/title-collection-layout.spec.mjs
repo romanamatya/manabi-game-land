@@ -10,6 +10,8 @@ test.beforeEach(async({page})=>{
  await page.route('https://**/*',route=>route.abort());
  await mockPublicVisibility(page,{verticalParallel:'published'});
  await page.addInitScript(scope=>{
+  if (sessionStorage.getItem('title-collection-fixture')) return;
+  sessionStorage.setItem('title-collection-fixture', '1');
   localStorage.setItem(scope+'mgl_nickname','コレクション確認');
   localStorage.setItem(scope+'mgl_profile','{"icon":"cat","frame":"plain","owned":["kept-item"]}');
   localStorage.setItem(scope+'mgl_parallelPair','{"best":25,"streak":2}');
@@ -47,7 +49,7 @@ for(const size of sizes)test('home, picker and collection '+size.width+'x'+size.
 test('all released games launch without ranking requests or controls',async({page})=>{
  await page.goto(site+'titles.html');
  const ids=await page.evaluate(()=>window.ManabiProfileCatalog.map(g=>g.id));expect(ids).toHaveLength(18);
- const errors=[],requests=[];page.on('pageerror',e=>errors.push(e.message));page.on('request',r=>{if(/firestore.googleapis.com/.test(r.url()))requests.push(r.url());});
+ const errors=[],requests=[];page.on('pageerror',e=>errors.push(new URL(page.url()).pathname+': '+e.message));page.on('request',r=>{if(/firestore.googleapis.com/.test(r.url()))requests.push(r.url());});
  for(const id of ids){
   await page.goto(site+'games/'+id+'.html');
   await expect(page).toHaveURL(site+'games/'+id+'.html');

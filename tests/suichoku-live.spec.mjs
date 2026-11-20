@@ -125,8 +125,8 @@ test('math unit chooser places vertical only under geometry and opens the playab
  await page.goto(pageURL('math-calculation.html?adminTest=1'));await expect(page.locator('[data-game-card="suichoku"]')).toHaveCount(0);
 });
 
-test('iPad landscape geometry card stays compact and opens the shared ranking',async({page})=>{
+test('iPad landscape geometry card stays compact and shows personal title progress',async({page})=>{
  await page.setViewportSize({width:1194,height:834});await page.goto(pageURL('math-geometry.html?adminTest=1'));
- const card=page.locator('[data-game-card="suichoku"]'),rank=card.locator('[data-game-ranking]');await expect(card).toBeVisible();await expect(rank).toHaveAttribute('href',/ranking\.html\?game=suichoku/);
+ const card=page.locator('[data-game-card="suichoku"]'),rank=card.locator('[data-game-ranking]');await expect(card).toBeVisible();await expect(rank).toHaveCount(0);await expect(card.locator('.title-row-art .collection-art')).toHaveCount(5);
  const size=await card.boundingBox();expect(size.height).toBeLessThan(220);expect(await page.evaluate(()=>document.documentElement.scrollHeight<=window.innerHeight)).toBe(true);
 });
