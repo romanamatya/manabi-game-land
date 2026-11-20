@@ -21,9 +21,9 @@ test.beforeEach(async ({ page })=>{
 
 test('math listing and iPad landscape show five labeled, unmarked shapes without scrolling', async ({ page })=>{
   await page.setViewportSize(viewports[0]);
-  await page.goto(url(prefix + (production ? 'math-geometry.html' : 'math.html#geometry')));
-  const card=page.locator(production?'[data-game-card="shikakkeSecrets"]':'#shikakke-secrets-card');
-  await card.getByRole(production?'button':'link',{name:'プレイ',exact:true}).tap();
+  await page.goto(url(prefix + 'math-geometry.html'));
+  const card=page.locator('[data-game-card="shikakkeSecrets"]');
+  await card.getByRole('button',{name:'プレイ',exact:true}).tap();
   await expect(page).toHaveURL(url(game));
   for(const viewport of viewports){
     await page.setViewportSize(viewport);
