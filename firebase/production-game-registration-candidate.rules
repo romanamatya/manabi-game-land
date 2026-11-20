@@ -521,7 +521,7 @@ service cloud.firestore {
       allow create: if productionManagementEnabled()
         && request.resource.data.keys().hasOnly(['id','actor','at','action','targets','reason','before','after','beforeByGame','afterByGame','backupId'])
         && request.resource.data.id == auditId && request.resource.data.actor == request.auth.uid
-        && request.resource.data.at == request.time && request.resource.data.action in ['campaign','notice','visibility','visibilityBatch','registerGame']
+        && request.resource.data.at == request.time && request.resource.data.action in ['campaign','notice','visibility','visibilityBatch']
         && request.resource.data.targets is list && request.resource.data.targets.size() >= 1 && request.resource.data.targets.size() <= 11
         && request.resource.data.reason is string && request.resource.data.reason.size() >= 2 && request.resource.data.reason.size() <= 300
         && ((request.resource.data.action == 'visibilityBatch'
@@ -529,7 +529,7 @@ service cloud.firestore {
           && request.resource.data.beforeByGame.keys().size() == request.resource.data.targets.size()
           && request.resource.data.afterByGame is map
           && request.resource.data.afterByGame.keys().size() == request.resource.data.targets.size())
-          || (request.resource.data.action in ['campaign','notice','visibility','registerGame']
+          || (request.resource.data.action in ['campaign','notice','visibility']
             && request.resource.data.before is list && request.resource.data.before.size() <= 11
             && (request.resource.data.after is list || request.resource.data.after is map)))
         && request.resource.data.backupId is string
@@ -542,61 +542,69 @@ service cloud.firestore {
       allow create: if productionManagementEnabled()
         && request.resource.data.keys().hasOnly(['id','actor','at','action','targets','before','beforeByGame','reason','auditId'])
         && request.resource.data.id == backupId && request.resource.data.actor == request.auth.uid
-        && request.resource.data.at == request.time && request.resource.data.action in ['campaign','notice','visibility','visibilityBatch','registerGame']
+        && request.resource.data.at == request.time && request.resource.data.action in ['campaign','notice','visibility','visibilityBatch']
         && request.resource.data.targets is list && request.resource.data.targets.size() >= 1 && request.resource.data.targets.size() <= 11
         && ((request.resource.data.action == 'visibilityBatch'
           && request.resource.data.beforeByGame is map
           && request.resource.data.beforeByGame.keys().size() == request.resource.data.targets.size())
-          || (request.resource.data.action in ['campaign','notice','visibility','registerGame']
+          || (request.resource.data.action in ['campaign','notice','visibility']
             && request.resource.data.before is list && request.resource.data.before.size() <= 11))
         && request.resource.data.reason is string && request.resource.data.reason.size() >= 2 && request.resource.data.reason.size() <= 300
         && request.resource.data.auditId is string
         && getAfter(managementAuditPath(request.resource.data.auditId)).data.backupId == backupId;
       allow update, delete: if false;
     }
-    // Proposed registered-game extension. No deployment is performed by the registration tool.
-    function registeredGame(gameId) {
-      let path = /databases/$(database)/documents/productionAdmin/v1/gameRegistry/$(gameId);
-      return exists(path) && get(path).data.id == gameId && get(path).data.enabled == true;
+    // Registered games accept individual, audited visibility updates.
+    function registryPath(id) { return /databases/$(database)/documents/productionAdmin/v1/gameRegistry/$(id); }
+    function registrationAuditPath(id) { return /databases/$(database)/documents/productionAdmin/v1/registrationAudit/$(id); }
+    function registrationTarget(group, id) { return /databases/$(database)/documents/productionAdmin/v1/$(group)/$(id); }
+    function registryIdValid(id) { return id.matches('^[a-zA-Z][a-zA-Z0-9-]{0,63}$'); }
+    function registeredGame(id) { return exists(registryPath(id)) && get(registryPath(id)).data.enabled == true; }
+    function registrationAuditValid(group, id, old) {
+      let path = registrationAuditPath(request.resource.data.lastAudit);
+      let audit = getAfter(path).data;
+      return productionManagementEnabled() && !exists(path) && audit.actor == request.auth.uid
+        && audit.at == request.time && audit.group == group && audit.gameId == id
+        && audit.before == old && audit.after == request.resource.data;
+    }
+    match /productionAdmin/v1/registrationAudit/{auditId} {
+      allow get, list: if productionManagementEnabled();
+      allow create: if productionManagementEnabled()
+        && request.resource.data.keys().hasOnly(['actor','at','group','gameId','before','after'])
+        && request.resource.data.actor == request.auth.uid && request.resource.data.at == request.time
+        && request.resource.data.group in ['gameRegistry','gameSettings']
+        && registryIdValid(request.resource.data.gameId)
+        && getAfter(registrationTarget(request.resource.data.group,request.resource.data.gameId)).data.lastAudit == auditId;
     }
     function registryDocumentValid(gameId) {
       let d = request.resource.data;
-      return gameId.matches('^[a-zA-Z][a-zA-Z0-9-]{0,63}$')
-        && d.keys().hasAll(['id','name','subject','unit','entry','enabled','manifestSHA256','updatedAt','lastAudit','lastBackup'])
-        && d.keys().hasOnly(['id','name','subject','unit','entry','enabled','manifestSHA256','updatedAt','lastAudit','lastBackup'])
+      return registryIdValid(gameId)
+        && d.keys().hasOnly(['id','name','subject','unit','entry','enabled','manifestSHA256','updatedAt','lastAudit'])
         && d.id == gameId && d.name is string && d.name.size() > 0 && d.name.size() <= 80
         && d.subject in ['japanese','math','social','science','english']
         && d.unit in ['geometry','calculation','general']
         && (d.subject == 'math' || d.unit == 'general')
         && d.entry == 'games/' + gameId + '.html' && d.enabled is bool
         && d.manifestSHA256 is string && d.manifestSHA256.matches('^[a-f0-9]{64}$')
-        && d.updatedAt == request.time && d.lastAudit is string && d.lastBackup is string
-        && managementWriteValid(d.lastAudit, d.lastBackup, 'productionAdmin/v1/gameRegistry/' + gameId, 'registerGame');
+        && d.updatedAt == request.time;
     }
     match /productionAdmin/v1/gameRegistry/{gameId} {
-      allow get: if request.auth != null;
-      allow list: if productionAdminSessionFresh();
-      allow create, update: if registryDocumentValid(gameId);
-      allow delete: if false;
+      allow get, list: if productionManagementEnabled();
+      allow create: if registryDocumentValid(gameId) && registrationAuditValid('gameRegistry',gameId,null);
+      allow update: if registryDocumentValid(gameId) && registrationAuditValid('gameRegistry',gameId,resource.data);
     }
-    function registeredVisibilityValid(gameId) {
+    function registryVisibilityValid(id) {
       let d = request.resource.data;
-      return registeredGame(gameId)
-        && d.keys().hasAll(['status','updatedAt','lastAudit','lastBackup'])
-        && d.diff(resource.data).affectedKeys().hasOnly(['status','updatedAt','lastAudit','lastBackup'])
-        && d.status in ['published','preparing','hidden'] && d.updatedAt == request.time
-        && d.lastAudit is string && d.lastBackup is string
-        && managementWriteValid(d.lastAudit, d.lastBackup, 'productionAdmin/v1/gameSettings/' + gameId, 'visibility');
+      return registeredGame(id) && d.status in ['published','preparing','hidden'] && d.updatedAt == request.time;
     }
     match /productionAdmin/v1/gameSettings/{gameId} {
-      allow create: if registeredGame(gameId)
-        && request.resource.data.keys().hasOnly(['status','updatedAt','lastAudit','lastBackup'])
-        && request.resource.data.status in ['published','preparing','hidden']
-        && request.resource.data.updatedAt == request.time
-        && request.resource.data.lastAudit is string && request.resource.data.lastBackup is string
-        && managementWriteValid(request.resource.data.lastAudit, request.resource.data.lastBackup,
-          'productionAdmin/v1/gameSettings/' + gameId, 'visibility');
-      allow update: if registeredVisibilityValid(gameId);
+      allow get: if request.auth != null && registeredGame(gameId);
+      allow create: if registryVisibilityValid(gameId) && request.resource.data.status != 'published'
+        && request.resource.data.keys().hasOnly(['status','updatedAt','lastAudit'])
+        && registrationAuditValid('gameSettings',gameId,null);
+      allow update: if registryVisibilityValid(gameId)
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status','updatedAt','lastAudit'])
+        && registrationAuditValid('gameSettings',gameId,resource.data);
     }
   }
 }

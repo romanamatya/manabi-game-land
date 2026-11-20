@@ -22,18 +22,17 @@ test('production lists all 18 games and preserves the original profile records',
   const releasedIds = [...before.map(game => game.id), ...addedIds, ...legacyMathIds].sort();
   assert.equal(releasedIds.length, 18);
   assert.deepEqual([...config.gameIds, ...config.staticLocalGameIds].sort(), releasedIds);
-  assert.deepEqual([...config.rankingGameIds].sort(), releasedIds.filter(id => !['verticalParallel', 'quadrilateral', 'heikouPair', 'shikakkeSecrets'].includes(id)));
+  assert.deepEqual([...config.rankingGameIds].sort(), []);
   assert.deepEqual(fs.readdirSync('games').filter(file => file.endsWith('.html'))
     .map(file => file.slice(0, -5)).sort(), releasedIds);
   assert.deepEqual(Array.from(after, game => game.id).sort(),
-    releasedIds.filter(id => !legacyMathIds.includes(id)));
-  assert.deepEqual(plain(after.filter(game => !addedIds.includes(game.id))), plain(before));
+    releasedIds);
+  assert.deepEqual(plain(after.filter(game => !addedIds.includes(game.id) && !legacyMathIds.includes(game.id))), plain(before));
 
   const parallel = after.find(game => game.id === 'parallelPair');
   assert.deepEqual(Array.from(parallel.titles, title => title.at), [3, 5, 10, 15, 25]);
-  // Parallel's scoped adapter is enabled separately from the catalog flag.
   assert.equal(parallel.rankingEnabled, false);
-  assert.equal(config.parallelPairRankingEnabled, true);
+  assert.equal(config.parallelPairRankingEnabled, false);
 
   const vertical = after.find(game => game.id === 'suichoku');
   assert.equal(vertical.name, '垂直を見つけよう！');

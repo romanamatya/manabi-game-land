@@ -44,7 +44,7 @@ test('all 11 root game pages load the safe availability guard before settings; p
   const session=html.indexOf('public-firebase-session.js?v=shared-firebase-session-v1'),guard=html.indexOf('public-game-availability.js?v=firebase-session-recovery-v1'),settings=html.indexOf('public-admin-settings.js?v=firebase-session-recovery-v1');
   assert.ok(session>=0,`${id}: shared Firebase session broker is loaded`);assert.ok(guard>session,`${id}: broker loads before the availability guard`);assert.ok(settings>guard,`${id}: guard loads before settings`);
   assert.doesNotMatch(html,/document\.documentElement\.inert\s*=\s*true/);
-  if(id!=='keisanSummary')assert.match(html,/challenge120-runtime\.js\?v=availability-guard-v2/,`${id}: challenge mode remains wired`);
+  if(id!=='keisanSummary')assert.match(html,/challenge120-runtime\.js\?v=title-collection-production-v1/,`${id}: challenge mode remains wired`);
  }
  for(const filename of await readdir(new URL('../shared-src/site/games/',import.meta.url))){
   if(!filename.endsWith('.html'))continue;

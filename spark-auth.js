@@ -1,6 +1,6 @@
 import {createManagementStore} from './management-store.js?v=shikakke-v1';
 import {validateBackend,contractFor} from './data-contract.js?v=adminprod-20261030';
-import {createFirestoreStore} from './firebase-store.js?v=admin-stage2-player-rename-1';
+import {createFirestoreStore} from './firebase-store.js?v=title-collection-production-v1';
 const config = window.MANABI_SPARK_CONFIG;
 const error = code => Object.assign(new Error(code), {code});
 const validName = value => typeof value === 'string' && value === value.trim() && value.length >= 1 && value.length <= 12 && !/[<>\r\n]/.test(value);

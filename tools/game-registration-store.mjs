@@ -1,35 +1,36 @@
-// Explicit admin operations for the proposed registry Rules. Never invoked by the CLI
-// generator, site load or CI. The caller must use the existing administrator's authenticated Firebase client session.
-const fields=['id','name','subject','unit','entry','enabled','manifestSHA256'];
-const stable=value=>Array.isArray(value)?value.map(stable):value&&typeof value==='object'?Object.fromEntries(Object.keys(value).sort().map(key=>[key,stable(value[key])])):value;
-const equal=(a,b)=>JSON.stringify(stable(a))===JSON.stringify(stable(b));
-export function createRegistrationStore(F,db){
- const root='productionAdmin/v1';
- const doc=(collection,id)=>F.doc(db,root+'/'+collection+'/'+id);
- async function audited(user,collection,id,action,next){
-  if(!user?.uid)throw Error('admin-session-required');
-  const target=doc(collection,id),audit=F.doc(F.collection(db,root+'/managementAudit')),backup=F.doc(F.collection(db,root+'/managementBackups'));
-  const before=await F.runTransaction(db,async tx=>{
-   const snap=await tx.get(target),previous=snap.exists()?snap.data():null,at=F.serverTimestamp();
-   tx.set(backup,{id:backup.id,actor:user.uid,at,action,targets:[target.path],before:[previous],reason:'ゲーム共通登録からの個別操作',auditId:audit.id});
-   tx.set(audit,{id:audit.id,actor:user.uid,at,action,targets:[target.path],before:[previous],after:[next],reason:'ゲーム共通登録からの個別操作',backupId:backup.id});
-   return previous;
+// Registration and visibility each commit their audit and exact before-image atomically.
+export function createRegistrationStore(F, db, mode = 'production') {
+ const root = {preview: 'previewSpark/v1', production: 'productionAdmin/v1'}[mode];
+ if (!root) throw Error('invalid-registration-environment');
+ const doc = (group, id) => F.doc(db, root + '/' + group + '/' + id);
+ const idOK = id => typeof id === 'string' && /^[a-zA-Z][a-zA-Z0-9-]{0,63}$/.test(id);
+ async function write(user, group, id, next) {
+  if (!user?.uid || !idOK(id)) throw Error('invalid-registration-operation');
+  const target = doc(group, id);
+  const audit = F.doc(F.collection(db, root + '/registrationAudit'));
+  return F.runTransaction(db, async tx => {
+   const snap = await tx.get(target);
+   const before = snap.exists() ? snap.data() : null;
+   if (group === 'gameSettings' && !before && next.status === 'published') throw Error('prepare-before-publish');
+   const at = F.serverTimestamp();
+   const after = {...before, ...next, updatedAt: at, lastAudit: audit.id};
+   tx.set(audit, {actor: user.uid, at, group, gameId: id, before, after});
+   tx.set(target, after);
+   return {path: target.path, auditId: audit.id, backupId: audit.id};
   });
-  await F.runTransaction(db,async tx=>{
-   const current=await tx.get(target),value=current.exists()?current.data():null;
-   if(!equal(before,value))throw Error('registration-target-changed-after-backup');
-   tx.set(target,{...before,...next,updatedAt:F.serverTimestamp(),lastAudit:audit.id,lastBackup:backup.id});
-  });
-  return {path:target.path,auditId:audit.id,backupId:backup.id};
  }
  return {
-  async register(user,registration){
-   if(!registration||Object.keys(registration).length!==fields.length||fields.some(key=>!Object.hasOwn(registration,key)))throw Error('invalid-registration-fields');
-   return audited(user,'gameRegistry',registration.id,'registerGame',registration);
+  register: (user, game) => write(user, 'gameRegistry', game.id, game),
+  setVisibility(user, id, status) {
+   if (!['preparing', 'published', 'hidden'].includes(status)) throw Error('invalid-registered-visibility');
+   return write(user, 'gameSettings', id, {status});
   },
-  async setVisibility(user,id,status){
-   if(!/^[a-zA-Z][a-zA-Z0-9-]{0,63}$/.test(id)||!['preparing','published','hidden'].includes(status))throw Error('invalid-registered-visibility');
-   return audited(user,'gameSettings',id,'visibility',{status});
+  async status(id) {
+   if (!idOK(id)) throw Error('invalid-registration-operation');
+   const registry = await F.getDocFromServer(doc('gameRegistry', id));
+   if (!registry.exists()) return {registered: false, status: 'unknown'};
+   const settings = await F.getDocFromServer(doc('gameSettings', id));
+   return {registered: registry.data().enabled === true, status: settings.data()?.status || 'unknown'};
   },
  };
 }

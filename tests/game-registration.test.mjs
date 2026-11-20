@@ -21,3 +21,30 @@ test('preview-only new game never changes production NEW or production registrat
 test('duplicate IDs, wrong point policies, title changes and unsafe routes are rejected',()=>{
  for(const value of [mutate(r=>r.games.push(r.games[0])),mutate(r=>r.games[0].dailyPointCap=100),mutate(r=>r.games[0].correctPoints=2),mutate(r=>r.games[0].entry='../admin.html'),mutate(r=>r.games[0].titles[1].at=2),mutate(r=>r.games[0].titles[0].image='assets/../private.png')])assert.throws(()=>validateRegistration(value));
 });
+
+test('preview build uses the registry without changing production or the approved preview', async () => {
+ const {execFileSync} = await import('node:child_process');
+ const before = fs.readFileSync('preview/BUILD-MANIFEST.json');
+ execFileSync(process.execPath,['tools/build-site.mjs','preview','--registration']);
+ const release='.release/stage2/preview/';
+ const context=vm.createContext({window:{},location:{pathname:'/preview/index.html'}});
+ for (const file of ['environment.js','profile-catalog.js']) vm.runInContext(fs.readFileSync(release+file,'utf8'),context);
+ const plan=context.window.ManabiRegistration;
+ assert.equal(plan.gameIds.length,18);
+ assert.equal(context.window.ManabiProfileCatalog.length,18);
+ assert.equal(context.window.MANABI_BACKEND_CONFIG.expectedProjectId,'manabi-game-landcheck');
+ assert.equal(context.window.MANABI_BACKEND_CONFIG.playerSyncEnabled,false);
+ assert.deepEqual(fs.readFileSync('preview/BUILD-MANIFEST.json'),before);
+ for (const g of plan.catalog) {
+  assert.ok(fs.existsSync(release+g.page),g.page);
+  for (const t of g.titles) if (t.image) assert.ok(fs.existsSync(release+t.image),t.image);
+ }
+ const approved = {window:{}};
+ vm.runInNewContext(fs.readFileSync('profile-catalog.js','utf8'),approved);
+ for (const previous of approved.window.ManabiProfileCatalog) {
+  const current=context.window.ManabiProfileCatalog.find(g=>g.id===previous.id);
+  assert.equal(current.field,previous.field ?? plan.bestRecords[previous.id].field,previous.id);
+  assert.equal(JSON.stringify(current.titles.map(t=>[t.id,t.at,t.name,t.image||null])),
+    JSON.stringify(previous.titles.map(t=>[t.id,t.at,t.name,t.image||null])),previous.id);
+ }
+});

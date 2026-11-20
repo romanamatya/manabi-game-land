@@ -1,10 +1,12 @@
-name: Game registration foundation (no deploy)
+name: Game registration preview
 on:
   pull_request:
     paths:
       - 'config/game-registration.json'
+      - 'stage2/**'
+      - 'tools/build-site.mjs'
       - 'tools/game-registration*.mjs'
-      - 'firebase/production-game-registration-candidate.rules'
+      - 'firebase/*-game-registration-candidate.rules'
       - 'tests/game-registration.test.mjs'
       - 'tests/rules/game-registration.test.mjs'
       - '.github/workflows/game-registration-foundation.yml'
@@ -28,6 +30,42 @@ jobs:
           java-version: '21'
       - run: npm ci --no-audit --no-fund
       - run: node --test tests/game-registration.test.mjs
-      - run: node tools/game-registration.mjs preview --output .release/registry-preview
       - run: node tools/game-registration.mjs production --output .release/registry-production
-      - run: ./node_modules/.bin/firebase emulators:exec --project demo-manabi-game-registration --only firestore --config firebase/rules-release-emulator.json "node --test tests/rules/game-registration.test.mjs"
+      - run: >
+          ./node_modules/.bin/firebase emulators:exec --project demo-manabi-game-registration
+          --only firestore --config firebase/rules-release-emulator.json
+          "node --test tests/rules/game-registration.test.mjs && MGL_REGISTRATION_RULES=preview node --test tests/rules/game-registration.test.mjs"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: manabi-registration-preview
+          path: .release/stage2/
+  browser:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        browser: [chromium, webkit]
+    env:
+      MGL_BASE_URL: http://127.0.0.1:4173/.release/stage2/
+      MGL_CHROME_CHANNEL: ${{ matrix.browser == 'chromium' && 'chrome' || '' }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm install --no-save --no-package-lock @playwright/test@1.56.1
+      - if: matrix.browser == 'chromium'
+        run: sudo apt-get update -qq && sudo apt-get install -y --no-install-recommends fonts-noto-cjk
+      - if: matrix.browser == 'webkit'
+        run: npx playwright install --with-deps webkit
+      - run: node tools/build-site.mjs preview --registration
+      - run: node tools/suichoku-smoke-server.mjs > /tmp/stage2-server.log 2>&1 &
+      - run: npx playwright test tests/title-collection-layout.spec.mjs --browser ${{ matrix.browser }}
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: registration-browser-${{ matrix.browser }}
+          path: test-results/

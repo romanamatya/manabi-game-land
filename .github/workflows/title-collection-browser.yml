@@ -2,6 +2,10 @@ name: Title collection browser
 on:
   pull_request:
     paths:
+      - '*.html'
+      - '*.js'
+      - '*.css'
+      - 'games/**'
       - 'shared-src/site/**'
       - 'tools/title-mode.mjs'
       - 'tools/build-site.mjs'
@@ -14,10 +18,14 @@ jobs:
   layout:
     runs-on: ubuntu-24.04
     timeout-minutes: 25
+    env:
+      MGL_TITLE_TARGET: ${{ matrix.target }}
+      MGL_CHROME_CHANNEL: ${{ matrix.browser == 'chromium' && 'chrome' || '' }}
     strategy:
       fail-fast: false
       matrix:
         browser: [chromium, webkit]
+        target: [preview, production]
     steps:
       - uses: actions/checkout@v4
         with:
@@ -26,11 +34,17 @@ jobs:
         with:
           node-version: 22
       - run: npm install --no-save --no-package-lock @playwright/test@1.56.1
-      - run: npx playwright install --with-deps ${{ matrix.browser }}
+      - name: Install Japanese fonts for the installed Chrome
+        if: matrix.browser == 'chromium'
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends fonts-noto-cjk
+      - if: matrix.browser == 'webkit'
+        run: npx playwright install --with-deps webkit
       - run: node tools/suichoku-smoke-server.mjs > /tmp/title-server.log 2>&1 &
       - run: npx playwright test tests/title-collection-layout.spec.mjs --browser ${{ matrix.browser }}
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: title-collection-${{ matrix.browser }}
+          name: title-collection-${{ matrix.target }}-${{ matrix.browser }}
           path: test-results/
