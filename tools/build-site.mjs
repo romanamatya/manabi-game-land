@@ -1,4 +1,5 @@
 import fs from 'node:fs/promises';
+import {loadRegistration, registrationPlan} from './game-registration.mjs';
 import {transformTitleMode} from './title-mode.mjs';
 import path from 'node:path';
 import crypto from 'node:crypto';
@@ -11,9 +12,21 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const mode = process.argv[2] || 'preview';
 if (!['preview', 'production'].includes(mode)) throw Error('unknown-environment');
 
+const registryPreview = mode === 'preview' && process.argv.includes('--registration');
 const config = validateEnvironment(JSON.parse(await fs.readFile(path.join(root, 'environments', `${mode}.json`), 'utf8')));
+const plan = registryPreview ? registrationPlan(await loadRegistration(), mode) : null;
+if (plan) {
+ const known = new Set([...config.gameIds, ...config.staticLocalGameIds]);
+ config.registration = {...plan, newGames: plan.trustedRegistrations.filter(game => !known.has(game.id))};
+ config.latestGameId = config.registration.newGames.at(-1)?.id || plan.latestPublishedGameId;
+ for (const game of config.registration.newGames) {
+  config.gameIds.push(game.id);
+  config.visibilityGameIds.push(game.id);
+  config.localChallengeGameIds.push(game.id);
+ }
+}
 const source = path.join(root, 'shared-src/site');
-const out = path.join(root, mode === 'preview' ? 'preview' : '.release/production');
+const out = path.join(root, registryPreview ? '.release/stage2/preview' : mode === 'preview' ? 'preview' : '.release/production');
 const blocked = mode === 'production' && !config.productionReleaseApproved;
 if (out === root || (mode === 'production' && !out.startsWith(path.join(root, '.release') + path.sep))) {
   throw Error('unsafe-production-output');
@@ -30,9 +43,26 @@ async function listFiles(dir, rel = '') {
 }
 
 const sourceFiles = await listFiles(source);
+const registrationStore = 'game-registration-store.js';
+if (plan) sourceFiles.push(registrationStore);
+const overlay = new Set(plan ? await listFiles(path.join(root,'stage2/site')) : []);
+for (const file of overlay) if (!sourceFiles.includes(file)) sourceFiles.push(file);
+const sourceFor = file => {
+ if (file === registrationStore) return path.join(root,'tools/game-registration-store.mjs');
+ return overlay.has(file) ? path.join(root,'stage2/site',file) : path.join(source,file);
+};
+if (plan) for (const game of plan.catalog) {
+ if (!sourceFiles.includes(game.page)) throw Error('missing-game-entry:'+game.page);
+ for (const title of game.titles) if (title.image && !sourceFiles.includes(title.image)) await fs.access(path.join(root,'preview',title.image));
+}
+const validators = plan ? await Promise.all(config.registration.newGames.map(async game => {
+ const code = await fs.readFile(sourceFor('registrations/'+game.id+'.js'),'utf8');
+ return 'window.ManabiValidators['+JSON.stringify(game.id)+']=(()=>{'+code+'\n})();';
+})) : [];
+
 const sourceDigests = new Map();
 for (const rel of sourceFiles) {
-  sourceDigests.set(rel, crypto.createHash('sha256').update(await fs.readFile(path.join(source, rel))).digest('hex'));
+  sourceDigests.set(rel, crypto.createHash('sha256').update(await fs.readFile(sourceFor(rel))).digest('hex'));
 }
 const buildId = crypto.createHash('sha256')
   .update(JSON.stringify({mode, config, source: [...sourceDigests], titleMode:await fs.readFile(new URL('./title-mode.mjs',import.meta.url),'utf8')}))
@@ -43,19 +73,23 @@ vm.runInNewContext(await fs.readFile(path.join(source, 'profile-catalog.js'), 'u
 const fullCatalog = catalogContext.window.ManabiProfileCatalog;
 const catalogById = new Map(fullCatalog.map(game => [game.id, game]));
 if (catalogById.size !== fullCatalog.length) throw Error('duplicate-game-id-in-catalog');
-for (const id of config.gameIds) if (!catalogById.has(id)) throw Error(`unknown-game-id:${id}`);
+for (const id of config.gameIds) if (!catalogById.has(id) && !plan?.gameIds.includes(id)) throw Error(`unknown-game-id:${id}`);
 const catalogGameIds = [...new Set([...config.gameIds, ...(config.staticLocalGameIds || [])])];
 for (const id of config.rankingGameIds) {
   if (!catalogGameIds.includes(id)) throw Error(`ranking-game-not-published:${id}`);
 }
 const releaseCatalog = config.gameIds.map(id => {
-  const game = catalogById.get(id);
+  const game = (plan ? plan.catalog.find(game => game.id === id) : null) || catalogById.get(id);
   return {id, name: game.name, field: game.field || GAME_FIELDS[id] || `${id}BestStreak`, rankingEnabled: config.rankingGameIds.includes(id)};
 });
 
+if (plan) {
+ await fs.rm(out,{recursive:true,force:true});
+ await fs.cp(path.join(root,'preview/assets'),path.join(out,'assets'),{recursive:true});
+}
 const entries = [];
 for (const rel of sourceFiles) {
-  const input = await fs.readFile(path.join(source, rel));
+  const input = await fs.readFile(sourceFor(rel));
   if (input.includes(0)) {
     const outputPath = path.join(out, rel);
     await fs.mkdir(path.dirname(outputPath), {recursive: true});
@@ -65,16 +99,32 @@ for (const rel of sourceFiles) {
   }
   const original = input.toString('utf8');
   let text = transformTitleMode(rel, original, config, await fs.readFile(path.join(source,'titles.html'),'utf8'));
-  if (rel === 'environment.js') text = environmentScript(config);
+  if (rel === 'environment.js') {
+    text = environmentScript(config);
+    if (plan) text += '\nwindow.ManabiRegistration='+JSON.stringify(config.registration)
+      +';window.ManabiValidators=Object.create(null);'+validators.join('\n');
+  }
   if (rel === 'profile-catalog.js') {
-    const games = catalogGameIds.map(id => ({...catalogById.get(id), rankingEnabled: config.rankingGameIds.includes(id)}));
+    const games = catalogGameIds.map(id => {
+      const old = catalogById.get(id);
+      const registered = plan?.catalog.find(game => game.id === id);
+      return {...old, ...registered, page: old?.page ?? registered?.page, rankingEnabled: config.rankingGameIds.includes(id)};
+    });
     text = `window.ManabiProfileCatalog=${JSON.stringify(games)};\n`;
   }
   if (rel.endsWith('.html')) {
+    if (plan && overlay.has(rel) && rel.startsWith('games/') && !plan.gameIds.includes(path.basename(rel,'.html'))) continue;
+    if (plan && config.registration.newGames.some(game => game.entry === rel)) {
+      const scripts = ['public-firebase-session','public-game-availability','public-admin-settings'];
+      for (const name of [...scripts,'challenge120-core','challenge120-runtime','economy-core','economy']) {
+        if (!text.includes('../'+name+'.js')) throw Error('missing-registered-game-runtime:'+rel+':'+name);
+      }
+    }
     if (!text.includes('src="environment.js') && !text.includes('src="../environment.js')) {
       text = text.replace('<head>', `<head><script src="${rel.startsWith('games/') ? '../' : ''}environment.js"></script>`);
     }
     text = text.replace(/(<script[^>]+src="(?:\.\.\/)?economy-core\.js[^\"]*"><\/script>)/, `$1<script src="${rel.startsWith('games/') ? '../' : ''}storage-adapters.js"></script>`);
+    if (plan && rel === 'science.html') text = text.replace('</head>','<script type="module" src="game-selection.js"></script></head>');
     if (mode === 'production' && rel === 'index.html') text = text.replace(/<a class="mq-admin-login"[^>]*>[\s\S]*?<\/a>/g, '');
     if (mode === 'production') {
       text = text.replace(/<article\b[^>]*>[\s\S]*?<\/article>/g, article => {
