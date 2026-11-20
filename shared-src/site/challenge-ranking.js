@@ -3,7 +3,7 @@ const MAX_BEST = 100000;
 
 export function challengeRankingEnabled(game, config = window.MANABI_BACKEND_CONFIG, env = window.MANABI_ENV) {
   const project = env?.preview === true ? 'manabi-game-landcheck' : 'manabi-game-land';
-  return games.has(game) && env?.expectedProjectId === project && config?.firebase?.projectId === project
+  return config?.rankingsRetired!==true && games.has(game) && env?.expectedProjectId === project && config?.firebase?.projectId === project
     && config.mode === (env.preview ? 'preview' : 'production') && config.challengeRankingGameIds?.includes(game);
 }
 
@@ -57,7 +57,7 @@ export async function openChallengeRanking(game, config = window.MANABI_BACKEND_
 }
 
 export function mountChallengeRanking({ game, read, titles, button = document.getElementById('ranking-open') }) {
-  if (!button) return null;
+  if (window.MANABI_BACKEND_CONFIG?.rankingsRetired || !button) return null;
   const params = new URL(location.href).searchParams;
   const enabled = challengeRankingEnabled(game) && !params.has('adminTest') && !params.has('syncTest');
   const storage = window.manabiStorage;

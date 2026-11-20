@@ -211,7 +211,7 @@ $('challenge-start').onclick = async () => {
   try { await progress.start(); next(); }
   finally { $('challenge-start').disabled = false; }
 };
-$('ranking-open').onclick = async () => {
+if($('ranking-open')) $('ranking-open').onclick = async () => {
   $('line-ranking').hidden = false;
   $('ranking-rows').replaceChildren();
   if (!ranking) {
@@ -236,7 +236,7 @@ $('ranking-open').onclick = async () => {
     $('ranking-message').textContent = `共有ランキングに接続できません。端末の最高記録は ${best}問です。`;
   }
 };
-$('ranking-close').onclick = () => { $('line-ranking').hidden = true; };
+if($('ranking-close')) $('ranking-close').onclick = () => { $('line-ranking').hidden = true; };
 function tick() {
   const record = progress.read();
   if (phase === 'ask' && !['training', 'running'].includes(record.challenge.phase)) next();

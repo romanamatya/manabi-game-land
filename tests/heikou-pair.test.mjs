@@ -168,7 +168,8 @@ test('the published game uses the reviewed question model, button and approved a
     assert.deepEqual(image,open('shared-src/site/'+path));
     assert.deepEqual(image,open(path));
   }
-  assert.match(open('preview/math.html').toString(),/id="geometry"[^]*?href="games\/heikouPair\.html"/);
+  assert.match(open('preview/math-geometry.html').toString(),/data-unit="geometry"/);
+  assert.match(open('preview/math-navigation.js').toString(),/games.push\('heikouPair'\)/);
   const controller = open('heikou-pair-game.js').toString().replace(/heikou-pair-model\.js\?v=[^']+/, 'heikou-pair-model.js');
   assert.equal(controller,open('shared-src/site/heikou-pair-game.js').toString());
   for (const path of ['heikou-pair-model.js','heikou-pair.css','parallel-confirm.css']) {

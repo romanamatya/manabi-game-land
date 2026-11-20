@@ -52,7 +52,7 @@ test('question logic matches preview and the production campaign advertises 50pt
   const preview = read('preview/keisan-summary-game.js');
   assert.equal([...production.matchAll(/今日の上限50pt/g)].length, 2);
   // A dormant preview campaign has older copy; neither shared wallet accepts a 100pt policy.
-  const stripCampaignCopy = script => script.replace(/今日の上限(?:50|100)pt/g, '今日の上限').trimEnd();
+  const stripCampaignCopy = script => script.replace('if(window.MANABI_BACKEND_CONFIG?.rankingsRetired)return;','').replace(/今日の上限(?:50|100)pt/g, '今日の上限').trimEnd();
   assert.equal(stripCampaignCopy(production), stripCampaignCopy(preview));
   const window = load('preview/environment.js', { window: {}, location: { pathname: '/preview/' } });
   assert.notEqual(window.MANABI_BACKEND_CONFIG.summaryManagementEnabled, true);

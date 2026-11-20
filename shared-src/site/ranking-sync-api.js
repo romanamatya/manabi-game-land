@@ -9,7 +9,7 @@ export function bestForSharedRanking(game,record,challenge){
  if(Number.isSafeInteger(challenge?.attemptBest))best=Math.max(best,challenge.attemptBest);
  return best;
 }
-function assertConfig(c){
+function assertConfig(c){if(c?.rankingsRetired)throw err('rankings-retired');
  if(!c||c.mode!=='production'||c.expectedProjectId!=='manabi-game-land'||(c.rankingSyncEnabled!==true&&c.missingAlphabetRankingSyncEnabled!==true)||c.firebase?.projectId!=='manabi-game-land')throw err('production-ranking-config-rejected');
  if(c.missingAlphabetRankingSyncEnabled===true&&(c.rankingSyncEnabled===true||c.playerNameSyncEnabled===true||!c.rankingGameIds?.includes('missingAlphabet')))throw err('global-ranking-sync-must-remain-disabled');
  if(typeof window!=='undefined'&&(window.MANABI_ENV?.preview!==false||window.MANABI_ENV?.expectedProjectId!=='manabi-game-land'))throw err('production-environment-mismatch');
@@ -107,6 +107,7 @@ export async function createProductionRankingClient(c,[App,A,F],{challenge=false
 }
 let pending;
 export function client(){
+ if(window.MANABI_BACKEND_CONFIG?.rankingsRetired)return Promise.reject(err('rankings-retired'));
  if(!pending)pending=Promise.all(['app','auth','firestore'].map(n=>import('https://www.gstatic.com/firebasejs/13.1.0/firebase-'+n+'.js')))
   .then(sdks=>createProductionRankingClient({...window.MANABI_BACKEND_CONFIG,missingAlphabetRankingSyncEnabled:false},sdks)).catch(e=>{pending=null;throw e});
  return pending;
@@ -115,6 +116,7 @@ export function client(){
 let missingAlphabetPending;
 export function missingAlphabetClient(){
  const config=window.MANABI_BACKEND_CONFIG;
+ if(config?.rankingsRetired)return Promise.reject(err('rankings-retired'));
  if(config?.missingAlphabetRankingSyncEnabled!==true||!config.gameIds?.includes('missingAlphabet')||!config.rankingGameIds?.includes('missingAlphabet'))return Promise.reject(err('missing-alphabet-ranking-disabled'));
  if(!missingAlphabetPending)missingAlphabetPending=Promise.all(['app','auth','firestore'].map(n=>import('https://www.gstatic.com/firebasejs/13.1.0/firebase-'+n+'.js')))
   .then(sdks=>createProductionRankingClient({...config,rankingSyncEnabled:false,playerNameSyncEnabled:false,rankingGameIds:['missingAlphabet']},sdks))
@@ -125,6 +127,7 @@ export function missingAlphabetClient(){
 let challengeRankingPending;
 export function challengeRankingClient(){
  const c=window.MANABI_BACKEND_CONFIG;
+ if(c?.rankingsRetired)return Promise.reject(err('rankings-retired'));
  if(!c?.challengeRankingGameIds?.length||c.playerNameSyncEnabled!==true)return Promise.reject(err('challenge-ranking-disabled'));
  if(!challengeRankingPending)challengeRankingPending=Promise.all(['app','auth','firestore'].map(n=>import('https://www.gstatic.com/firebasejs/13.1.0/firebase-'+n+'.js')))
   .then(sdks=>createProductionRankingClient({...c,missingAlphabetRankingSyncEnabled:false},sdks,{challenge:true}))

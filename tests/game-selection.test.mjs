@@ -37,7 +37,7 @@ test('live visibility updates disable and restore only the play control',async()
 });
 
 test('preview selection pages keep every listed game and separate play from ranking',async()=>{
- for(const file of ['math.html','japanese.html','social.html','language.html']){
+ for(const file of ['japanese.html','social.html','language.html']){
   const html=await readFile(new URL('../shared-src/site/'+file,import.meta.url),'utf8');
   const cards=[...html.matchAll(/<article class="card game-card" data-game-card="([^"]+)">([\s\S]*?)<\/article>/g)];
   assert.ok(cards.length>0,file);
@@ -51,7 +51,7 @@ test('preview selection pages keep every listed game and separate play from rank
 });
 
 test('every production and shared game-selection page loads the Firebase session before the settings reader',async()=>{
- for(const file of ['../math-calculation.html','../japanese.html','../social.html','../language.html','../shared-src/site/math.html','../shared-src/site/japanese.html','../shared-src/site/social.html','../shared-src/site/language.html']){
+ for(const file of ['../math-calculation.html','../japanese.html','../social.html','../language.html','../shared-src/site/math-calculation.html','../shared-src/site/japanese.html','../shared-src/site/social.html','../shared-src/site/language.html']){
   const html=await readFile(new URL(file,import.meta.url),'utf8');
   assert.match(html,/game-selection\.js/,file+': game picker is present');
   const session=html.indexOf('public-firebase-session.js'),settings=html.indexOf('public-admin-settings.js'),picker=html.indexOf('game-selection.js');

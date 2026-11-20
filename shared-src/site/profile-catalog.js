@@ -54,3 +54,5 @@ window.ManabiProfileCatalog.push({
     image: 'assets/shikakke-titles/' + image + '_512.png', viewport: [0, 0, 512, 512],
   })),
 });
+
+window.ManabiProfileCatalog.push({"id": "keisanSummary", "name": "計算のきまり・総まとめ", "subject": "math", "page": "math-calculation.html", "field": "keisanSummaryBestStreak", "rankingEnabled": true, "titles": [{"id": "keisanSummary:5", "at": 5, "name": "計算の見習い", "image": "assets/title_05.png", "standalone": true}, {"id": "keisanSummary:10", "at": 10, "name": "計算のひらめき者", "image": "assets/title_10.png", "standalone": true}, {"id": "keisanSummary:15", "at": 15, "name": "計算の使い手", "image": "assets/title_15.png", "standalone": true}, {"id": "keisanSummary:20", "at": 20, "name": "計算の達人", "image": "assets/title_20.png", "standalone": true}, {"id": "keisanSummary:30", "at": 30, "name": "計算のきまりマスター", "image": "assets/title_30.png", "standalone": true}]});

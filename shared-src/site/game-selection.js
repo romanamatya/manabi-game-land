@@ -24,7 +24,7 @@ function initialize(){
   if(initialized.has(card))continue;initialized.add(card);
   const button=card.querySelector('[data-game-play]');
   if(button)button.addEventListener('click',()=>{if(card.dataset.gameAvailability==='published'&&!button.disabled&&button.dataset.gameHref)location.assign(button.dataset.gameHref)});
-  if(card.dataset.gameCard==='verticalParallel'&&window.MANABI_ENV?.preview===true){
+  if(!window.MANABI_BACKEND_CONFIG?.rankingsRetired&&card.dataset.gameCard==='verticalParallel'&&window.MANABI_ENV?.preview===true){
    card.hidden=true;
    const ranking=openLineQuizRanking({storage:window.manabiStorage,titles:[]});
    ranking.watchAvailability(published=>{
@@ -33,7 +33,7 @@ function initialize(){
    });
    continue;
   }
-  const binding=bindGameAvailability(card,{enabled:window.MANABI_BACKEND_CONFIG?.availabilityEnabled===true,settings:window.ManabiPublicSettings});
+  const binding=bindGameAvailability(card,{enabled:window.MANABI_BACKEND_CONFIG?.availabilityEnabled===true||window.MANABI_BACKEND_CONFIG?.visibilityGameIds?.includes(card.dataset.gameCard),settings:window.ManabiPublicSettings});
   window.addEventListener('pagehide',binding.dispose,{once:true});
  }
 }

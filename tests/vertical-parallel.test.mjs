@@ -85,7 +85,8 @@ test('preview is scoped to its Firebase project and the new game is excluded fro
   assert.ok(!production.gameIds.includes(game));
   assert.ok(!production.rankingGameIds.includes(game));
   const env = { preview: true, expectedProjectId: preview.projectId };
-  assert.equal(previewLineQuizEnabled({ ...preview, mode: 'preview' }, env), true);
+  assert.equal(previewLineQuizEnabled({ ...preview, mode: 'preview' }, env), false, 'rankings are retired in preview');
+  assert.equal(previewLineQuizEnabled({ ...preview, rankingsRetired:false, mode:'preview' }, env),true,'legacy production behavior remains unchanged until approval');
   assert.equal(previewLineQuizEnabled({ ...production, mode: 'preview' }, env), false);
   assert.equal(previewLineQuizEnabled({ ...preview, mode: 'preview' }, { ...env, preview: false }), false);
 });

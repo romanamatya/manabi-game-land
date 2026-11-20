@@ -3,7 +3,7 @@ const project = 'manabi-game-landcheck';
 const root = 'previewSpark/v1';
 
 export function previewLineQuizEnabled(config, env) {
-  return env?.preview === true && env.expectedProjectId === project && config?.mode === 'preview'
+  return config?.rankingsRetired !== true && env?.preview === true && env.expectedProjectId === project && config?.mode === 'preview'
     && config.firebase?.projectId === project && config.gameIds?.includes(game);
 }
 
@@ -56,6 +56,7 @@ export function openLineQuizRanking({ storage, titles }) {
   }
   return {
     watchAvailability(update) {
+      if(config?.rankingsRetired){ if(config.availabilityEnabled||config.visibilityGameIds?.includes(game))void window.ManabiPublicSettings?.subscribeGame(game,s=>{if(!s.metadata?.fromCache)update(s.exists()?s.data().status==='published':true)},()=>update(false));return;}
       void client().then(api => api.watchAvailability(update, () => {})).catch(() => {});
     },
     rows: async () => (await client()).rows(),

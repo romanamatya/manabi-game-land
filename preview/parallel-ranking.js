@@ -1,7 +1,7 @@
-import {challengeRankingEnabled,mountChallengeRanking} from './challenge-ranking.js?v=4dec013b969a';
-import {client} from './ranking-sync-api.js?v=4dec013b969a';
+import {challengeRankingEnabled,mountChallengeRanking} from './challenge-ranking.js?v=cc211caa6031';
+import {client} from './ranking-sync-api.js?v=cc211caa6031';
 const GAME='parallelPair';
-export function parallelRankingEnabled(config,env){return env?.preview===false&&env.expectedProjectId==='manabi-game-land'&&config?.mode==='production'&&config.firebase?.projectId==='manabi-game-land'&&config.rankingSyncEnabled===true&&config.parallelPairRankingEnabled===true&&config.playerNameSyncEnabled===true&&config.rankingGameIds?.includes(GAME)===true;}
+export function parallelRankingEnabled(config,env){return config?.rankingsRetired!==true&&env?.preview===false&&env.expectedProjectId==='manabi-game-land'&&config?.mode==='production'&&config.firebase?.projectId==='manabi-game-land'&&config.rankingSyncEnabled===true&&config.parallelPairRankingEnabled===true&&config.playerNameSyncEnabled===true&&config.rankingGameIds?.includes(GAME)===true;}
 // One pending best, one acknowledgement per ranking UID. No answer data is stored.
 export function createParallelRankingSync({api,storage,record,titles,appearance=()=>({}),online=()=>true,access=()=>true,status=()=>{},mergeBest=()=>{}}){
  const pendingKey='manabi_parallel_rank_pending:v1';let work=Promise.resolve();

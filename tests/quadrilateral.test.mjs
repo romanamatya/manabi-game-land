@@ -160,7 +160,8 @@ test('the game ships as a standalone release in preview and production without a
   assert.ok(preview.staticLocalGameIds.includes(GAME));
   for (const config of [preview, production]) assert.ok(!config.rankingGameIds.includes(GAME));
   assert.ok(!production.staticLocalGameIds?.includes(GAME) && !production.gameIds.includes(GAME));
-  assert.match(await read('preview/math.html'), /href="games\/quadrilateral\.html"/);
+  assert.match(await read('preview/math-geometry.html'), /data-unit="geometry"/);
+  assert.match(await read('preview/math-navigation.js'), /games.push\('quadrilateral'\)/);
   assert.doesNotMatch(await read('.release/production/math.html'), /href="games\/quadrilateral\.html"/);
   assert.match(await read('environment.js'), /"staticLocalGameIds":\[[^\]]*"quadrilateral"/);
   assert.match(await read('games/quadrilateral.html'), /href="\.\.\/math-geometry\.html"/);
