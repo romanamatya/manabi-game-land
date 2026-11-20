@@ -1,0 +1,64 @@
+.quad-layout { grid-template-columns: minmax(166px, 17%) minmax(0, 1fr) minmax(160px, 18%); }
+.quad-layout .sq-main { text-align: center; gap: 5px; }
+.quad-stats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 5px; }
+.quad-stats .sq-stat { padding: 5px 2px; }
+.quad-stats .sq-stat:first-child { grid-column: 1 / -1; }
+.quad-stats .sq-stat b { font-size: clamp(20px, 3vw, 29px); }
+.quad-stats small { display: block; }
+#clock { text-align: center; font-size: clamp(14px, 1.65vw, 20px); }
+#keypad { display: grid; gap: 6px; }
+#answer { display: block; padding: 3px; border: 2px solid #9bb8d5; border-radius: 9px; background: #f8fcff; text-align: center; font-size: 27px; font-weight: 800; }
+#unit { font-size: 18px; }
+#keys { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; }
+#keys button, #confirm, #challenge-start {
+  min-height: 44px;
+  padding: 2px;
+  border: 2px solid #a6bfd8;
+  border-radius: 8px;
+  background: #edf6ff;
+  color: #163c64;
+  font: 800 clamp(16px, 2.3vw, 24px) system-ui;
+  touch-action: manipulation;
+}
+#keys button:active { background: #ffedb1; }
+#keys button[data-digit="0"] { grid-column: span 2; }
+#confirm, #challenge-start { background: #315eaa; border-color: #315eaa; color: white; }
+#confirm:disabled { opacity: .45; }
+#shape-name { margin: 0; color: #144b8f; font-size: clamp(28px, 4.4vw, 48px); line-height: 1.15; }
+#shape-name[data-shape="r"] { color: #703a99; }
+.quad-mission { display: flex; justify-content: center; align-items: baseline; gap: 9px; flex-wrap: wrap; }
+#kind { background: #e6f3ff; border-radius: .55em; padding: .2em .55em; font-size: clamp(14px, 1.65vw, 19px); }
+#question { margin: 0; font-size: clamp(16px, 2vw, 24px); font-weight: 800; }
+.quad-layout #diagram { min-height: 0; overflow: hidden; }
+.quad-layout #diagram polygon { fill: #e5f3ff; stroke: #2572b4; stroke-width: 3.5; stroke-linejoin: round; }
+.quad-layout #diagram [data-shape="r"] polygon { fill: #f0e9fd; stroke: #7544a6; }
+.quad-layout #diagram path { fill: none; stroke: #111; stroke-width: 1.9; }
+.quad-layout #diagram text { fill: #000; font: 750 22px system-ui; text-anchor: middle; dominant-baseline: central; }
+.quad-layout #diagram text[data-unknown] { font-size: 24px; font-weight: 900; }
+#hint { min-height: 1.4em; margin: 0; font-weight: 700; font-size: clamp(13px, 1.6vw, 17px); }
+#hint[data-wrong] { color: #9c1c26; }
+#challenge-gate {
+  position: absolute;
+  inset: 20% 5% auto;
+  z-index: 2;
+  padding: 18px;
+  border: 3px solid #e4ad46;
+  border-radius: 16px;
+  background: #fff9e9;
+  box-shadow: 0 12px 28px #23375440;
+}
+#challenge-gate h2 { margin: 0; font-size: clamp(19px, 2.7vw, 32px); }
+#challenge-start { padding-inline: .7em; }
+@media (max-height: 600px) and (orientation: landscape) {
+  .quad-layout .sq-stat { padding: 1px; }
+  .quad-layout #keys button, .quad-layout #confirm { min-height: 40px; }
+  .quad-layout #keypad { gap: 3px; }
+}
+@media (max-width: 720px) and (orientation: landscape) {
+  .quad-layout { grid-template-rows: minmax(0, 1fr); grid-template-columns: minmax(137px, 20%) minmax(0, 1fr) minmax(118px, 17%); }
+  .quad-layout .sq-stats { display: flex; }
+  .quad-layout .sq-titles ol { grid-template-columns: 1fr; }
+  .quad-layout .sq-titles li { display: grid; }
+  .quad-layout .sq-titles img { width: 34px; height: 34px; }
+  .sq-wrap { height: 100dvh; }
+}

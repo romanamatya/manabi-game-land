@@ -1,0 +1,26 @@
+.challenge-ranking {
+  position: fixed;
+  inset: 50% auto auto 50%;
+  transform: translate(-50%, -50%);
+  z-index: 10;
+  width: min(88vw, 620px);
+  max-height: 80dvh;
+  margin: 0;
+  padding: 16px;
+  border: 2px solid #c1d4e7;
+  border-radius: 16px;
+  color: #243b53;
+  background: #fff;
+  box-shadow: 0 10px 36px #243b5355;
+}
+.challenge-ranking h2 { margin: 0; text-align: center; }
+.challenge-ranking p { text-align: center; }
+.challenge-ranking-table { max-height: 49dvh; overflow: auto; }
+.challenge-ranking table { width: 100%; border-collapse: collapse; }
+.challenge-ranking th, .challenge-ranking td { padding: 6px; border-bottom: 1px solid #dbe7f1; text-align: left; }
+.challenge-ranking th { position: sticky; top: 0; background: #e9f3fb; }
+.challenge-ranking td img { width: 30px; height: 30px; object-fit: contain; margin-inline-end: 6px; vertical-align: middle; }
+.challenge-ranking-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 10px; }
+.challenge-ranking-actions button, .sq-stats > #ranking-open {
+  min-height: 44px; padding: 6px 12px; border: 0; border-radius: 9px; background: #315eaa; color: #fff; font: 700 15px system-ui;
+}

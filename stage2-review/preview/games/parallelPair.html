@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="ja"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="robots" content="noindex,nofollow">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.gstatic.com; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src https://www.gstatic.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://firestore.googleapis.com; object-src 'none'; base-uri 'self'">
+<title>平行な2本を見つけよう！｜マナビクエスト</title>
+<link rel="stylesheet" href="../suichoku.css?v=3a95d6253e02"><link rel="stylesheet" href="../parallel.css?v=3a95d6253e02"><link rel="stylesheet" href="../parallel-confirm.css?v=3a95d6253e02">
+<script src="../environment.js?v=3a95d6253e02"></script><script src="../environment-runtime.js?v=3a95d6253e02"></script><script src="../parallel-model.js?v=3a95d6253e02"></script><script src="../economy-core.js?v=3a95d6253e02"></script><script src="../storage-adapters.js?v=3a95d6253e02"></script><script src="../storage-adapters.js?v=3a95d6253e02"></script><script src="../economy.js?v=3a95d6253e02"></script><script src="../challenge120-core.js?v=3a95d6253e02"></script><script src="../parallel-local.js?v=3a95d6253e02"></script><script src="../celebration-effects.js?v=3a95d6253e02"></script>
+<link rel="stylesheet" href="../game-home.css?v=3a95d6253e02"><link rel="stylesheet" href="../challenge-ranking.css?v=3a95d6253e02">
+<script src="../public-firebase-session.js?v=3a95d6253e02"></script>
+</head><body>
+<div class="sq-wrap"><header class="sq-header"><a href="../math.html">← 算数へ</a><h1>平行な2本を見つけよう！</h1><a class="mq-game-home" href="../index.html" aria-label="マナビクエストのトップへ戻る"><img src="../assets/title.png" alt="マナビクエスト"></a></header>
+<div class="sq-layout parallel-layout"><aside class="sq-panel sq-stats" aria-label="このゲームの記録">
+<div class="sq-stat">算数ポイント<small>正解1問で1pt</small><b id="points">0</b><small id="daily">1日最大50pt</small></div>
+<div class="sq-stat">連続正解<b id="streak">0</b></div><div class="sq-stat">最高記録<b id="best">0</b></div>
+<strong id="challenge-clock" role="timer">時間制限なし</strong><div class="parallel-guide"><strong id="level">初級</strong><p>もう一度タップで<br>選び直せるよ。</p><small id="storage-status" role="status"></small></div></aside>
+<main class="sq-panel sq-main"><p class="sq-question">平行な2本はどれ？</p><p id="hint" class="sq-hint" role="status">線を2本選んで「決定！」を押そう。</p>
+<div id="diagram" aria-label="7本の直線から2本を選ぶ"></div>
+<div class="parallel-controls"><span id="selection-count" aria-live="polite">0 / 2本</span><button id="confirm" type="button" disabled>決定！</button></div>
+<section id="feedback" class="sq-feedback" aria-live="assertive" hidden><h2 id="verdict"></h2><p id="explanation"></p></section>
+<section id="challenge-gate" class="parallel-gate" hidden><h2 id="challenge-heading"></h2><p id="challenge-message"></p><button id="challenge-start" type="button"></button></section>
+</main><aside class="sq-panel sq-titles parallel-titles"><h2>称号タワー</h2><ol id="tower" aria-label="称号と獲得状況" aria-live="polite"></ol></aside></div></div><script src="../parallel-game.js?v=3a95d6253e02"></script></body></html>
