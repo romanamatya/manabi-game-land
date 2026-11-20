@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { TYPES, createQuestion, createDeck } from '../shared-src/site/fraction-basics-model.js';
+import { TYPES, createQuestion, createDeck } from '../preview/fraction-basics-model.js';
 
 function random(seed = 123456) {
   let state = seed >>> 0;
