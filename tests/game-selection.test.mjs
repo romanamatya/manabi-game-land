@@ -65,16 +65,16 @@ test('a missing settings document stays unknown on the game picker instead of ap
 });
 
 
-test('production subject pages expose separate play and ranking controls',async()=>{
+test('production subject pages expose play and title collection',async()=>{
  for(const file of ['japanese.html','social.html','language.html']){
   const html=await readFile(new URL('../'+file,import.meta.url),'utf8');
   const cards=[...html.matchAll(/<article class="card game-card" data-game-card="([^"]+)">([\s\S]*?)<\/article>/g)];
-  assert.ok(cards.length>0,file);assert.match(html,/src="game-selection\.js\?v=(?:managed-games-v1)"/);
-  for(const [,id,body] of cards){assert.match(body,new RegExp('data-game-id="'+id+'"'));assert.match(body,/data-game-play[^>]*disabled/);assert.match(body,/data-game-ranking/);}
+  assert.ok(cards.length>0,file);assert.match(html,/src="game-selection\.js\?v=title-collection-production-v1"/);
+  for(const [,id,body] of cards){assert.match(body,new RegExp('data-game-id="'+id+'"'));assert.match(body,/data-game-play[^>]*disabled/);assert.doesNotMatch(body,/data-game-ranking/);}
  }
 });
 
-test('production 2-minute challenge keeps its ranking route and direct URL guard',async()=>{
+test('production keeps the 2-minute challenge and direct URL guard',async()=>{
  const navigation=await readFile(new URL('../math-navigation.js',import.meta.url),'utf8');
  assert.ok(navigation.includes("games:['keisan','distribution','distribution2','exchangeAssociation','multiplicationProperties','shapeExpressions','keisanSummary']"));
  assert.ok(navigation.includes("id:'geometry',name:'四角形・垂直と平行'"));

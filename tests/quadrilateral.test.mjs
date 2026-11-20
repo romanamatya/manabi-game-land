@@ -165,6 +165,6 @@ test('the game ships as a standalone release in preview and production without a
   assert.doesNotMatch(await read('.release/production/math.html'), /href="games\/quadrilateral\.html"/);
   assert.match(await read('environment.js'), /"staticLocalGameIds":\[[^\]]*"quadrilateral"/);
   assert.match(await read('games/quadrilateral.html'), /href="\.\.\/math-geometry\.html"/);
-  assert.equal(await read('quadrilateral-game.js'), await read('shared-src/site/quadrilateral-game.js'));
+  assert.equal((await read('quadrilateral-game.js')).replace('title-collection-production-v1','challenge-rankings-v2'), await read('shared-src/site/quadrilateral-game.js'));
   assert.equal(await read('quadrilateral-model.js'), await read('shared-src/site/quadrilateral-model.js'));
 });

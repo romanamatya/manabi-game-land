@@ -2,6 +2,10 @@ name: Title collection browser
 on:
   pull_request:
     paths:
+      - '*.html'
+      - '*.js'
+      - '*.css'
+      - 'games/**'
       - 'shared-src/site/**'
       - 'tools/title-mode.mjs'
       - 'tools/build-site.mjs'
@@ -15,11 +19,13 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 25
     env:
+      MGL_TITLE_TARGET: ${{ matrix.target }}
       MGL_CHROME_CHANNEL: ${{ matrix.browser == 'chromium' && 'chrome' || '' }}
     strategy:
       fail-fast: false
       matrix:
         browser: [chromium, webkit]
+        target: [preview, production]
     steps:
       - uses: actions/checkout@v4
         with:
@@ -40,5 +46,5 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: title-collection-${{ matrix.browser }}
+          name: title-collection-${{ matrix.target }}-${{ matrix.browser }}
           path: test-results/

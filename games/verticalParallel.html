@@ -10,8 +10,8 @@
   <link rel="stylesheet" href="../parallel.css">
   <link rel="stylesheet" href="../game-home.css">
   <link rel="stylesheet" href="../line-quiz.css">
-  <script src="../environment.js?v=managed-games-v1"></script>
-  <script src="../environment-runtime.js"></script>
+  <script src="../environment.js?v=title-collection-production-v1"></script>
+  <script src="../environment-runtime.js?v=title-collection-production-v1"></script>
   <script src="../public-firebase-session.js?v=shared-firebase-session-v1"></script>
   <script src="../public-game-availability.js?v=firebase-session-recovery-v1"></script>
   <script src="../public-admin-settings.js?v=managed-games-v1"></script>
@@ -39,7 +39,7 @@
         <div class="sq-stat">連続正解<b id="streak">0</b></div>
         <div class="sq-stat">最高記録<b id="best">0</b></div>
         <strong id="challenge-clock" role="timer">時間制限なし</strong>
-        <button id="ranking-open" type="button">共有ランキング</button>
+
         <div class="parallel-guide"><strong id="level">初級</strong><small id="storage-status" role="status"></small></div>
       </aside>
       <main class="sq-panel sq-main">
@@ -56,12 +56,7 @@
           <p id="challenge-message"></p>
           <button id="challenge-start" type="button"></button>
         </section>
-        <section id="line-ranking" class="parallel-gate" aria-label="共有ランキング" hidden>
-          <h2>共有ランキング</h2>
-          <p id="ranking-message" role="status"></p>
-          <table aria-label="連続正解ランキング"><thead><tr><th>順位</th><th>名前</th><th>最高記録</th></tr></thead><tbody id="ranking-rows"></tbody></table>
-          <button id="ranking-close" type="button">閉じる</button>
-        </section>
+
       </main>
       <aside class="sq-panel sq-titles parallel-titles">
         <h2>称号タワー</h2>
@@ -69,6 +64,6 @@
       </aside>
     </div>
   </div>
-  <script type="module" src="../line-quiz-game.js"></script>
+  <script type="module" src="../line-quiz-game.js?v=title-collection-production-v1"></script>
 </body>
 </html>

@@ -10,7 +10,7 @@ export function createFirebaseSession(loadModules){
    const auth=A.getAuth(app);
    await auth.authStateReady();
    if(!auth.currentUser)await A.signInAnonymously(auth);
-   return {F,db:F.getFirestore(app)};
+   return {F,db:F.getFirestore(app),uid:auth.currentUser?.uid};
   })().catch(error=>{sessionPromise=null;throw error;});
   return sessionPromise;
  };

@@ -13,7 +13,7 @@ function addMissingAlphabetCard(){
  const status=document.createElement('span');status.className='game-status-badge';status.dataset.gameStatus='';status.setAttribute('role','status');status.setAttribute('aria-live','polite');status.hidden=true;
  const actions=document.createElement('div');actions.className='game-actions';
  const play=document.createElement('button');play.type='button';play.className='play-button';play.dataset.gamePlay='';play.dataset.gameId='missingAlphabet';play.dataset.gameHref='games/missingAlphabet.html';play.disabled=true;play.textContent='確認中…';
- const ranking=document.createElement('a');ranking.className='rank-button';ranking.dataset.gameRanking='';ranking.href='ranking.html?game=missingAlphabet';ranking.textContent='ランキング';actions.append(play,ranking);card.append(summary,status,actions);grid.append(card);
+ const ranking=document.createElement('a');ranking.className='rank-button';ranking.dataset.gameRanking='';ranking.href='ranking.html?game=missingAlphabet';ranking.textContent='ランキング';actions.append(play);if(!config.rankingsRetired)actions.append(ranking);card.append(summary,status,actions);grid.append(card);
  const storage=window.manabiStorage;let saved={};try{saved=JSON.parse(storage?.getItem('mgl_missingAlphabet')||'{}')||{}}catch{}
  record.textContent='🔥 最高連続：'+(Number(saved.best)||0)+'問';
 }
