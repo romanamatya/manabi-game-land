@@ -2,7 +2,7 @@
 // release flags are approved. This is a UI guard, not authorization for legacy clients.
 (()=>{
  const cfg=window.MANABI_BACKEND_CONFIG;if(!cfg)return;
- const games=['keisan','pref-name','pref-place','alphabet','missingAlphabet','distribution','distribution2','exchangeAssociation','kotowaza','multiplicationProperties','shapeExpressions','keisanSummary','parallelPair','suichoku','verticalParallel','quadrilateral','heikouPair','shikakkeSecrets'];
+ const games=['keisan','pref-name','pref-place','alphabet','missingAlphabet','distribution','distribution2','exchangeAssociation','kotowaza','multiplicationProperties','shapeExpressions','keisanSummary','parallelPair','suichoku','verticalParallel','quadrilateral','heikouPair','shikakkeSecrets','fractionBasics'];
  const settingsRoot=cfg.environment==='productionAdmin/v1'?'productionAdmin/v1':cfg.environment==='previewSpark/v1'?'previewSpark/v1':null;
  const staticLocalGames=new Set(cfg.staticLocalGameIds||[]);
  const managedGames=new Set(cfg.managedVisibilityGameIds||[]);
@@ -42,7 +42,7 @@
    },onError));
   }
  });
- const gameId=location.pathname.match(/(?:^|\/)games\/([^/]+)\.html$/)?.[1],gated=cfg.availabilityEnabled===true&&games.includes(gameId)&&!staticPublished(gameId);
+ const gameId=location.pathname.match(/(?:^|\/)games\/([^/]+)\.html$/)?.[1],gated=cfg.availabilityEnabled===true&&gameId!=='fractionBasics'&&games.includes(gameId)&&!staticPublished(gameId);
  if(gated){
   const readGameSetting=()=>read('gameSettings',gameId);
   if(window.ManabiGameAvailability?.create){const reset=()=>window.ManabiPublicSettings?.reset?.();void window.ManabiGameAvailability.create(document).check(readGameSetting,{onTimeout:reset,onError:reset});}

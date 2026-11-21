@@ -29,7 +29,8 @@ test('legacy best, challenge best, explicit awarded titles and malformed data',(
  assert.equal(gameProgress(game,storage({mgl_parallelPair:'broken'})).earned,0);
 });
 test('registered original artwork exists and text-only titles remain text-only',()=>{
- assert.equal(catalog.length,18);assert.equal(new Set(catalog.map(g=>g.id)).size,18);
+ assert.equal(catalog.filter(game=>game.id!=='fractionBasics').length,18);
+ assert.equal(new Set(catalog.map(g=>g.id)).size,catalog.length);
  for(const g of catalog)for(const t of g.titles){if(t.image)assert.ok((fs.existsSync('shared-src/site/'+t.image)||fs.existsSync('preview/'+t.image)),t.image);if(t.textOnly)assert.ok(!t.image);}
 });
 test('retirement strips rank entry points without removing the title tower or game controls',()=>{

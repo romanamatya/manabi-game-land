@@ -27,7 +27,7 @@ function connect(rules, projectId=base) {
     .then(rules => initializeTestEnvironment({projectId,firestore:{rules}}));
 }
 before(async () => {
-  env=await connect('production-shikakke-visibility-candidate.rules');
+  env=await connect('production-fraction-visibility-candidate.rules');
   await seed(env);
   admin=env.authenticatedContext(adminUid,signedIn).firestore();
   child=env.authenticatedContext('visibility-child',learner).firestore();
@@ -44,7 +44,7 @@ test('the production baseline denies a management write for all scoped visibilit
   } finally { await baseline.cleanup(); }
 });
 
-test('the existing admin store lists six distinct games and preserves published defaults and saved state', async () => {
+test('the existing admin store lists the individual visibility games and preserves published defaults and saved state', async () => {
   const ids=['parallelPair','missingAlphabet',...recent];
   assert.equal(new Set(GAME_IDS).size,GAME_IDS.length);
   const store=()=>createManagementStore('production',F,admin);
@@ -100,6 +100,9 @@ test('campaign, extra fields and mixed visibility batches cannot alter the new d
   await assertFails(commit(['heikouPair'],{nickname:'変更'}));
   await assertFails(commit(['shikakkeSecrets'],{campaign:{enabled:true}}));
   await assertFails(commit(['shikakkeSecrets','keisan'],{}));
+  await assertFails(commit(['fractionBasics','keisan'],{}));
+  await assertFails(commit(['fractionBasics'],{campaign:{enabled:true}}));
+  assert.equal((await F.getDoc(setting(admin,'fractionBasics'))).data().status,'published');
   assert.equal((await F.getDoc(setting(admin,'heikouPair'))).data().status,'published');
   assert.equal((await F.getDoc(setting(admin,'keisan'))).data().status,'published');
 });

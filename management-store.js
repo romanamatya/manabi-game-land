@@ -1,4 +1,4 @@
-import {GAME_IDS,ADDITIONAL_VISIBILITY_GAME_IDS,checkedInput,visibilityStatus} from './management-model.js?v=shikakke-v1';
+import {GAME_IDS,ADDITIONAL_VISIBILITY_GAME_IDS,checkedInput,visibilityStatus} from './management-model.js?v=fraction-basics-v1';
 import {contractFor} from './data-contract.js?v=adminprod-20261030';
 
 export function createManagementStore(mode,F,db){

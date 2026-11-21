@@ -71,6 +71,10 @@ for (const rel of sourceFiles) {
     text = `window.ManabiProfileCatalog=${JSON.stringify(games)};\n`;
   }
   if (rel.endsWith('.html')) {
+    if (mode === 'preview' && config.staticLocalGameIds?.includes('fractionBasics')) {
+      text = text.replace(/(<script src="((?:\.\.\/)?)public-admin-settings\.js[^"]*"><\/script>)/,
+        '$1<script src="$2fraction-public-settings.js"></script>');
+    }
     if (!text.includes('src="environment.js') && !text.includes('src="../environment.js')) {
       text = text.replace('<head>', `<head><script src="${rel.startsWith('games/') ? '../' : ''}environment.js"></script>`);
     }

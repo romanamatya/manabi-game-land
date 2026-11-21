@@ -28,7 +28,7 @@ button:disabled{cursor:default}
 .diagram svg .tap{cursor:pointer;touch-action:manipulation;outline:none}
 .diagram svg .tap:focus-visible{stroke:#2878c7;stroke-width:5}
 .instruction{margin:0;text-align:center;font-size:13px;font-weight:750;color:#4f6880}
-.options{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;flex:1;max-height:170px}
+.options{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;flex:0 0 auto;min-height:78px}
 .options button{min-height:50px;border:2px solid #91b7d6;background:#edf6ff;border-radius:12px;font-size:clamp(20px,2.6vw,29px);font-weight:850;color:#24415b}
 .options button:active:not(:disabled){background:#ffedb1}
 .options button.correct{background:#effff5;border-color:#28a767;color:#186b46}
@@ -46,12 +46,22 @@ button:disabled{cursor:default}
 .titles li.earned{background:#ffedb1;color:#253b50;border-color:#e4ad46}
 .titles li small{font-size:11px;font-weight:700}
 .small{font-size:11px;color:#58718c;line-height:1.5}
-@media(max-height:620px){.app{padding:7px;gap:6px}.header{height:42px}.panel{padding:9px}.stats{gap:5px}.stat{padding:5px 8px}.stat strong{font-size:21px}.titles ol{gap:5px}.titles li{padding:5px 8px}.game{gap:4px}.options{max-height:130px}.options button{min-height:40px}.diagram svg{max-height:145px}.feedback:not(:empty){padding:6px 10px}}
+@media(max-height:620px){.app{padding:7px;gap:6px}.header{height:42px}.panel{padding:9px}.stats{gap:5px}.stat{padding:5px 8px}.stat strong{font-size:21px}.titles ol{gap:5px}.titles li{padding:5px 8px}.game{gap:4px}.options{min-height:62px}.options button{min-height:40px}.diagram svg{max-height:145px}.feedback:not(:empty){padding:6px 10px}}
 @media(max-width:750px){.layout{grid-template-columns:130px minmax(250px,1fr)}.titles{display:none}.preview-label{display:none}}
 
 .fraction{display:inline-flex;vertical-align:middle;flex-direction:column;align-items:center;justify-content:center;line-height:1.03;min-width:1.15em;font-size:1em;margin:0 .07em}
 .fraction>span:first-child{border-bottom:2px solid currentColor;padding:0 .14em .09em;width:100%;text-align:center}
 .fraction>span:last-child{padding-top:.09em}
+.options .fraction{inline-size:1.8em}
 #question .fraction{font-size:1.1em}
 .feedback .fraction{font-size:1.06em}
 #practice-continue{width:100%;margin-top:8px}
+
+.titles li{flex-direction:row;align-items:center;gap:7px;min-height:55px}
+.titles li img{width:44px;height:44px;object-fit:contain;flex:none;filter:grayscale(1);opacity:.68}
+.titles li.earned img{filter:none;opacity:1}
+.titles li div{display:grid;gap:2px;line-height:1.2;overflow-wrap:anywhere}
+.titles li span{font-size:clamp(12px,1.35vw,17px)}
+.feedback:not(.wrong) strong{display:block;text-align:center;font-size:clamp(24px,4vw,42px)}
+.game:has(.feedback.wrong) .options{display:none}
+@media(max-height:620px){.titles li{min-height:47px}.titles li img{width:36px;height:36px}}

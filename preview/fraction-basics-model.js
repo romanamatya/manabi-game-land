@@ -17,12 +17,12 @@ function shuffle(random, items) {
 }
 function fractionOptions(random, top, bottom) {
   const distractors = [];
-  for (let offset = 1; distractors.length < 3; offset++) {
+  for (let offset = 1; distractors.length < 7; offset++) {
     for (const value of [top - offset, top + offset]) {
-      if (value > 0 && !distractors.includes(value) && distractors.length < 3) distractors.push(value);
+      if (value > 0 && !distractors.includes(value) && distractors.length < 7) distractors.push(value);
     }
   }
-  return shuffle(random, [top, ...distractors].map(value => fraction(value, bottom)));
+  return shuffle(random, [top, ...shuffle(random, distractors).slice(0, 3)].map(value => fraction(value, bottom)));
 }
 function decimalOptions(random, top) {
   const candidates = Array.from({ length: 10 }, (_, i) => i).filter(v => v !== top);
@@ -53,13 +53,19 @@ export function createQuestion(type, random = Math.random) {
   } else if (type === 'one') {
     n = integer(random, 3, 7); k = random() < .5 ? n : integer(random, n + 1, 2 * n - 1);
     label = '1との関係';
-    prompt = k === n ? '1と同じ大きさの分数は？' : '1/' + n + ' が ' + k + 'こ分あると？';
-    answer = fraction(k, n); options = fractionOptions(random, k, n);
-    explanation = n + '/' + n + ' は1です。' + (k > n ? ' さらに ' + (k - n) + 'こ分で ' + answer + ' です。' : '');
+    prompt = k === n ? '1と同じ大きさの分数は？' : '1より大きい分数はどれ？';
+    answer = fraction(k, n);
+    const others = shuffle(random, Array.from({length:n - 1}, (_, i) => i + 1));
+    if (k > n) others.unshift(n);
+    else if (n === 3 || random() < .5) others.unshift(integer(random, n + 1, 2 * n - 1));
+    options = shuffle(random, [k, ...others.slice(0, 3)]).map(value => fraction(value, n));
+    explanation = n + '/' + n + ' は1です。' + (k > n ? ' 分子が分母より大きいので、' + answer + ' は1より大きいです。' : '');
   } else if (type === 'compare') {
     n = integer(random, 5, 9);
     const numerators = shuffle(random, Array.from({ length: n }, (_, i) => i + 1)).slice(0, 4);
-    k = Math.max(...numerators); label = '分数の大きさ'; prompt = 'いちばん大きい分数はどれ？';
+    const smallest = random() < .5;
+    k = (smallest ? Math.min : Math.max)(...numerators);
+    label = '分数の大きさ'; prompt = 'いちばん' + (smallest ? '小さい' : '大きい') + '分数はどれ？';
     answer = fraction(k, n); options = shuffle(random, numerators.map(value => fraction(value, n)));
     explanation = '分母が同じときは、分子が大きいほど大きくなります。';
   } else if (type === 'line') {
@@ -89,7 +95,8 @@ export function createQuestion(type, random = Math.random) {
     answer = fraction(k, n); options = fractionOptions(random, k, n);
     explanation = '分母はそのまま、分子をひきます。' + a + '−' + b + '＝' + k + ' なので ' + answer + ' です。';
   }
-  return { type, label, prompt, answer, options, visual, explanation };
+  const scorePrompt = {type, n, k, a, b, options};
+  return { type, label, prompt, answer, options, visual, explanation, scorePrompt };
 }
 export function createDeck(random = Math.random) {
   let queue = [];
