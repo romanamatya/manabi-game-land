@@ -29,14 +29,14 @@ export function gameProgress(game, storage, subjectMap = {}) {
   return { ...game, subject: game.subject || subjectMap[game.id], best, titles,
     earned, total: titles.length, percent: titles.length ? Math.round(100 * earned / titles.length) : null };
 }
-export function collectionProgress(catalog, storage, statuses, subjectMap = {}) {
-  const games = catalog.map(game => ({ ...gameProgress(game, storage, subjectMap), status: statuses.get(game.id) || 'checking' }));
-  const summarize = rows => {
+export function summarizePublished(rows) {
     const published = rows.filter(game => game.status === 'published');
     const earned = published.reduce((sum, game) => sum + game.earned, 0);
     const total = published.reduce((sum, game) => sum + game.total, 0);
     return { earned, total, percent: total ? Math.round(100 * earned / total) : null, games: published.length };
-  };
-  return { games, overall: summarize(games), subjects: subjects.map(subject => ({ ...subject,
-    ...summarize(games.filter(game => game.subject === subject.id)) })) };
+}
+export function collectionProgress(catalog, storage, statuses, subjectMap = {}) {
+  const games = catalog.map(game => ({ ...gameProgress(game, storage, subjectMap), status: statuses.get(game.id) || 'checking' }));
+  return { games, overall: summarizePublished(games), subjects: subjects.map(subject => ({ ...subject,
+    ...summarizePublished(games.filter(game => game.subject === subject.id)) })) };
 }

@@ -1,0 +1,4 @@
+#question { min-height: 2.4em; }
+.options button { white-space: nowrap; }
+.fraction-award { display:flex; align-items:center; justify-content:center; gap:8px; font-weight:700; }
+.fraction-award img { width:48px; height:48px; object-fit:contain; }

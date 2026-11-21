@@ -1,4 +1,4 @@
-import { subjects, geometryGames, gameProgress, collectionProgress } from './title-progress-model.js?v=794704fd1ce8';
+import { subjects, geometryGames, gameProgress, collectionProgress, summarizePublished } from './title-progress-model.js?v=22bac70c2625';
 
 const storage = window.manabiStorage;
 const catalog = window.ManabiProfileCatalog || [];
@@ -144,14 +144,28 @@ function renderNewBadge() {
   const game = catalog.find(game => game.id === id);
   if (!game) return;
   const subjectId = game.subject || subjectMap[id];
-  const unit = geometryGames.includes(id) ? 'geometry' : 'calculation';
+  const unit = window.ManabiMathUnits?.find(unit => unit.games.includes(id))?.id || (geometryGames.includes(id) ? 'geometry' : ['fractionBasics','fractionTransform'].includes(id) ? 'fractions' : 'calculation');
   for (const card of document.querySelectorAll('[data-subject-card],[data-unit-games],[data-game-card]')) {
     const matches = card.dataset.gameCard === id || card.dataset.subjectCard === subjectId
       || (subjectId === 'math' && card.dataset.unitId === unit);
     if (matches) { const badge = node('span', 'NEW', 'new-game-badge'); card.classList.add('has-new-game'); card.append(badge); }
   }
 }
-function update() { decorateCards(); renderHome(); renderCollection(); }
+function renderMathUnits() {
+  const cards = document.querySelectorAll('.math-unit-row[data-unit-games]');
+  if (!cards.length) return;
+  const {games} = view();
+  for (const card of cards) {
+    const ids = new Set(card.dataset.unitGames.split(' '));
+    const summary = summarizePublished(games.filter(game => ids.has(game.id)));
+    const name = card.querySelector('h2').textContent;
+    card.querySelector('.math-unit-progress').replaceChildren(
+      progressMeter(summary.percent, name + 'の称号達成率'),
+      ...(summary.total ? [node('small', summary.earned + ' / ' + summary.total + '個')] : []));
+    card.querySelector('.math-unit-count').textContent = summary.games + 'ゲーム';
+  }
+}
+function update() { decorateCards(); renderHome(); renderCollection(); renderMathUnits(); }
 function start() {
   if (!config.rankingsRetired) return;
   if(document.querySelector('#mathCards,[data-game-card]'))document.body.classList.add('title-collection-picker');
