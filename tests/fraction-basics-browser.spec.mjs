@@ -2,9 +2,10 @@ import { test, expect } from '@playwright/test';
 import { createDeck, TYPES } from '../preview/fraction-basics-model.js';
 import { mockPublicVisibility } from './fixtures/public-visibility-browser.mjs';
 
-const base = 'http://127.0.0.1:4173/preview/';
+const production = process.env.MGL_FRACTION_TARGET === 'production';
+const base = 'http://127.0.0.1:4173/' + (production ? '' : 'preview/');
 const url = base + 'games/fractionBasics.html';
-const scope = 'manabi_public_preview:';
+const scope = production ? '' : 'manabi_public_preview:';
 const viewports = [{ width: 1024, height: 768 }, { width: 1194, height: 834 }, { width: 960, height: 540 }];
 const seed = 321;
 function seeded(seed) {

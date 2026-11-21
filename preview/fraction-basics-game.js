@@ -36,7 +36,10 @@ function resume() {
 }
 
 function initialize() {
-  if (window.MANABI_ENV?.environment !== 'preview' || config.expectedProjectId !== 'manabi-game-landcheck'
+  const environment = window.MANABI_ENV?.environment;
+  const expectedProject = {preview:'manabi-game-landcheck', production:'manabi-game-land'}[environment];
+  if (!expectedProject || config?.expectedProjectId !== expectedProject || !config.staticLocalGameIds?.includes(GAME)
+      || (environment === 'production' && config.productionReleaseApproved !== true)
       || !game || !storage || !economy || !challenge) return;
   for (const title of [...game.titles].reverse()) {
     const item = document.createElement('li');
@@ -74,7 +77,7 @@ function initialize() {
     if (playingChallenge && state.phase === 'ended') showGate();
     else next();
   });
-  if (config.visibilityGameIds?.includes(GAME)) {
+  if (config.visibilityGameIds?.includes(GAME) || config.managedVisibilityGameIds?.includes(GAME)) {
     const message = status => {
       const canPlay = status === 'published';
       $('access').hidden = canPlay;

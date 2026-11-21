@@ -106,3 +106,20 @@ test('shared challenge unlocks at 25, runs 120 seconds and deduplicates answers'
   assert.equal(wrong.phase,'ended');
   assert.equal(wrong.bests.local,26);
 });
+
+test('production and preview serve the same fraction gameplay and artwork', () => {
+  for (const path of ['fraction-basics.css', 'fraction-basics-game.js','fraction-basics-model.js']) {
+    assert.deepEqual(readFileSync(path),readFileSync('preview/'+path),path);
+  }
+  for (const art of ['03_review','05_recall','10_master','15_expert','25_nextgrade']) {
+    const path='assets/fraction-basics-titles/fractionBasics_'+art+'.png';
+    assert.deepEqual(readFileSync(path),readFileSync('preview/'+path),path);
+  }
+});
+test('the production Rules candidate extends only the existing individual visibility allowlist', () => {
+  const original = readFileSync('firebase/production-shikakke-visibility-candidate.rules','utf8');
+  const old = "['verticalParallel','quadrilateral','heikouPair','shikakkeSecrets']";
+  assert.equal(original.split(old).length,2);
+  assert.equal(readFileSync('firebase/production-fraction-visibility-candidate.rules','utf8'),
+    original.replace(old,old.slice(0,-1)+",'fractionBasics']"));
+});

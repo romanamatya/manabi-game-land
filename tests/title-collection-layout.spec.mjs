@@ -48,7 +48,7 @@ for(const size of sizes)test('home, picker and collection '+size.width+'x'+size.
 });
 test('all released games launch without ranking requests or controls',async({page})=>{
  await page.goto(site+'titles.html');
- const ids=await page.evaluate(()=>window.ManabiProfileCatalog.map(g=>g.id));expect(ids).toHaveLength(production?18:19);
+ const ids=await page.evaluate(()=>window.ManabiProfileCatalog.map(g=>g.id));expect(ids).toHaveLength(19);
  const errors=[],requests=[];page.on('pageerror',e=>errors.push(new URL(page.url()).pathname+': '+e.message));page.on('request',r=>{if(/firestore.googleapis.com/.test(r.url()))requests.push(r.url());});
  for(const id of ids){
   await page.goto(site+'games/'+id+'.html');
@@ -62,7 +62,7 @@ test('all released games launch without ranking requests or controls',async({pag
 });
 for(const size of sizes)test('all subject lists retain ordered title rows '+size.width+'x'+size.height,async({page},info)=>{
  await page.setViewportSize(size);
- for(const [route,count] of [['japanese',1],['social',2],['language',2],['math-calculation',production?7:8]]){
+ for(const [route,count] of [['japanese',1],['social',2],['language',2],['math-calculation',8]]){
   await page.goto(site+route+'.html');
   await expect(page.locator('.title-game-row')).toHaveCount(count);
   await clean(page);

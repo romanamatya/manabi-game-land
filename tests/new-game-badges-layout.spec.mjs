@@ -49,19 +49,19 @@ for (const size of [{ width: 1024, height: 768 }, { width: 1194, height: 834 }])
   test(`NEW badges follow the math path and fit a landscape tablet at ${size.width}px`, async ({ page }) => {
     await page.setViewportSize(size);
     await page.route('https://**/*', route => route.abort());
-    await mockPublicVisibility(page, { shikakkeSecrets: null });
+    await mockPublicVisibility(page, { fractionBasics: null });
     await page.addInitScript(() => localStorage.setItem('mgl_nickname', '図形テスト'));
     await page.goto(new URL('index.html', base).href);
     await checkBadges(page, ['算数']);
 
     await page.locator('.subject-card[href="math.html"]').tap();
     await expect(page).toHaveURL(/\/math\.html$/);
-    await checkBadges(page, ['四角形・垂直と平行']);
+    await checkBadges(page, ['計算のきまり']);
 
-    await page.getByRole('link', { name: /四角形・垂直と平行/ }).tap();
-    await expect(page).toHaveURL(/\/math-geometry\.html$/);
-    await checkBadges(page, ['四角形のひみつを見やぶれ！']);
-    await expect(page.locator('[data-game-card]:not([data-game-card="shikakkeSecrets"]) .new-game-badge')).toHaveCount(0);
+    await page.getByRole('link', { name: /計算のきまり/ }).tap();
+    await expect(page).toHaveURL(/\/math-calculation\.html$/);
+    await checkBadges(page, ['分数のきほんをマスター！']);
+    await expect(page.locator('[data-game-card]:not([data-game-card="fractionBasics"]) .new-game-badge')).toHaveCount(0);
     expect(await page.evaluate(() => [document.documentElement.scrollWidth, document.documentElement.scrollHeight]))
       .toEqual([size.width, size.height]);
   });
@@ -72,7 +72,7 @@ test('one production setting moves NEW across subjects and respects publication 
   await page.setViewportSize({ width: 1024, height: 768 });
   await page.addInitScript(() => localStorage.setItem('mgl_nickname', 'NEW表示テスト'));
   await page.route('https://**/*', route => route.abort());
-  await page.route('**/latest-game.js', route => route.fulfill({
+  await page.route(/\/latest-game\.js(?:\?|$)/, route => route.fulfill({
     contentType: 'application/javascript',
     body: 'export const latestGameId = ' + JSON.stringify(current),
   }));
