@@ -127,7 +127,8 @@ for (const size of sizes) test('calculation title art reaches the tower, cards a
   await checkCalculationArt(tower.locator('.mq-badge img'), id);
   for (const image of await tower.locator('img').all()) await expect(image).toBeInViewport({ratio:1});
   await expect(tower.locator('.mq-badge').first()).toHaveCSS('filter', 'grayscale(1)');
-  await page.goto(site + 'titles.html?game=' + id);
+  await page.goto(site + 'titles.html');
+  await page.locator('#collectionGame').selectOption(id);
   await checkCalculationArt(page.locator('.collection-title-grid img'), id);
  }
 });
@@ -159,6 +160,8 @@ for (const id of calculationGames) test(id + ' awards illustrated titles and res
  await expect(page.locator('#best')).toHaveText('25');
  await expect(tower.locator('.mq-badge').first()).toHaveCSS('filter', 'none');
  await expect(page.locator('#mqCelebration')).toHaveCount(0);
- await page.goto(site + 'titles.html?game=' + id);
+ await page.goto(site + 'titles.html');
+ await page.locator('#collectionGame').selectOption(id);
  await expect(page.locator('.collection-title-grid li.earned')).toHaveCount(5);
+ await expect(page.locator('.collection-game-heading progress')).toHaveAttribute('value', '100');
 });
