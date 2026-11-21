@@ -55,3 +55,12 @@ button:disabled{cursor:default}
 #question .fraction{font-size:1.1em}
 .feedback .fraction{font-size:1.06em}
 #practice-continue{width:100%;margin-top:8px}
+
+.titles li{flex-direction:row;align-items:center;gap:7px;min-height:55px}
+.titles li img{width:44px;height:44px;object-fit:contain;flex:none;filter:grayscale(1);opacity:.68}
+.titles li.earned img{filter:none;opacity:1}
+.titles li div{display:grid;gap:2px;line-height:1.2;overflow-wrap:anywhere}
+.titles li span{font-size:clamp(12px,1.35vw,17px)}
+.feedback:not(.wrong) strong{display:block;text-align:center;font-size:clamp(24px,4vw,42px)}
+.game:has(.feedback.wrong) .options{display:none}
+@media(max-height:620px){.titles li{min-height:47px}.titles li img{width:36px;height:36px}}

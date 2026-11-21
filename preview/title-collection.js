@@ -1,4 +1,4 @@
-import { subjects, geometryGames, gameProgress, collectionProgress } from './title-progress-model.js?v=cc211caa6031';
+import { subjects, geometryGames, gameProgress, collectionProgress } from './title-progress-model.js?v=a0aa8a464229';
 
 const storage = window.manabiStorage;
 const catalog = window.ManabiProfileCatalog || [];
@@ -166,7 +166,8 @@ function renderCollection() {
 }
 function renderNewBadge() {
   for (const badge of document.querySelectorAll('.new-game-badge')) badge.remove();
-  const id = config.latestGameId;
+  const id = statuses.get(config.latestGameId) === 'published' ? config.latestGameId
+    : config.latestGameId === 'fractionBasics' ? 'shikakkeSecrets' : null;
   if (!id || statuses.get(id) !== 'published') return;
   const game = catalog.find(game => game.id === id);
   if (!game) return;

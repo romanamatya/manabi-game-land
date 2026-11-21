@@ -1,87 +1,139 @@
 import { test, expect } from '@playwright/test';
+import { createDeck, TYPES } from '../preview/fraction-basics-model.js';
+import { mockPublicVisibility } from './fixtures/public-visibility-browser.mjs';
 
-const url = 'http://127.0.0.1:4173/preview/games/fractionBasics.html';
+const base = 'http://127.0.0.1:4173/preview/';
+const url = base + 'games/fractionBasics.html';
+const scope = 'manabi_public_preview:';
 const viewports = [{ width: 1024, height: 768 }, { width: 1194, height: 834 }, { width: 960, height: 540 }];
+const seed = 321;
+function seeded(seed) {
+  let state = seed;
+  return () => ((state = (Math.imul(state, 1664525) + 1013904223) >>> 0) / 2 ** 32);
+}
 test.use({ isMobile: true, hasTouch: true });
 
 test.beforeEach(async ({ page }) => {
   await page.route('https://**/*', route => route.abort());
+  await mockPublicVisibility(page,{fractionBasics:'published'});
+  await page.addInitScript(scope => localStorage.setItem(scope+'mgl_nickname','ゲーム確認'),scope);
+  await page.route('**/fraction-basics-model.js', route => route.fulfill({
+    contentType:'application/javascript',
+    body:`export { GAME } from './fraction-basics-model.js?real';
+      import { createDeck as create } from './fraction-basics-model.js?real';
+      export const createDeck = () => create((${seeded}) (${seed}));`,
+  }));
 });
 
-test('preview page fits iPad landscape; wrong answer explains and waits for acknowledgment', async ({ page }) => {
+function selector(question, value) {
+  return question.visual?.interactive ? '#diagram [data-count="'+value+'"]' : '#options button[data-value="'+value+'"]';
+}
+function wrongAnswer(question) {
+  return question.visual?.interactive ? (question.answer==='1'?'2':'1') : question.options.find(value=>value!==question.answer);
+}
+async function fits(page,size) {
+  const viewport = await page.evaluate(() => ({
+    width: document.documentElement.scrollWidth,
+    height: document.documentElement.scrollHeight,
+  }));
+  expect(viewport.width).toBeLessThanOrEqual(size.width + 1);
+  expect(viewport.height).toBeLessThanOrEqual(size.height + 1);
+  await expect(page.locator('#titles li').last()).toBeInViewport();
+}
+const stored = (page, key) => page.evaluate(key => JSON.parse(localStorage.getItem(key) || 'null'),scope+key);
+
+test('three iPad sizes: all question formats, correct diagram painting and wrong feedback', async ({ page }) => {
   const errors = [];
   page.on('pageerror', error => errors.push(error.message));
   for (const size of viewports) {
     await page.setViewportSize(size);
+    const deck = createDeck(seeded(seed));
     await page.goto(url);
     await expect(page.locator('#question')).not.toContainText('準備しています');
-    await expect(page.locator('#streak')).toHaveText('0');
-    const viewport = await page.evaluate(() => ({
-      width: document.documentElement.scrollWidth,
-      height: document.documentElement.scrollHeight,
-    }));
-    expect(viewport.width).toBeLessThanOrEqual(size.width + 1);
-    expect(viewport.height).toBeLessThanOrEqual(size.height + 1);
-    await expect(page.locator('.game')).toBeInViewport();
-    await expect(page.locator('#restart')).toBeInViewport();
-
-    // All 12 types appear once per deck. Every question can be answered incorrectly.
-    const types = [];
-    for (let i = 0; i < 12; i++) {
-      const label = await page.locator('#category').textContent();
-      types.push(label);
-      const diagramAnswer = await page.locator('#diagram [data-count]').count();
-      if (diagramAnswer) {
-        const denominator = Number(await page.locator('#question .fraction span').nth(1).textContent());
-        const numerator = Number(await page.locator('#question .fraction span').nth(0).textContent());
-        expect(denominator).toBeGreaterThan(1);
-        const wrong = numerator === 1 ? 2 : 1;
-        await page.locator('#diagram [data-count="' + wrong + '"]').tap();
-      } else {
-        await page.locator('#options button').first().tap();
-        // If the initial answer happened to be correct, wait for automatic advance.
-        if (await page.locator('#feedback').evaluate(node => !node.classList.contains('wrong'))) {
-          await expect(page.locator('#question-number')).toHaveText('第' + (i + 2) + '問');
-          continue;
-        }
+    await expect(page.locator('#titles img')).toHaveCount(5);
+    expect(await page.locator('#titles img').evaluateAll(imgs => imgs.map(img=>img.naturalWidth))).toEqual(Array(5).fill(1024));
+    await fits(page,size);
+    for (let i=0; i<TYPES.length; i++) {
+      const q = deck.next();
+      await expect(page.locator('#category')).toHaveText(q.label);
+      if (q.visual?.filled) await expect(page.locator('#diagram [fill="#f3ae55"]')).toHaveCount(q.visual.k);
+      if (q.visual?.kind === 'line') {
+        const marker = await page.locator('#diagram path').first().getAttribute('d');
+        expect(Number(marker.split(' ')[1])).toBeCloseTo(40 + 440 * q.visual.k / (2*q.visual.n));
       }
-      await expect(page.locator('#feedback')).toContainText('まちがいを確認しよう');
+      const action = page.locator(selector(q,wrongAnswer(q)));
+      await expect(action).toBeInViewport();
+      await action.tap();
       await expect(page.locator('#feedback')).toContainText('正しい答え');
+      if (q.visual?.interactive) await expect(page.locator('#diagram [fill="#f3ae55"]')).toHaveCount(q.visual.k);
       await expect(page.locator('#question-number')).toHaveText('第' + (i + 1) + '問');
+      await fits(page,size);
+      await expect(page.locator('#understood')).toBeInViewport();
       await page.locator('#understood').tap();
-      await expect(page.locator('#question-number')).toHaveText('第' + (i + 2) + '問');
     }
-    expect(new Set(types).size).toBe(12);
   }
   expect(errors).toEqual([]);
 });
-
-test('reverse tape/pizza accept a direct tap; best unlocks 120-second challenge', async ({ page }) => {
-  await page.setViewportSize(viewports[0]);
+test('five formal titles, saved record and daily points cap survive reload; challenge can end and retry', async ({ page }) => {
+  const size = viewports[2];
+  await page.setViewportSize(size);
+  await page.clock.install();
   await page.goto(url);
-  let reverseCount = 0;
-  for (let i = 0; i < 12; i++) {
-    const reverse = (await page.locator('#diagram [data-count]').count()) > 0;
-    if (reverse) {
-      reverseCount++;
-      const numerator = Number(await page.locator('#question .fraction span').nth(0).textContent());
-      await page.locator('#diagram [data-count="' + numerator + '"]').tap();
-      await expect(page.locator('#feedback')).toContainText('正解！');
-      await expect(page.locator('#question-number')).toHaveText('第' + (i + 2) + '問');
-    } else {
-      await page.locator('#options button').first().tap();
-      if (await page.locator('#feedback').evaluate(el => el.classList.contains('wrong'))) {
-        await page.locator('#understood').tap();
-      } else {
-        await expect(page.locator('#question-number')).toHaveText('第' + (i + 2) + '問');
-      }
-    }
+  const deck = createDeck(seeded(seed));
+  async function right(q, expected, doubleTap = false) {
+    const answer = page.locator(selector(q,q.answer));
+    if (doubleTap) {
+      await answer.evaluate(el=>{ el.dispatchEvent(new MouseEvent('click',{bubbles:true}));el.dispatchEvent(new MouseEvent('click',{bubbles:true})); });
+    } else await answer.tap();
+    await expect(page.locator('#feedback')).toHaveText('正解！');
+    await expect(page.locator('#streak')).toHaveText(String(expected));
+    await page.clock.fastForward(520);
   }
-  expect(reverseCount).toBe(2);
-  await page.evaluate(() => localStorage.setItem('mq_fractionBasics_preview_v1', JSON.stringify({ best: 25 })));
-  await page.reload();
+  let rank = 0;
+  for (let n=1; n<=25; n++) {
+    if ([3,5,10,15,25].includes(n)) rank++;
+    await right(deck.next(),n,n===1);
+    await expect(page.locator('#titles li.earned')).toHaveCount(rank);
+  }
   await expect(page.locator('#gate')).toBeVisible();
+  await expect(page.locator('#clock')).toHaveText('120秒チャレンジ');
+  await expect.poll(async ()=>(await stored(page,'mgl_economy_v1'))?.balances.math).toBe(25);
+  expect((await stored(page,'mgl_fractionBasics')).titles).toEqual([3,5,10,15,25].map(n=>'fractionBasics:'+n));
   await page.locator('#challenge-start').tap();
-  await expect(page.locator('#streak')).toHaveText('25');
+  await expect(page.locator('#clock')).toContainText('残り 2:00');
+  for (let n=1; n<=26; n++) await right(deck.next(),25+n);
+  await expect.poll(async ()=>(await stored(page,'mgl_economy_v1'))?.daily.games.fractionBasics).toBe(50);
+  expect((await stored(page,'mgl_economy_v1')).balances.math).toBe(50);
+  await page.reload();
+  await expect(page.locator('#best')).toHaveText('51');
   await expect(page.locator('#clock')).toContainText('残り');
+  const afterReload = createDeck(seeded(seed)).next();
+  await page.locator(selector(afterReload,wrongAnswer(afterReload))).tap();
+  await expect(page.locator('#feedback')).toContainText('正しい答え');
+  await page.locator('#understood').tap();
+  await expect(page.locator('#gate-title')).toHaveText('120秒チャレンジ終了');
+  await page.locator('#challenge-start').tap();
+  await page.clock.fastForward(121000);
+  await expect(page.locator('#gate-message')).toContainText('時間切れ');
+  await expect(page.locator('#best')).toHaveText('51');
+  await page.goto(base + 'math-calculation.html');
+  const row = page.locator('[data-game-card="fractionBasics"]');
+  await expect(row.locator('.new-game-badge')).toHaveText('NEW');
+  await expect(row.locator('.title-row-percent')).toContainText('100');
+  await expect(row.locator('.title-row-best')).toContainText('51');
+  await page.goto(base + 'titles.html?game=fractionBasics');
+  await expect(page.locator('.collection-title-grid li.earned img')).toHaveCount(5);
+  await page.goto(base + 'index.html');
+  await expect.poll(()=>page.evaluate(()=>window.ManabiTitleCollection.snapshot().games.find(game=>game.id==='fractionBasics')?.earned)).toBe(5);
+});
+test('hidden visibility disables play in the list and on the direct game page', async ({page})=>{
+  await page.unroute(/\/public-firebase-session\.js(?:\?|$)/);
+  await mockPublicVisibility(page,{fractionBasics:'hidden'});
+  await page.goto(base+'math-calculation.html');
+  const row = page.locator('[data-game-card="fractionBasics"]');
+  await expect(row.locator('[data-game-play]')).toBeDisabled();
+  await expect(row.locator('.new-game-badge')).toHaveCount(0);
+  await page.goto(url);
+  await expect(page.locator('#access')).toHaveText('このゲームは現在非公開です。');
+  await expect(page.locator('#options button')).toHaveCount(0);
 });

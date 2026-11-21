@@ -114,6 +114,24 @@ export function createAdminOperations(c,{auth,db},A,F) {
       return {players:players.rows,playerCursor:players.cursor,...more,managementReady:c.managementEnabled===true,audit:history.docs.map(d=>plain({...d.data(),id:d.id}))};
     }
     if (action === 'admin:players') return list('players', input.cursor);
+    if (action.startsWith('admin:fraction-visibility:') && contract.mode === 'preview'
+        && c.expectedProjectId === 'manabi-game-landcheck' && c.managedVisibilityGameIds?.includes('fractionBasics')) {
+      const {createRegistrationStore} = await import('./fraction-registration-store.js');
+      const registry = createRegistrationStore(F, db, 'preview');
+      const game = (window.ManabiProfileCatalog || []).find(item => item.id === 'fractionBasics');
+      if (!game) throw error('feature-unverified');
+      if (action === 'admin:fraction-visibility:read') return registry.status(game.id);
+      if (input.confirm !== true) throw error('invalid-input');
+      const user = await verify();
+      if (action === 'admin:fraction-visibility:register') {
+        const metadata = {id:game.id, name:game.name, subject:'math', unit:'calculation', entry:'games/fractionBasics.html', enabled:true};
+        const bytes = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(JSON.stringify({...metadata, titles:game.titles})));
+        const manifestSHA256 = [...new Uint8Array(bytes)].map(value => value.toString(16).padStart(2, '0')).join('');
+        return registry.register(user, {...metadata, manifestSHA256});
+      }
+      if (action === 'admin:fraction-visibility:set') return registry.setVisibility(user, game.id, input.status);
+      throw error('invalid-input');
+    }
     if (contract.mode === 'preview' && c.gameIds?.includes('verticalParallel')) {
       const target = ref('gameSettings', 'verticalParallel');
       if (action === 'admin:line-quiz:read') {

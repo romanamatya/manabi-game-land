@@ -1,45 +1,105 @@
-import { createDeck } from './fraction-basics-model.js';
+import { GAME, createDeck } from './fraction-basics-model.js';
+import { gameProgress } from './title-progress-model.js';
 
 const $ = id => document.getElementById(id);
-const STORAGE_KEY = 'mq_fractionBasics_preview_v1';
-const TITLES = [3, 5, 10, 15, 25];
+const storage = window.manabiStorage;
+const economy = window.ManabiEconomy;
+const challenge = window.ManabiChallenge120Core;
+const config = window.MANABI_BACKEND_CONFIG;
+const game = window.ManabiProfileCatalog?.find(game => game.id === GAME);
+const recordKey = 'mgl_' + GAME;
+const challengeKey = 'mgl_challenge120_v1:' + GAME;
+const threshold = challenge?.highest[GAME];
 const deck = createDeck();
-let question, phase = 'ask', mode = 'practice', number = 0, streak = 0, total = 0;
-let best = 0, challengeBest = 0, deadline = 0, transition, clockTimer, sequence = 0;
+let question, scoreContext, practiceStreak = 0, number = 0, transition;
+let phase = 'idle', state, playingChallenge = false, allowed = false;
+let anchorWall = Date.now(), anchorMono = performance.now();
 
-if (window.MANABI_ENV?.environment !== 'preview') {
-  $('question').textContent = 'このゲームは確認用サイトでのみ利用できます。';
-  $('instruction').textContent = '本番サイトでは公開されていません。';
-} else {
-  try { best = Math.max(0, Number(JSON.parse(localStorage.getItem(STORAGE_KEY))?.best) || 0); }
-  catch { /* プライベートモードでは記録を保存しない */ }
+function read(key, fallback) {
+  try { return JSON.parse(storage.getItem(key) || 'null') ?? fallback; }
+  catch { return fallback; }
+}
+
+function resume() {
+  state = read(challengeKey, null);
+  if (state?.protocol !== challenge.PROTOCOL || state.game !== GAME) state = challenge.fresh(GAME);
+  state = challenge.unlock(state, gameProgress(game, storage).best >= threshold);
+  if (state.phase === 'running') {
+    playingChallenge = true;
+    anchorWall = Math.max(Date.now(), state.lastWall);
+    anchorMono = performance.now();
+    settle();
+    if (state.phase === 'ended') return showGate();
+    next();
+  } else if (state.unlocked) showGate();
+  else next();
+}
+
+function initialize() {
+  if (window.MANABI_ENV?.environment !== 'preview' || config.expectedProjectId !== 'manabi-game-landcheck'
+      || !game || !storage || !economy || !challenge) return;
+  for (const title of [...game.titles].reverse()) {
+    const item = document.createElement('li');
+    item.dataset.at = title.at;
+    const image = document.createElement('img');
+    image.src = '../' + title.image;
+    image.alt = '';
+    const labels = document.createElement('div');
+    const name = document.createElement('span');
+    name.textContent = title.name;
+    const count = document.createElement('small');
+    count.textContent = title.at + '問連続';
+    labels.append(name, count);
+    item.append(image, labels);
+    $('titles').append(item);
+  }
   $('restart').addEventListener('click', restart);
   $('challenge-start').addEventListener('click', startChallenge);
-  $('gate').addEventListener('click', event => {
-    if (event.target.id === 'practice-continue') { mode = 'practice'; next(); }
-  });
+  $('practice-continue').addEventListener('click', restart);
   $('options').addEventListener('click', event => {
     const button = event.target.closest('button[data-value]');
     if (button) judge(button.dataset.value);
   });
   $('diagram').addEventListener('click', event => {
     const item = event.target.closest('[data-count]');
-    if (item && question?.visual?.interactive) judge(item.dataset.count);
+    if (item) judge(item.dataset.count);
   });
   $('diagram').addEventListener('keydown', event => {
     if (event.key !== 'Enter' && event.key !== ' ') return;
     const item = event.target.closest('[data-count]');
-    if (item && question?.visual?.interactive) { event.preventDefault(); judge(item.dataset.count); }
+    if (item) { event.preventDefault(); judge(item.dataset.count); }
   });
   $('feedback').addEventListener('click', event => {
-    if (event.target.id === 'understood') {
-      if (mode === 'ended') showGate();
-      else next();
-    }
+    if (event.target.id !== 'understood' || phase !== 'feedback') return;
+    if (playingChallenge && state.phase === 'ended') showGate();
+    else next();
   });
-  clockTimer = setInterval(tick, 200);
-  if (best >= 25) { mode = 'waiting'; showGate(); }
-  else next();
+  if (config.visibilityGameIds?.includes(GAME)) {
+    const message = status => {
+      const canPlay = status === 'published';
+      $('access').hidden = canPlay;
+      $('question').hidden = !canPlay;
+      $('access').textContent = status === 'hidden' ? 'このゲームは現在非公開です。'
+        : status === 'preparing' ? 'このゲームは公開準備中です。'
+          : '公開状態を確認できません。算数の一覧へ戻ってください。';
+      if (canPlay && !allowed) { allowed = true; resume(); }
+      else if (!canPlay) {
+        allowed = false;
+        phase = 'idle';
+        clearTimeout(transition);
+        for (const id of ['diagram', 'instruction', 'options', 'gate', 'feedback']) $(id).hidden = true;
+      }
+    };
+    const responsiveTimeout = setTimeout(() => message('unknown'), 10000);
+    const unavailable = () => { clearTimeout(responsiveTimeout); message('unknown'); };
+    if (!window.ManabiPublicSettings) unavailable();
+    else window.ManabiPublicSettings.subscribeGame(GAME, snapshot => {
+      if (snapshot.metadata?.fromCache) return;
+      clearTimeout(responsiveTimeout);
+      message(snapshot.exists() ? snapshot.data().status : 'preparing');
+    }, unavailable).catch(unavailable);
+  } else { allowed = true; resume(); }
+  setInterval(tick, 200);
 }
 
 function fractionHTML(text) {
@@ -104,73 +164,101 @@ function visualHTML(visual) {
   return lineSVG(visual);
 }
 function paintStats() {
-  $('streak').textContent = streak;
-  $('best').textContent = best;
-  $('total').textContent = total;
-  for (const item of $('titles').children) item.classList.toggle('earned', best >= Number(item.dataset.at));
-  try { localStorage.setItem(STORAGE_KEY, JSON.stringify({ best })); }
-  catch { /* 保存不可の場合も練習を継続 */ }
+  const progress = gameProgress(game, storage);
+  $('streak').textContent = playingChallenge ? state.streak : practiceStreak;
+  $('best').textContent = progress.best;
+  for (const item of $('titles').children) {
+    const earned = progress.titles.some(title => title.at === Number(item.dataset.at) && title.earned);
+    item.classList.toggle('earned', earned);
+    const label = item.querySelector('small');
+    label.textContent = item.dataset.at + '問連続 · ' + (earned ? '獲得済み' : '未獲得');
+  }
 }
-function hideGate() {
-  $('gate').hidden = true;
-  for (const id of ['question', 'diagram', 'instruction', 'options']) $(id).hidden = false;
+function saveRecord(streak) {
+  const previous = read(recordKey, {});
+  const best = Math.max(Number(previous.best) || 0, streak);
+  const titles = game.titles.filter(title => best >= title.at).map(title => title.id);
+  storage.setItem(recordKey, JSON.stringify({ ...previous, best, streak, titles }));
+  window.dispatchEvent(new Event('manabi-local-record-change'));
+}
+function saveChallenge() {
+  storage.setItem(challengeKey, JSON.stringify(state));
+}
+function settle() {
+  if (state.phase !== 'running') return;
+  const { now, rollback } = challenge.clock(state, Date.now(), performance.now() - anchorMono, anchorWall);
+  state = challenge.settle(state, now, rollback);
+  saveChallenge();
 }
 function next() {
   clearTimeout(transition);
-  sequence++;
-  if (mode === 'ended' || mode === 'waiting') return showGate();
-  if (mode === 'challenge' && Date.now() >= deadline) return endChallenge('時間切れ');
+  if (!allowed) return;
+  if (playingChallenge) {
+    settle();
+    if (state.phase !== 'running') return showGate();
+  }
   phase = 'ask';
   question = deck.next();
+  scoreContext = economy.begin(GAME, question.scorePrompt);
   number++;
-  hideGate();
+  $('gate').hidden = true;
+  for (const id of ['question', 'diagram', 'instruction', 'options', 'feedback']) $(id).hidden = false;
   $('category').textContent = question.label;
   $('question-number').textContent = '第' + number + '問';
   $('question').innerHTML = fractionHTML(question.prompt);
   $('diagram').innerHTML = visualHTML(question.visual);
   $('diagram').classList.toggle('empty', !question.visual);
   $('instruction').textContent = question.visual?.interactive
-    ? '色をつける最後の部分をタッチしよう。左から・上から順番に色がつくよ。'
+    ? '色をつける最後の部分をタッチしよう。' + (question.visual.kind === 'pizza' ? '上から時計回りに色がつくよ。' : '左から順に色がつくよ。')
     : '答えを1つタッチしよう。';
   $('options').innerHTML = question.options.map(value =>
     '<button type="button" data-value="' + value + '">' + fractionHTML(value) + '</button>').join('');
   $('feedback').innerHTML = '';
   $('feedback').className = 'feedback';
   paintStats();
+  renderClock();
 }
 function judge(value) {
-  if (phase !== 'ask') return;
-  if (mode === 'challenge' && Date.now() >= deadline) return endChallenge('時間切れ');
+  if (phase !== 'ask' || !allowed) return;
   phase = 'feedback';
   const correct = value === question.answer;
-  const buttons = $('options').querySelectorAll('button');
-  for (const button of buttons) {
+  if (playingChallenge) {
+    settle();
+    const result = challenge.answer(state, challenge.issue(state, scoreContext.id), correct, state.lastWall);
+    if (!result.accepted) return showGate();
+    state = result.state;
+    saveChallenge();
+    saveRecord(state.streak);
+  } else {
+    practiceStreak = correct ? practiceStreak + 1 : 0;
+    saveRecord(practiceStreak);
+    if (practiceStreak >= threshold) {
+      state = challenge.unlock(state, true);
+      saveChallenge();
+    }
+  }
+  if (correct) void economy.answer(scoreContext, value).catch(() => {});
+  for (const button of $('options').querySelectorAll('button')) {
     button.disabled = true;
     if (button.dataset.value === question.answer) button.classList.add('correct');
     else if (button.dataset.value === value) button.classList.add('wrong');
   }
   if (question.visual?.interactive) {
-    const filled = correct ? Number(value) : question.visual.k;
-    $('diagram').innerHTML = visualHTML({ ...question.visual, interactive: false, filled });
+    $('diagram').innerHTML = visualHTML({ ...question.visual, interactive: false, filled: question.visual.k });
   }
+  paintStats();
   if (correct) {
-    streak++; total++; best = Math.max(best, streak);
-    if (mode === 'challenge') challengeBest = Math.max(challengeBest, streak);
-    paintStats();
-    $('feedback').innerHTML = '<strong>正解！</strong>　次の問題に進みます。';
+    $('feedback').innerHTML = '<strong>正解！</strong>';
     transition = setTimeout(() => {
-      if (mode === 'practice' && streak >= 25) { mode = 'waiting'; showGate(); }
+      if (!playingChallenge && practiceStreak === threshold) showGate();
       else next();
     }, 500);
   } else {
-    streak = 0;
-    if (mode === 'challenge') mode = 'ended';
-    paintStats();
     $('feedback').classList.add('wrong');
     $('feedback').innerHTML = '<strong>まちがいを確認しよう</strong><div>正しい答え：'
       + fractionHTML(question.visual?.interactive ? question.visual.k + '/' + question.visual.n : question.answer)
       + '</div><div>' + fractionHTML(question.explanation) + '</div>'
-      + '<button type="button" id="understood">わかった！　次の問題へ</button>';
+      + '<button type="button" id="understood">わかった！</button>';
   }
 }
 function showGate() {
@@ -179,44 +267,42 @@ function showGate() {
   for (const id of ['question', 'diagram', 'instruction', 'options']) $(id).hidden = true;
   $('feedback').innerHTML = '';
   $('gate').hidden = false;
-  $('gate-title').textContent = mode === 'waiting' ? '25問連続正解！' : '120秒チャレンジ終了';
-  $('gate-message').textContent = mode === 'waiting'
-    ? '最高称号を達成しました。120秒チャレンジに挑戦できます。'
-    : '今回の最高記録は ' + challengeBest + '問です。';
-  $('challenge-start').textContent = mode === 'waiting' ? '120秒チャレンジを始める' : 'もう一度120秒チャレンジ';
-  if (!$('practice-continue')) {
-    const button = document.createElement('button');
-    button.id = 'practice-continue';
-    button.type = 'button';
-    button.textContent = '時間制限なしの練習にもどる';
-    button.className = 'secondary';
-    $('gate').append(button);
-  }
+  const ended = state.phase === 'ended';
+  $('gate-title').textContent = ended ? '120秒チャレンジ終了' : '最高称号達成！';
+  $('gate-message').textContent = ended
+    ? (state.endReason === 'timeout' ? '時間切れ。' : '') + '今回の最高は ' + state.attemptBest + '問連続です。'
+    : '120秒チャレンジに挑戦できます。';
+  $('challenge-start').textContent = ended ? 'もう一度120秒チャレンジ' : '120秒チャレンジを始める';
+  renderClock();
+  paintStats();
 }
 function startChallenge() {
-  if (mode !== 'waiting' && mode !== 'ended') return;
-  mode = 'challenge'; streak = 25; challengeBest = 25;
-  deadline = Date.now() + 120000;
-  paintStats();
+  if (!allowed || phase !== 'gate' || !['waiting', 'ended'].includes(state.phase)) return;
+  anchorWall = Date.now();
+  anchorMono = performance.now();
+  state = challenge.start(state, anchorWall, crypto.randomUUID(), 'local');
+  saveChallenge();
+  playingChallenge = true;
+  number = 0;
   next();
 }
-function endChallenge(reason) {
-  if (mode !== 'challenge') return;
-  mode = 'ended';
-  $('clock').textContent = reason;
-  showGate();
+function renderClock() {
+  $('clock').textContent = playingChallenge && state.phase === 'running'
+    ? '残り ' + challenge.format(state.deadline - state.lastWall)
+    : phase === 'gate' ? '120秒チャレンジ' : '時間制限なし';
+  $('restart').hidden = playingChallenge || phase === 'gate';
 }
 function tick() {
-  if (mode === 'challenge') {
-    const remaining = Math.max(0, deadline - Date.now());
-    $('clock').textContent = '残り ' + Math.floor(Math.ceil(remaining / 1000) / 60) + ':'
-      + String(Math.ceil(remaining / 1000) % 60).padStart(2, '0');
-    if (remaining <= 0) endChallenge('時間切れ');
-  } else $('clock').textContent = mode === 'practice' ? '時間制限なし' : '120秒チャレンジ';
+  if (!allowed || !playingChallenge || state.phase !== 'running') return;
+  settle();
+  if (state.phase === 'ended') showGate();
+  else renderClock();
 }
 function restart() {
-  clearTimeout(transition);
-  mode = 'practice'; phase = 'ask'; number = 0; streak = 0; total = 0;
-  tick();
+  if (!allowed || state.phase === 'running') return;
+  playingChallenge = false;
+  number = 0;
+  practiceStreak = 0;
   next();
 }
+initialize();
