@@ -17,6 +17,6 @@ body[data-unit=""] .math-unit-row{min-height:82px;padding:10px 16px}
 .math-unit-count{font-weight:700;text-align:center}
 .math-unit-select{background:#315d8c;color:white;border-radius:10px;padding:10px 5px;text-align:center;font-weight:700}
 body[data-unit]:not([data-unit=""]) #mathCards{flex:none;grid-auto-rows:auto}
-body[data-unit] #collectionPager{flex:none;margin:0 0 5px}
+
 @media(orientation:landscape) and (min-width:900px){body[data-unit]{overflow:auto}}
 @media(max-width:550px){.math-unit-row .game-start{grid-template-columns:minmax(0,1.2fr) minmax(70px,.8fr) 55px 45px;font-size:14px}.math-unit-row h2{font-size:16px}.math-unit-row{padding-inline:8px!important}}
