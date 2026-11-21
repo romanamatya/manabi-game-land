@@ -101,3 +101,67 @@ if(production)for(const size of sizes)test('math units preserve all games and co
  }
  expect([...seen]).toEqual(['keisan','distribution','distribution2','exchangeAssociation','multiplicationProperties','shapeExpressions','keisanSummary']);
 });
+
+const calculationGames = ['multiplicationProperties', 'shapeExpressions'];
+async function checkCalculationArt(locator, id) {
+ await expect(locator).toHaveCount(5);
+ const images = await locator.evaluateAll(async items => Promise.all(items.map(async image => {
+  await image.decode();
+  return [image.src.split('/').pop(), image.naturalWidth];
+ })));
+ expect(images.sort()).toEqual([5, 10, 15, 20, 25].map(at => [
+  id + '-' + String(at).padStart(2, '0') + '.png', 512,
+ ]));
+}
+
+for (const size of sizes) test('calculation title art reaches the tower, cards and collection at ' + size.width, async ({page}) => {
+ await page.setViewportSize(size);
+ await page.goto(site + 'math-calculation.html');
+ for (const id of calculationGames) {
+  const row = page.locator('[data-game-card="' + id + '"]');
+  await checkCalculationArt(row.locator('.title-row-art img'), id);
+ }
+ for (const id of calculationGames) {
+  await page.goto(site + 'games/' + id + '.html');
+  const tower = page.locator('#tower');
+  await checkCalculationArt(tower.locator('.mq-badge img'), id);
+  for (const image of await tower.locator('img').all()) await expect(image).toBeInViewport({ratio:1});
+  await expect(tower.locator('.mq-badge').first()).toHaveCSS('filter', 'grayscale(1)');
+  await page.goto(site + 'titles.html');
+  await page.locator('#collectionGame').selectOption(id);
+  await checkCalculationArt(page.locator('.collection-title-grid img'), id);
+ }
+});
+
+for (const id of calculationGames) test(id + ' awards illustrated titles and restores them on reload', async ({page}) => {
+ test.setTimeout(75000);
+ await page.setViewportSize(sizes[0]);
+ await page.goto(site + 'games/' + id + '.html');
+ const tower = page.locator('#tower');
+ for (let streak = 1; streak <= 25; streak++) {
+  await expect(page.locator('#feedback')).toBeHidden();
+  const correctText = await page.evaluate(id => {
+   const state = JSON.parse(window.manabiStorage.getItem('mgl_' + id));
+   const pool = id === 'multiplicationProperties'
+    ? window.ManabiMultiplication.multiplication() : window.ManabiMathConcepts.shapes();
+   const question = pool.find(item => item.id === state.queue[0]);
+   return question.answer + (question.unit || '');
+  }, id);
+  await page.getByRole('button', {name: String(correctText), exact: true}).click();
+  await expect(page.locator('#best')).toHaveText(String(streak));
+  if (streak % 5 === 0) {
+   await expect(tower.locator('li.earned')).toHaveCount(streak / 5);
+   await expect(page.locator('#mqCelebration img')).toHaveAttribute('src',
+    new RegExp(id + '-' + String(streak).padStart(2, '0') + '\\.png$'));
+  }
+ }
+ await page.reload();
+ await expect(tower.locator('li.earned')).toHaveCount(5);
+ await expect(page.locator('#best')).toHaveText('25');
+ await expect(tower.locator('.mq-badge').first()).toHaveCSS('filter', 'none');
+ await expect(page.locator('#mqCelebration')).toHaveCount(0);
+ await page.goto(site + 'titles.html');
+ await page.locator('#collectionGame').selectOption(id);
+ await expect(page.locator('.collection-title-grid li.earned')).toHaveCount(5);
+ await expect(page.locator('.collection-game-heading progress')).toHaveAttribute('value', '100');
+});

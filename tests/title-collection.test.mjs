@@ -48,3 +48,32 @@ test('retired client entry points reject before importing SDKs even if old flags
   for(const client of [api.client,api.missingAlphabetClient,api.challengeRankingClient])await assert.rejects(client(),error=>error.code==='rankings-retired');
  }finally{if(previous===undefined)delete globalThis.window;else globalThis.window=previous;}
 });
+
+test('calculation artwork retains legacy title IDs and contributes to math and overall progress', () => {
+ const ids = ['multiplicationProperties', 'shapeExpressions'];
+ const rows = catalog.filter(game => ids.includes(game.id));
+ const records = storage({
+  mgl_multiplicationProperties: '{"best":15}',
+  mgl_shapeExpressions: '{"best":5}',
+  mgl_profile: '{"titles":["shapeExpressions:25"]}',
+ });
+ const states = new Map(ids.map(id => [id, 'published']));
+ const result = collectionProgress(rows, records, states);
+ assert.deepEqual(result.games.map(game => game.percent), [60, 40]);
+ assert.deepEqual(result.overall, {earned:5, total:10, percent:50, games:2});
+ assert.equal(result.subjects.find(subject => subject.id === 'math').percent, 50);
+ for (const game of rows) {
+  assert.deepEqual(game.titles.map(title => title.at), [5, 10, 15, 20, 25]);
+  for (const title of game.titles) {
+   assert.equal(title.id, game.id + ':' + title.at);
+   assert.ok(title.standalone && !title.textOnly);
+   const bytes = fs.readFileSync(title.image);
+   assert.equal(bytes.readUInt32BE(16), 512);
+   assert.equal(bytes.readUInt32BE(20), 512);
+   assert.equal(bytes[25], 6);
+   for (const prefix of ['preview/', 'shared-src/site/']) {
+    assert.deepEqual(fs.readFileSync(prefix + title.image), bytes);
+   }
+  }
+ }
+});

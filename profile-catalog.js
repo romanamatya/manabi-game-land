@@ -50,7 +50,24 @@ window.ManabiProfileCatalog.push({
   })),
 });
 
-window.ManabiProfileCatalog.push(...[{"id": "multiplicationProperties", "name": "かけ算のせいしつ", "subject": "math", "page": "math.html", "field": "multiplicationPropertiesBestStreak", "titles": [{"id": "multiplicationProperties:5", "at": 5, "name": "積の変化みつけ隊", "textOnly": true}, {"id": "multiplicationProperties:10", "at": 10, "name": "十倍の案内人", "textOnly": true}, {"id": "multiplicationProperties:15", "at": 15, "name": "百倍の読み手", "textOnly": true}, {"id": "multiplicationProperties:20", "at": 20, "name": "倍のつながり名人", "textOnly": true}, {"id": "multiplicationProperties:25", "at": 25, "name": "積の変化マスター", "textOnly": true}]}, {"id": "shapeExpressions", "name": "図形と式", "subject": "math", "page": "math.html", "field": "shapeExpressionsBestStreak", "titles": [{"id": "shapeExpressions:5", "at": 5, "name": "丸のまとまり探し", "textOnly": true}, {"id": "shapeExpressions:10", "at": 10, "name": "囲みの読み手", "textOnly": true}, {"id": "shapeExpressions:15", "at": 15, "name": "青と赤の式名人", "textOnly": true}, {"id": "shapeExpressions:20", "at": 20, "name": "図を式にする達人", "textOnly": true}, {"id": "shapeExpressions:25", "at": 25, "name": "まとまりの設計王", "textOnly": true}]}]);
+window.ManabiProfileCatalog.push(
+  {"id": "multiplicationProperties", "name": "かけ算のせいしつ", "subject": "math", "page": "math.html", "field": "multiplicationPropertiesBestStreak",
+   "titles": [
+    {"id": "multiplicationProperties:5", "at": 5, "name": "積の変化みつけ隊", "image": "assets/calculation-titles/multiplicationProperties-05.png", "standalone": true},
+    {"id": "multiplicationProperties:10", "at": 10, "name": "十倍の案内人", "image": "assets/calculation-titles/multiplicationProperties-10.png", "standalone": true},
+    {"id": "multiplicationProperties:15", "at": 15, "name": "百倍の読み手", "image": "assets/calculation-titles/multiplicationProperties-15.png", "standalone": true},
+    {"id": "multiplicationProperties:20", "at": 20, "name": "倍のつながり名人", "image": "assets/calculation-titles/multiplicationProperties-20.png", "standalone": true},
+    {"id": "multiplicationProperties:25", "at": 25, "name": "積の変化マスター", "image": "assets/calculation-titles/multiplicationProperties-25.png", "standalone": true}
+   ]},
+  {"id": "shapeExpressions", "name": "図形と式", "subject": "math", "page": "math.html", "field": "shapeExpressionsBestStreak",
+   "titles": [
+    {"id": "shapeExpressions:5", "at": 5, "name": "丸のまとまり探し", "image": "assets/calculation-titles/shapeExpressions-05.png", "standalone": true},
+    {"id": "shapeExpressions:10", "at": 10, "name": "囲みの読み手", "image": "assets/calculation-titles/shapeExpressions-10.png", "standalone": true},
+    {"id": "shapeExpressions:15", "at": 15, "name": "青と赤の式名人", "image": "assets/calculation-titles/shapeExpressions-15.png", "standalone": true},
+    {"id": "shapeExpressions:20", "at": 20, "name": "図を式にする達人", "image": "assets/calculation-titles/shapeExpressions-20.png", "standalone": true},
+    {"id": "shapeExpressions:25", "at": 25, "name": "まとまりの設計王", "image": "assets/calculation-titles/shapeExpressions-25.png", "standalone": true}
+   ]}
+);
 
 window.ManabiProfileCatalog.push({
   id:'fractionBasics', name:'分数のきほんをマスター！', subject:'math', page:'math-fractions.html',
