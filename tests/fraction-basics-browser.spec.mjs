@@ -89,10 +89,11 @@ test('three iPad sizes: all question formats, correct diagram painting and wrong
             const size = getComputedStyle(top).fontSize;
             return {stacked:top.getBoundingClientRect().bottom <= bottom.getBoundingClientRect().top+1,
               size, bottomSize:getComputedStyle(bottom).fontSize,
-              rule:getComputedStyle(top).borderBottomWidth};
+              rule:getComputedStyle(top).borderBottomWidth, ruleWidth:top.getBoundingClientRect().width};
           }));
           expect(typography.every(fraction => fraction.stacked && fraction.size === typography[0].size &&
-            fraction.bottomSize === fraction.size && fraction.rule === typography[0].rule)).toBe(true);
+            fraction.bottomSize === fraction.size && fraction.rule === typography[0].rule &&
+            fraction.ruleWidth === typography[0].ruleWidth)).toBe(true);
           expect(parseFloat(typography[0].size)).toBeGreaterThanOrEqual(20);
           expect(parseFloat(typography[0].rule)).toBeGreaterThan(0);
         }

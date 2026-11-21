@@ -52,6 +52,7 @@ button:disabled{cursor:default}
 .fraction{display:inline-flex;vertical-align:middle;flex-direction:column;align-items:center;justify-content:center;line-height:1.03;min-width:1.15em;font-size:1em;margin:0 .07em}
 .fraction>span:first-child{border-bottom:2px solid currentColor;padding:0 .14em .09em;width:100%;text-align:center}
 .fraction>span:last-child{padding-top:.09em}
+.options .fraction{inline-size:1.8em}
 #question .fraction{font-size:1.1em}
 .feedback .fraction{font-size:1.06em}
 #practice-continue{width:100%;margin-top:8px}
