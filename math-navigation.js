@@ -5,7 +5,7 @@ if(window.MANABI_BACKEND_CONFIG?.staticLocalGameIds?.includes('verticalParallel'
 if(window.MANABI_BACKEND_CONFIG?.staticLocalGameIds?.includes('quadrilateral'))units.find(unit=>unit.id==='geometry').games.push('quadrilateral');
 if(window.MANABI_BACKEND_CONFIG?.staticLocalGameIds?.includes('heikouPair'))units.find(unit=>unit.id==='geometry').games.push('heikouPair');
 if(window.MANABI_BACKEND_CONFIG?.staticLocalGameIds?.includes('shikakkeSecrets'))units.find(unit=>unit.id==='geometry').games.push('shikakkeSecrets');
-if(window.MANABI_BACKEND_CONFIG?.staticLocalGameIds?.includes('fractionBasics'))units.find(unit=>unit.id==='calculation').games.push('fractionBasics');
+if(window.MANABI_BACKEND_CONFIG?.staticLocalGameIds?.includes('fractionBasics'))units.find(unit=>unit.id==='calculation').games.unshift('fractionBasics');
 window.ManabiMathUnits=Object.freeze(units);const root=document.getElementById('mathCards'),unitId=document.body.dataset.unit,inUnit=units.some(u=>u.id===unitId);
 function card(title,description,href,rank){const article=document.createElement('article');article.className='unit-card';const a=document.createElement('a');a.className='game-start';a.href=testLink(href);const h=document.createElement('h2'),p=document.createElement('p');h.textContent=title;p.textContent=description;a.append(h,p);article.append(a);if(rank){const link=document.createElement('a');link.className='rank-button';link.href=testLink(rank);link.textContent='ゲーム最高連続ランキング（この端末）';article.append(link)}return article}
 if(!inUnit){

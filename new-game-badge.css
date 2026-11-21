@@ -34,7 +34,7 @@
 
 .subject-card.has-new-game img {
   box-sizing: border-box;
-  padding-block-start: 16px;
+  padding-block-start: 20px;
 }
 
 .card.game-card.has-new-game .game-summary {
