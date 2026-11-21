@@ -62,7 +62,18 @@ test('three iPad sizes: all question formats, correct diagram painting and wrong
         expect(Number(marker.split(' ')[1])).toBeCloseTo(40 + 440 * q.visual.k / (2*q.visual.n));
       }
       const action = page.locator(selector(q,wrongAnswer(q)));
-      await expect(action).toBeInViewport();
+      if (q.visual?.interactive) {
+        // WebKit's intersection observer reports zero for individual SVG shapes.
+        // Check their actual bounds before tapping, which also verifies the target is hittable.
+        const target = await action.boundingBox();
+        expect(target).not.toBeNull();
+        expect(target.width).toBeGreaterThan(0);
+        expect(target.height).toBeGreaterThan(0);
+        expect(target.x).toBeGreaterThanOrEqual(0);
+        expect(target.y).toBeGreaterThanOrEqual(0);
+        expect(target.x + target.width).toBeLessThanOrEqual(size.width);
+        expect(target.y + target.height).toBeLessThanOrEqual(size.height);
+      } else await expect(action).toBeInViewport();
       await action.tap();
       await expect(page.locator('#feedback')).toContainText('正しい答え');
       if (q.visual?.interactive) await expect(page.locator('#diagram [fill="#f3ae55"]')).toHaveCount(q.visual.k);
