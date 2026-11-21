@@ -1,4 +1,4 @@
-import { subjects, geometryGames, gameProgress, collectionProgress } from './title-progress-model.js?v=adb974f23c67';
+import { subjects, geometryGames, gameProgress, collectionProgress } from './title-progress-model.js?v=794704fd1ce8';
 
 const storage = window.manabiStorage;
 const catalog = window.ManabiProfileCatalog || [];
@@ -8,7 +8,6 @@ const statuses = new Map(catalog.map(game => [game.id, (config.availabilityEnabl
 const activeBindings = [];
 let subject = new URL(location.href).searchParams.get('subject') || 'math';
 let selectedGame = new URL(location.href).searchParams.get('game');
-let pageIndex = 0;
 const node = (tag, text, className) => {
   const element = document.createElement(tag);
   if (text !== undefined) element.textContent = text;
@@ -70,38 +69,11 @@ function decorateCards() {
     const status = statuses.get(game.id);
     card.dataset.gameAvailability=status;
     card.querySelectorAll('[data-game-ranking],.rank-button').forEach(n=>n.remove());
-    if (status === 'hidden'||status === 'preparing') card.hidden = true;
-    else if (card.dataset.collectionPageHidden !== 'true') card.hidden = false;
+    card.hidden = status !== 'published';
     const play = card.querySelector('[data-game-play]');
     if (play) { play.disabled = status !== 'published'; play.textContent = status === 'published' ? 'プレイ' : '確認中'; }
   }
-  paginate();
   renderNewBadge();
-}
-function paginate() {
-  const cards = [...document.querySelectorAll('[data-game-card]')];
-  if (!cards.length) return;
-  const visible = cards.filter(card => !['hidden','preparing'].includes(statuses.get(card.dataset.gameCard)));
-  const top = Math.max(100, cards[0].parentElement.getBoundingClientRect().top + window.scrollY);
-  const capacity = Math.max(2, Math.floor((window.innerHeight - top - 66) / 88));
-  const pages = Math.max(1, Math.ceil(visible.length / capacity));
-  pageIndex = Math.min(pageIndex, pages - 1);
-  for (const card of cards) {
-    const index = visible.indexOf(card);
-    const hidden = index < 0 || Math.floor(index / capacity) !== pageIndex;
-    card.hidden = hidden; card.dataset.collectionPageHidden = String(hidden);
-  }
-  let pager = document.getElementById('collectionPager');
-  if (!pager) { pager = node('nav', undefined, 'collection-pager'); pager.id = 'collectionPager';
-    pager.setAttribute('aria-label', 'ゲーム一覧のページ'); cards[0].parentElement.after(pager); }
-  pager.replaceChildren(); pager.hidden = pages === 1;
-  for (const [text, delta] of [['前へ', -1], ['次へ', 1]]) {
-    const button = node('button', text); button.type = 'button';
-    button.disabled = pageIndex + delta < 0 || pageIndex + delta >= pages;
-    button.onclick = () => { pageIndex += delta; paginate(); };
-    pager.append(button);
-    if (delta === -1) pager.append(node('span', (pageIndex + 1) + ' / ' + pages));
-  }
 }
 function renderHome() {
   const host = document.getElementById('titleCollectionHome');
@@ -196,7 +168,6 @@ function start() {
     }
   }
   for (const event of ['storage', 'manabi-economy-change', 'manabi-profile-change', 'pageshow']) window.addEventListener(event, update);
-  window.addEventListener('resize', paginate);
   window.addEventListener('pagehide', event => { if(!event.persisted)activeBindings.splice(0).forEach(stop => stop?.()); });
   window.ManabiTitleCollection = { refresh: update, snapshot: view };
 }

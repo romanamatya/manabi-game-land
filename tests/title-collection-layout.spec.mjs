@@ -20,10 +20,10 @@ test.beforeEach(async({page})=>{
   localStorage.setItem(scope+'mgl_challenge120_local_board_v1','[]');
  },scope);
 });
-async function clean(page){
+async function clean(page, { scroll = false } = {}){
  await expect.poll(()=>page.locator('img').evaluateAll(images=>images.every(image=>image.complete))).toBe(true);
  const result=await page.evaluate(()=>({width:innerWidth,height:innerHeight,scrollWidth:document.documentElement.scrollWidth,scrollHeight:document.documentElement.scrollHeight,broken:[...document.images].filter(img=>img.complete&&img.naturalWidth===0).map(img=>img.src)}));
- expect(result.scrollWidth).toBeLessThanOrEqual(result.width+1);expect(result.scrollHeight).toBeLessThanOrEqual(result.height+1);expect(result.broken).toEqual([]);
+ expect(result.scrollWidth).toBeLessThanOrEqual(result.width+1);if (!scroll) expect(result.scrollHeight).toBeLessThanOrEqual(result.height+1);expect(result.broken).toEqual([]);
  await expect(page.getByText('今のチャンピオン',{exact:true})).toHaveCount(0);
 }
 for(const size of sizes)test('home, picker and collection '+size.width+'x'+size.height,async({page},info)=>{
@@ -33,7 +33,7 @@ for(const size of sizes)test('home, picker and collection '+size.width+'x'+size.
  await page.goto(site+'math-geometry.html');await expect(page.locator('.title-game-row')).toHaveCount(6);
  await expect(page.locator('[data-game-card="verticalParallel"] [data-game-play]')).toBeEnabled();
  const row=page.locator('[data-game-card="parallelPair"]');await expect(row.locator('.collection-art.earned')).toHaveCount(5);await expect(row.locator('.complete')).toHaveCount(1);
- await expect(page.locator('[data-game-ranking],.rank-button')).toHaveCount(0);await clean(page);
+ await expect(page.locator('[data-game-ranking],.rank-button')).toHaveCount(0);await clean(page,{scroll:true});
  await page.screenshot({path:info.outputPath('games.png'),fullPage:true});
  await page.goto(site+'titles.html?game=parallelPair');await expect(page.locator('.collection-title-grid li')).toHaveCount(5);await expect(page.locator('.collection-title-grid li.earned')).toHaveCount(5);await clean(page);
  await page.screenshot({path:info.outputPath('collection.png'),fullPage:true});
@@ -65,7 +65,7 @@ for(const size of sizes)test('all subject lists retain ordered title rows '+size
  for(const [route,count] of [['japanese',1],['social',2],['language',2],['math-calculation',production?7:8]]){
   await page.goto(site+route+'.html');
   await expect(page.locator('.title-game-row')).toHaveCount(count);
-  await clean(page);
+  await clean(page,{scroll:true});
   const problems=await page.locator('.title-game-row:visible').evaluateAll(cards=>cards.flatMap(card=>{
    const selectors=['.game-summary','.title-row-art','.title-row-percent','.title-row-best','.game-actions'];
    const boxes=selectors.map(selector=>card.querySelector(selector).getBoundingClientRect());
@@ -91,15 +91,16 @@ if(production)for(const size of sizes)test('math units preserve all games and co
  await expect(page.locator('[data-game-card]')).toHaveCount(1);
  await expect(page.locator('[data-game-card="fractionBasics"] [data-game-play]')).toBeEnabled();
  await page.goto(site+'math-calculation.html');
- const seen=new Set();
- while(true){
-  for(const id of await page.locator('[data-game-card]:visible').evaluateAll(cards=>cards.map(card=>card.dataset.gameCard)))seen.add(id);
-  const next=page.getByRole('button',{name:'次へ',exact:true});
-  if(!(await next.isVisible())||!(await next.isEnabled()))break;
-  await expect(next).toBeInViewport();
-  await next.click();
- }
- expect([...seen]).toEqual(['keisan','distribution','distribution2','exchangeAssociation','multiplicationProperties','shapeExpressions','keisanSummary']);
+ const rows=page.locator('[data-game-card]:visible');
+ await expect(rows).toHaveCount(7);
+ expect(await rows.evaluateAll(cards=>cards.map(card=>card.dataset.gameCard)))
+  .toEqual(['keisan','distribution','distribution2','exchangeAssociation','multiplicationProperties','shapeExpressions','keisanSummary']);
+ await expect(page.locator('#collectionPager')).toHaveCount(0);
+ const play=rows.last().locator('[data-game-play]');
+ await play.scrollIntoViewIfNeeded();
+ await expect(play).toBeInViewport();
+ await expect(play).toBeEnabled();
+
 });
 
 const calculationGames = ['multiplicationProperties', 'shapeExpressions'];
