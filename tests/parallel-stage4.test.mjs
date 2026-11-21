@@ -19,7 +19,7 @@ test('parallelPair files and settings match the reviewed release candidate', asy
         .replace("if(window.MANABI_BACKEND_CONFIG?.staticLocalGameIds?.includes('quadrilateral'))units.find(unit=>unit.id==='geometry').games.push('quadrilateral');\r\n", '')
         .replace("if(window.MANABI_BACKEND_CONFIG?.staticLocalGameIds?.includes('heikouPair'))units.find(unit=>unit.id==='geometry').games.push('heikouPair');\r\n", '')
         .replace("if(window.MANABI_BACKEND_CONFIG?.staticLocalGameIds?.includes('shikakkeSecrets'))units.find(unit=>unit.id==='geometry').games.push('shikakkeSecrets');\r\n", '')
-        .replace("if(window.MANABI_BACKEND_CONFIG?.staticLocalGameIds?.includes('fractionBasics'))units.find(unit=>unit.id==='calculation').games.unshift('fractionBasics');\r\n", '')
+        .replace(/if\(window\.MANABI_BACKEND_CONFIG\?\.staticLocalGameIds\?\.includes\('fractionBasics'\)\)units\.push\([^\n]+\r?\n/, '')
         .replace("fractionBasics:'テープ・ピザ・数直線を使って、3年生の分数を復習しよう',", '')
         .replace("shikakkeSecrets:'対角線・垂直・平行のひみつを見つけよう',", '')
         .replace("heikouPair:'角の大きさと場所をくらべて、平行な直線を見つけよう',", '')

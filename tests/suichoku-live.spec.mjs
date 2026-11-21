@@ -119,7 +119,7 @@ test('shared celebration leaves the active 120-second challenge timer and answer
 
 test('math unit chooser places vertical only under geometry and opens the playable game',async({page})=>{
  await waitForLiveBuild();await page.goto(pageURL('math.html?adminTest=1'));
- const units=page.locator('#mathCards .unit-card a');await expect(units).toHaveCount(2);await expect(units.nth(0)).toContainText('計算のきまり');await expect(units.nth(1)).toContainText('四角形・垂直と平行');
+ const units=page.locator('#mathCards .unit-card a');await expect(units).toHaveCount(3);await expect(units.nth(0)).toContainText('計算のきまり');await expect(units.nth(1)).toContainText('四角形・垂直と平行');await expect(units.nth(2)).toContainText('分数');
  await units.nth(1).click();await expect(page).toHaveURL(/math-geometry\.html/);await expect(page.locator('[data-game-card="suichoku"]')).toHaveCount(1);
  const play=page.locator('[data-game-card="suichoku"] [data-game-play]');await expect(play).toBeEnabled({timeout:10000});await play.click();await expect(page).toHaveURL(/games\/suichoku\.html/);await expect(page.locator('#choices button')).toHaveCount(5);
  await page.goto(pageURL('math-calculation.html?adminTest=1'));await expect(page.locator('[data-game-card="suichoku"]')).toHaveCount(0);

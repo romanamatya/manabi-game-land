@@ -62,7 +62,7 @@ test('all released games launch without ranking requests or controls',async({pag
 });
 for(const size of sizes)test('all subject lists retain ordered title rows '+size.width+'x'+size.height,async({page},info)=>{
  await page.setViewportSize(size);
- for(const [route,count] of [['japanese',1],['social',2],['language',2],['math-calculation',8]]){
+ for(const [route,count] of [['japanese',1],['social',2],['language',2],['math-calculation',production?7:8]]){
   await page.goto(site+route+'.html');
   await expect(page.locator('.title-game-row')).toHaveCount(count);
   await clean(page);
@@ -74,4 +74,30 @@ for(const size of sizes)test('all subject lists retain ordered title rows '+size
   expect(problems).toEqual([]);
   await page.screenshot({path:info.outputPath(route+'.png'),fullPage:true});
  }
+});
+
+if(production)for(const size of sizes)test('math units preserve all games and count the active player titles '+size.width,async({page})=>{
+ await page.setViewportSize(size);
+ await page.addInitScript(()=>localStorage.setItem('mgl_fractionBasics','{"best":25}'));
+ await page.goto(site+'math.html');
+ const unit=page.locator('[data-unit-id="fractions"]');
+ await expect(unit.getByRole('progressbar')).toHaveAttribute('value','100');
+ await expect(unit).toContainText('5 / 5個');
+ await expect(unit).toContainText('1ゲーム');
+ await expect(unit.getByRole('progressbar')).toHaveClass('complete');
+ await expect(page.locator('.math-unit-row')).toHaveCount(3);
+ await clean(page);
+ await unit.getByRole('link').click();
+ await expect(page.locator('[data-game-card]')).toHaveCount(1);
+ await expect(page.locator('[data-game-card="fractionBasics"] [data-game-play]')).toBeEnabled();
+ await page.goto(site+'math-calculation.html');
+ const seen=new Set();
+ while(true){
+  for(const id of await page.locator('[data-game-card]:visible').evaluateAll(cards=>cards.map(card=>card.dataset.gameCard)))seen.add(id);
+  const next=page.getByRole('button',{name:'次へ',exact:true});
+  if(!(await next.isVisible())||!(await next.isEnabled()))break;
+  await expect(next).toBeInViewport();
+  await next.click();
+ }
+ expect([...seen]).toEqual(['keisan','distribution','distribution2','exchangeAssociation','multiplicationProperties','shapeExpressions','keisanSummary']);
 });

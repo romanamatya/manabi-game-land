@@ -56,10 +56,10 @@ for (const size of [{ width: 1024, height: 768 }, { width: 1194, height: 834 }])
 
     await page.locator('.subject-card[href="math.html"]').tap();
     await expect(page).toHaveURL(/\/math\.html$/);
-    await checkBadges(page, ['計算のきまり']);
+    await checkBadges(page, ['分数']);
 
-    await page.getByRole('link', { name: /計算のきまり/ }).tap();
-    await expect(page).toHaveURL(/\/math-calculation\.html$/);
+    await page.getByRole('link', { name: /分数/ }).tap();
+    await expect(page).toHaveURL(/\/math-fractions\.html$/);
     await checkBadges(page, ['分数のきほんをマスター！']);
     await expect(page.locator('[data-game-card]:not([data-game-card="fractionBasics"]) .new-game-badge')).toHaveCount(0);
     expect(await page.evaluate(() => [document.documentElement.scrollWidth, document.documentElement.scrollHeight]))
