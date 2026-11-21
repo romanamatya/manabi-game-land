@@ -1,5 +1,5 @@
 import { visibilityState } from "./game-selection-model.js";
-import { gameProgress, collectionProgress } from './title-progress-model.js?v=title-collection-production-v1';
+import { gameProgress, collectionProgress, summarizePublished } from './title-progress-model.js?v=math-units-v1';
 
 const storage = window.manabiStorage;
 const catalog = window.ManabiProfileCatalog || [];
@@ -82,7 +82,7 @@ function paginate() {
   const cards = [...document.querySelectorAll('[data-game-card]')];
   if (!cards.length) return;
   const visible = cards.filter(card => !['hidden','preparing'].includes(statuses.get(card.dataset.gameCard)));
-  const top = Math.max(100, cards[0].parentElement.getBoundingClientRect().top + window.scrollY);
+  const top = Math.max(100, ((cards[0].parentElement.id === 'mathCards' && document.getElementById('collectionPager')) || cards[0].parentElement).getBoundingClientRect().top + window.scrollY);
   const capacity = Math.max(2, Math.floor((window.innerHeight - top - 66) / 88));
   const pages = Math.max(1, Math.ceil(visible.length / capacity));
   pageIndex = Math.min(pageIndex, pages - 1);
@@ -93,7 +93,8 @@ function paginate() {
   }
   let pager = document.getElementById('collectionPager');
   if (!pager) { pager = node('nav', undefined, 'collection-pager'); pager.id = 'collectionPager';
-    pager.setAttribute('aria-label', 'ゲーム一覧のページ'); cards[0].parentElement.after(pager); }
+    pager.setAttribute('aria-label', 'ゲーム一覧のページ'); const list = cards[0].parentElement;
+    if (list.id === 'mathCards') list.before(pager); else list.after(pager); }
   pager.replaceChildren(); pager.hidden = pages === 1;
   for (const [text, delta] of [['前へ', -1], ['次へ', 1]]) {
     const button = node('button', text); button.type = 'button';
@@ -164,7 +165,21 @@ function renderCollection() {
   else footer.append(node('p', 'お休み中のゲームです。獲得した称号は残っています。'));
   host.append(controls, heading, titles, footer);
 }
-function update() { decorateCards(); renderHome(); renderCollection(); }
+function renderMathUnits() {
+  const cards = document.querySelectorAll('.math-unit-row[data-unit-games]');
+  if (!cards.length) return;
+  const {games} = view();
+  for (const card of cards) {
+    const ids = new Set(card.dataset.unitGames.split(' '));
+    const summary = summarizePublished(games.filter(game => ids.has(game.id)));
+    const name = card.querySelector('h2').textContent;
+    card.querySelector('.math-unit-progress').replaceChildren(
+      progressMeter(summary.percent, name + 'の称号達成率'),
+      ...(summary.total ? [node('small', summary.earned + ' / ' + summary.total + '個')] : []));
+    card.querySelector('.math-unit-count').textContent = summary.games + 'ゲーム';
+  }
+}
+function update() { decorateCards(); renderHome(); renderCollection(); renderMathUnits(); }
 function start() {
   if (!config.rankingsRetired) return;
   if(document.querySelector('#mathCards,[data-game-card]'))document.body.classList.add('title-collection-picker');

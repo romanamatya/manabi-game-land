@@ -10,7 +10,7 @@ const targets = [
   ['quadrilateral', 'math-geometry.html', '[data-digit="1"]', '#best'],
   ['heikouPair', 'math-geometry.html', '[data-line]', '#practice-best'],
   ['shikakkeSecrets', 'math-geometry.html', '[data-shape]', '#practice-best'],
-  ['fractionBasics','math-calculation.html','#options button, #diagram [data-count]','#best'],
+  ['fractionBasics','math-fractions.html','#options button, #diagram [data-count]','#best'],
 ];
 test('individual management hides cards, gates direct play and keeps local records through re-publication', async ({ browser }) => {
   test.setTimeout(120000);
@@ -68,7 +68,7 @@ test('individual management hides cards, gates direct play and keeps local recor
     await visit(student,list);
     await expect(card).toBeHidden();
     if (id==='fractionBasics') {
-      for (const name of ['index.html','math.html','math-calculation.html']) {
+      for (const name of ['index.html','math.html','math-fractions.html']) {
         await visit(student,name);
         await expect(student.locator('.new-game-badge')).toHaveCount(0);
       }

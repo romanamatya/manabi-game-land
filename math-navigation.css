@@ -6,3 +6,17 @@
 @media(orientation:landscape) and (min-width:900px){body[data-unit="geometry"] #mathCards{flex:0 0 auto;grid-auto-rows:auto;align-content:start}body[data-unit="geometry"] #mathCards>.game-card{min-height:136px}}
 /* A one-game geometry unit keeps a normal card height instead of stretching to fill the viewport. */
 @media(orientation:landscape) and (min-width:900px){body[data-unit="geometry"] #mathCards{flex:0 0 auto;grid-auto-rows:auto;align-content:start}body[data-unit="geometry"] #mathCards>.game-card{min-height:136px}}
+
+body[data-unit=""] #mathCards{display:grid;grid-template-columns:1fr;grid-auto-rows:auto;flex:none}
+body[data-unit=""] .math-unit-row{min-height:82px;padding:10px 16px}
+.math-unit-row .game-start{display:grid;grid-template-columns:minmax(0,2fr) minmax(105px,1.15fr) minmax(70px,.55fr) minmax(58px,.45fr);gap:clamp(6px,2vw,24px);align-items:center}
+.math-unit-row h2,.math-unit-row p{grid-column:1;grid-row:1;margin:0}
+.math-unit-row p{display:none}
+.math-unit-progress,.math-unit-count,.math-unit-select{grid-row:1}
+.math-unit-progress small{display:block;margin-top:3px;color:#526e85}
+.math-unit-count{font-weight:700;text-align:center}
+.math-unit-select{background:#315d8c;color:white;border-radius:10px;padding:10px 5px;text-align:center;font-weight:700}
+body[data-unit]:not([data-unit=""]) #mathCards{flex:none;grid-auto-rows:auto}
+body[data-unit] #collectionPager{flex:none;margin:0 0 5px}
+@media(orientation:landscape) and (min-width:900px){body[data-unit]{overflow:auto}}
+@media(max-width:550px){.math-unit-row .game-start{grid-template-columns:minmax(0,1.2fr) minmax(70px,.8fr) 55px 45px;font-size:14px}.math-unit-row h2{font-size:16px}.math-unit-row{padding-inline:8px!important}}
