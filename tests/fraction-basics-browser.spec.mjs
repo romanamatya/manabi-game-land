@@ -61,6 +61,41 @@ test('three iPad sizes: all question formats, correct diagram painting and wrong
         const marker = await page.locator('#diagram path').first().getAttribute('d');
         expect(Number(marker.split(' ')[1])).toBeCloseTo(40 + 440 * q.visual.k / (2*q.visual.n));
       }
+      if (!q.visual?.interactive) {
+        const layout = await page.locator('#options button').evaluateAll(buttons => buttons.map(button => {
+          const {x,y,width,height} = button.getBoundingClientRect();
+          return {x,y,width,height};
+        }));
+        expect(layout).toHaveLength(4);
+        const questionBounds = await page.locator('#question').boundingBox();
+        const visualBounds = q.visual ? await page.locator('#diagram').boundingBox() : null;
+        expect(layout[0].y).toBeGreaterThanOrEqual((visualBounds ?? questionBounds).y + (visualBounds ?? questionBounds).height - 1);
+        const gap = layout[1].x - layout[0].x - layout[0].width;
+        expect(gap).toBeGreaterThan(0);
+        for (const [i, box] of layout.entries()) {
+          expect(box.y).toBeCloseTo(layout[0].y, 0);
+          expect(box.height).toBeCloseTo(layout[0].height, 0);
+          expect(box.width).toBeCloseTo(layout[0].width, 0);
+          expect(box.x).toBeCloseTo(layout[0].x + i * (layout[0].width + gap), 0);
+          expect(box.x + box.width).toBeLessThanOrEqual(size.width);
+          expect(box.y + box.height).toBeLessThanOrEqual(size.height);
+        }
+        if (q.options[0].includes('/')) {
+          const fractions = page.locator('#options .fraction');
+          await expect(fractions).toHaveCount(4);
+          const typography = await fractions.evaluateAll(items => items.map(item => {
+            const [top,bottom] = item.children;
+            const size = getComputedStyle(top).fontSize;
+            return {stacked:top.getBoundingClientRect().bottom <= bottom.getBoundingClientRect().top+1,
+              size, bottomSize:getComputedStyle(bottom).fontSize,
+              rule:getComputedStyle(top).borderBottomWidth};
+          }));
+          expect(typography.every(fraction => fraction.stacked && fraction.size === typography[0].size &&
+            fraction.bottomSize === fraction.size && fraction.rule === typography[0].rule)).toBe(true);
+          expect(parseFloat(typography[0].size)).toBeGreaterThanOrEqual(20);
+          expect(parseFloat(typography[0].rule)).toBeGreaterThan(0);
+        }
+      }
       const action = page.locator(selector(q,wrongAnswer(q)));
       if (q.visual?.interactive) {
         // WebKit's intersection observer reports zero for individual SVG shapes.
