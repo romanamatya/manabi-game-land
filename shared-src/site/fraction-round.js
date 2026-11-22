@@ -106,8 +106,10 @@ function initialize() {
 }
 
 function fractionHTML(text) {
-  return String(text).replace(/(\d+)\/(\d+)/g,
-    (_, top, bottom) => '<span class="fraction"><span>' + top + '</span><span>' + bottom + '</span></span>');
+  const stack = (top, bottom) => '<span class="fraction"><span>' + top + '</span><span>' + bottom + '</span></span>';
+  return String(text).replace(/(?:(\d+)と)?(\d+)\/(\d+)/g, (_, whole, top, bottom) =>
+    whole ? '<span class="mixed-number" role="math" aria-label="' + whole + 'と' + bottom + '分の' + top +
+      '"><span aria-hidden="true">' + whole + '</span>' + stack(top, bottom) + '</span>' : stack(top, bottom));
 }
 function tapeSVG({ n, k, interactive, filled }) {
   const units = k > n ? 2 : 1;
@@ -241,7 +243,10 @@ function judge(value) {
       saveChallenge();
     }
   }
-  if (correct) void economy.answer(scoreContext, value).catch(() => {});
+  if (correct) {
+    if (celebrate) scoreContext.__mglCelebrationHandled = true;
+    void economy.answer(scoreContext, value).catch(() => {});
+  }
   for (const button of $('options').querySelectorAll('button')) {
     button.disabled = true;
     if (button.dataset.value === question.answer) button.classList.add('correct');
@@ -253,20 +258,13 @@ function judge(value) {
   paintStats();
   if (correct) {
     $('feedback').innerHTML = '<strong>正解！</strong>';
-    const award = celebrate && gameProgress(game, storage).titles.find(title => title.earned && title.at > previousBest);
-    if (award) {
-      const image = document.createElement('img');
-      image.src = '../' + award.image;
-      image.alt = '';
-      const banner = document.createElement('div');
-      banner.className = 'fraction-award';
-      banner.append(image, award.name + ' を獲得！');
-      $('feedback').append(banner);
-    }
+    const duration = celebrate
+      ? window.ManabiCelebrations?.play(GAME, previousBest, gameProgress(game, storage).best)
+      : undefined;
     transition = setTimeout(() => {
       if (!playingChallenge && practiceStreak === threshold) showGate();
       else next();
-    }, 500);
+    }, duration ?? 500);
   } else {
     $('feedback').classList.add('wrong');
     $('feedback').innerHTML = '<strong>まちがいを確認しよう</strong><div>正しい答え：'

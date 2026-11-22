@@ -62,7 +62,16 @@ for (const size of viewports) test('four equal buttons and five badges at ' + si
       expect(box.x+box.width).toBeLessThanOrEqual(size.width);
       expect(box.y).toBeGreaterThanOrEqual(prompt.y+prompt.height);
     }
+    for (const mixed of await page.locator('.mixed-number').all()) {
+      expect(await mixed.textContent()).not.toContain('と');
+      const centers = await mixed.locator(':scope > span').evaluateAll(items => items.map(el => {
+        const box = el.getBoundingClientRect();
+        return box.top + box.height/2;
+      }));
+      expect(Math.abs(centers[0]-centers[1])).toBeLessThan(1);
+    }
     await page.locator(selector(q,wrongAnswer(q))).tap();
+    await expect(page.locator('.mgl-celebration:visible')).toHaveCount(0);
     await expect(page.locator('#feedback')).toContainText('正しい答え');
     await expect(page.locator('#understood')).toBeInViewport();
     await fits(page,size);
@@ -85,8 +94,13 @@ test('five formal titles, saved record and daily points cap survive reload; chal
     if (doubleTap) {
       await answer.evaluate(el=>{ el.dispatchEvent(new MouseEvent('click',{bubbles:true}));el.dispatchEvent(new MouseEvent('click',{bubbles:true})); });
     } else await answer.tap();
-    await expect(page.locator('#feedback strong')).toHaveText('正解！');
-    if ([3,5,10,15,25].includes(expected)) await expect(page.locator('.fraction-award img')).toBeVisible();
+    const award = [3,5,10,15,25].includes(expected) && expected <= 25;
+    if (award) {
+      await expect(page.locator('.mgl-celebration--title img')).toBeVisible();
+      await expect(page.locator('.mgl-celebration--correct')).toHaveCount(0);
+      await page.clock.fastForward(530);
+      await expect(page.locator('.mgl-celebration--title')).toBeVisible();
+    } else await expect(page.locator('.mgl-celebration--correct')).toBeVisible();
     await expect(page.locator('#streak')).toHaveText(String(expected));
     await page.clock.fastForward(520);
   }
