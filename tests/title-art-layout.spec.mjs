@@ -143,6 +143,8 @@ for (const game of games) {
   test(`${game.id}: capture pre-fix layout`, async ({ page }) => {
     test.skip(!baseline, 'Pre-fix screenshots require the pull request base commit');
     const replacements = ['profile-catalog.js', 'celebration-effects.js', 'games/' + game.id + '.html'];
+    // The baseline celebration module predates the delay API used by the candidate game.
+    if (game.id === 'missingAlphabet') replacements.push('missing-alphabet-game.js');
     for (const relative of replacements) {
       const original = execFileSync('git', ['show', `${baseline}:${relative}`]);
       await page.route(request => request.pathname === new URL(relative, base).pathname, route => route.fulfill({
