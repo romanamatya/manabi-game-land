@@ -26,7 +26,7 @@
   const gainedTitle=titles.find(item=>item.at>oldBest&&item.at<=state.best)||null;
   const request=window.ManabiEconomy.answer(pointContext,{choice:letter});save();logAnswer(question,letter,true,true,challenge);stats();$('feedback').className='feedback';$('feedback').textContent='';for(const button of $('choices').querySelectorAll('button'))button.disabled=true;
   try{await request}catch{}
-  busy=false;advanceTimer=setTimeout(next,gainedTitle?1000:500);
+  busy=false;advanceTimer=setTimeout(next,window.ManabiCelebrations?.delay() ?? (gainedTitle?1000:500));
  }
  window.addEventListener('manabi-local-record-change',()=>{const current=window.ManabiChallenge120?.state?.();if(!current)return;let changed=false;if(current.phase==='running'&&state.streak!==current.streak){state.streak=current.streak;changed=true}const attemptBest=current.attemptBest||0;if(attemptBest>state.best){state.best=attemptBest;changed=true}if(current.phase==='ended'&&state.streak!==0){state.streak=0;changed=true}if(changed){save();stats()}});
  function init(){if(state.question)beginQuestion(state.question);else next();stats()}

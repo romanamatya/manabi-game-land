@@ -140,7 +140,7 @@ for (const id of calculationGames) test(id + ' awards illustrated titles and res
  await page.goto(site + 'games/' + id + '.html');
  const tower = page.locator('#tower');
  for (let streak = 1; streak <= 25; streak++) {
-  await expect(page.locator('#feedback')).toBeHidden();
+  await expect(page.locator('#choices button').first()).toBeEnabled();
   const correctText = await page.evaluate(id => {
    const state = JSON.parse(window.manabiStorage.getItem('mgl_' + id));
    const pool = id === 'multiplicationProperties'
@@ -152,7 +152,7 @@ for (const id of calculationGames) test(id + ' awards illustrated titles and res
   await expect(page.locator('#best')).toHaveText(String(streak));
   if (streak % 5 === 0) {
    await expect(tower.locator('li.earned')).toHaveCount(streak / 5);
-   await expect(page.locator('#mqCelebration img')).toHaveAttribute('src',
+   await expect(page.locator('.mgl-celebration--title img')).toHaveAttribute('src',
     new RegExp(id + '-' + String(streak).padStart(2, '0') + '\\.png$'));
   }
  }
@@ -160,7 +160,7 @@ for (const id of calculationGames) test(id + ' awards illustrated titles and res
  await expect(tower.locator('li.earned')).toHaveCount(5);
  await expect(page.locator('#best')).toHaveText('25');
  await expect(tower.locator('.mq-badge').first()).toHaveCSS('filter', 'none');
- await expect(page.locator('#mqCelebration')).toHaveCount(0);
+ await expect(page.locator('.mgl-celebration:visible')).toHaveCount(0);
  await page.goto(site + 'titles.html');
  await page.locator('#collectionGame').selectOption(id);
  await expect(page.locator('.collection-title-grid li.earned')).toHaveCount(5);

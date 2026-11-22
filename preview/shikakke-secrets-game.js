@@ -1,4 +1,4 @@
-import { GAME, SHAPES, createDeck } from './shikakke-secrets-model.js?v=794704fd1ce8';
+import { GAME, SHAPES, createDeck } from './shikakke-secrets-model.js?v=740223b94830';
 
 const $ = id => document.getElementById(id);
 const config = window.MANABI_BACKEND_CONFIG;
@@ -138,7 +138,7 @@ function play() {
           // Supplying explicit artwork selects it instead of the indexed 512px badge.
           celebrations.showTitle({ name, at, image: image.replace('_512.png', '_1254.png') });
         } else celebrations.showCorrect();
-        setTimeout(showQuestion, 500);
+        setTimeout(showQuestion, result.title ? 1000 : 500);
       } else {
         showQuestion(true);
         if (record.challenge.phase === 'training') feedback('もう一度！ 同じ問題で選び直そう。', true);

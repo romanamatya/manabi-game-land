@@ -135,7 +135,7 @@ test('five formal titles, saved record and daily points cap survive reload; chal
     } else await answer.tap();
     await expect(page.locator('#feedback')).toHaveText('正解！');
     await expect(page.locator('#streak')).toHaveText(String(expected));
-    await page.clock.fastForward(520);
+    await page.clock.fastForward([3,5,10,15,25].includes(expected) && expected<=25 ? 1020 : 520);
   }
   let rank = 0;
   for (let n=1; n<=25; n++) {

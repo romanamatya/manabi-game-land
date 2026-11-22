@@ -1,6 +1,6 @@
-import {createManagementStore} from './management-store.js?v=794704fd1ce8';
-import {validateBackend,contractFor} from './data-contract.js?v=794704fd1ce8';
-import {createFirestoreStore} from './firebase-store.js?v=794704fd1ce8';
+import {createManagementStore} from './management-store.js?v=740223b94830';
+import {validateBackend,contractFor} from './data-contract.js?v=740223b94830';
+import {createFirestoreStore} from './firebase-store.js?v=740223b94830';
 const config = window.MANABI_SPARK_CONFIG;
 const error = code => Object.assign(new Error(code), {code});
 const validName = value => typeof value === 'string' && value === value.trim() && value.length >= 1 && value.length <= 12 && !/[<>\r\n]/.test(value);
@@ -116,7 +116,7 @@ export function createAdminOperations(c,{auth,db},A,F) {
     if (action === 'admin:players') return list('players', input.cursor);
     if (action.startsWith('admin:fraction-visibility:') && contract.mode === 'preview'
         && c.expectedProjectId === 'manabi-game-landcheck' && c.managedVisibilityGameIds?.includes('fractionBasics')) {
-      const {createRegistrationStore} = await import('./fraction-registration-store.js?v=794704fd1ce8');
+      const {createRegistrationStore} = await import('./fraction-registration-store.js?v=740223b94830');
       const registry = createRegistrationStore(F, db, 'preview');
       const game = (window.ManabiProfileCatalog || []).find(item => item.id === 'fractionBasics');
       if (!game) throw error('feature-unverified');
