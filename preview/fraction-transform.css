@@ -1,0 +1,4 @@
+#question { min-height: 2.4em; }
+.options button { white-space: nowrap; }
+.mixed-number { display:inline-flex; align-items:center; vertical-align:middle; gap:.16em; white-space:nowrap; }
+.mixed-number > .fraction { margin:0; }

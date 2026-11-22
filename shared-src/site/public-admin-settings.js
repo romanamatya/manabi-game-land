@@ -3,6 +3,7 @@
 (()=>{
  const cfg=window.MANABI_BACKEND_CONFIG;if(!cfg)return;
  const games=['keisan','pref-name','pref-place','alphabet','missingAlphabet','distribution','distribution2','exchangeAssociation','kotowaza','multiplicationProperties','shapeExpressions','keisanSummary','parallelPair','suichoku','verticalParallel','quadrilateral','heikouPair','shikakkeSecrets'];
+ if (cfg.mode === 'preview' && cfg.staticLocalGameIds?.includes('fractionTransform')) games.push('fractionTransform');
  const settingsRoot=cfg.environment==='productionAdmin/v1'?'productionAdmin/v1':cfg.environment==='previewSpark/v1'?'previewSpark/v1':null;
  const staticLocalGames=new Set(cfg.staticLocalGameIds||[]);
  const managedGames=new Set(cfg.managedVisibilityGameIds||[]);
@@ -38,7 +39,7 @@
    if(!settingsRoot||!games.includes(id))return Promise.reject(Error('game-settings-unavailable'));
    if(staticPublished(id)){onValue(staticSnapshot);return Promise.resolve(()=>{});}
    return db().then(({F,db})=>F.onSnapshot(F.doc(db,settingsRoot+'/gameSettings/'+id),{includeMetadataChanges:true},snapshot=>{
-    onValue(managedStatic(id)&&!snapshot.exists()&&snapshot.metadata.fromCache===false?staticSnapshot:snapshot);
+    onValue(managedStatic(id)&&id!=='fractionTransform'&&!snapshot.exists()&&snapshot.metadata.fromCache===false?staticSnapshot:snapshot);
    },onError));
   }
  });

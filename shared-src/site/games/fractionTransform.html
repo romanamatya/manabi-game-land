@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com; style-src 'self' 'unsafe-inline'; connect-src 'self' https://www.gstatic.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://firestore.googleapis.com; img-src 'self' data:; object-src 'none'; base-uri 'self'">
+<title>分数へんしんチャレンジ！｜マナビクエスト</title>
+<link rel="stylesheet" href="../fraction-basics.css?v=fraction-basics-v1">
+<script src="../environment.js?v=fraction-basics-v1"></script>
+<script src="../environment-runtime.js?v=fraction-basics-v1"></script>
+<script src="../profile-catalog.js?v=fraction-basics-v1"></script>
+<script src="../public-firebase-session.js?v=shared-firebase-session-v1"></script>
+<script src="../public-game-availability.js?v=firebase-session-recovery-v1"></script>
+<script src="../public-admin-settings.js?v=firebase-session-recovery-v1"></script>
+<script src="../economy-core.js?v=fraction-basics-v1"></script>
+<script src="../storage-adapters.js?v=fraction-basics-v1"></script>
+<script src="../economy.js?v=fraction-basics-v1"></script>
+<script src="../challenge120-core.js?v=fraction-basics-v1"></script>
+<script src="../celebration-effects.js"></script>
+<script type="module" src="../fraction-transform-game.js?v=fraction-basics-v1"></script>
+<link rel="stylesheet" href="../fraction-transform.css">
+</head>
+<body data-score-game="fractionTransform">
+<div class="app">
+  <header class="header">
+    <a href="../math-fractions.html" class="back">← 算数へ</a>
+    <h1>分数へんしんチャレンジ！</h1>
+
+  </header>
+  <div class="layout">
+    <aside class="panel stats" aria-label="練習記録">
+      <h2>練習の記録</h2>
+      <div class="stat"><span>連続正解</span><strong id="streak">0</strong></div>
+      <div class="stat"><span>自己最高</span><strong id="best">0</strong></div>
+      <div class="stat"><span>算数ポイント</span><strong id="points">0</strong></div>
+      <div class="timer" id="clock" role="timer">時間制限なし</div>
+      <button class="secondary" id="restart" type="button">練習をやり直す</button>
+    </aside>
+    <main class="panel game">
+      <div class="question-header"><span class="category" id="category">分数</span><span id="question-number">第1問</span></div>
+      <p id="access" role="status" hidden></p>
+      <h2 id="question">問題を準備しています</h2>
+      <div class="diagram" id="diagram" aria-label="問題の図"></div>
+      <p class="instruction" id="instruction">答えをタッチしよう。</p>
+      <div class="options" id="options" role="group" aria-label="答えの選択肢"></div>
+      <div class="feedback" id="feedback" aria-live="polite"></div>
+      <section class="gate" id="gate" hidden>
+        <h2 id="gate-title">120秒チャレンジ</h2>
+        <p id="gate-message"></p>
+        <button id="challenge-start" type="button">120秒チャレンジを始める</button>
+        <button id="practice-continue" type="button" class="secondary">時間制限なしの練習にもどる</button>
+      </section>
+    </main>
+    <aside class="panel titles">
+      <h2>称号タワー</h2>
+      <ol id="titles"></ol>
+    </aside>
+  </div>
+</div>
+</body>
+</html>

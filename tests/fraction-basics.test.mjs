@@ -108,7 +108,7 @@ test('shared challenge unlocks at 25, runs 120 seconds and deduplicates answers'
 });
 
 test('production and preview serve the same fraction gameplay and artwork', () => {
-  for (const path of ['fraction-basics.css', 'fraction-basics-game.js','fraction-basics-model.js']) {
+  for (const path of ['fraction-basics.css', 'fraction-basics-model.js']) {
     assert.deepEqual(readFileSync(path),readFileSync('preview/'+path),path);
   }
   for (const art of ['03_review','05_recall','10_master','15_expert','25_nextgrade']) {

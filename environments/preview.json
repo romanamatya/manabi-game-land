@@ -43,16 +43,19 @@
     "heikouPair",
     "shikakkeSecrets",
     "fractionBasics",
-    "verticalParallel"
+    "verticalParallel",
+    "fractionTransform"
   ],
   "rankingsRetired": true,
-  "latestGameId": "fractionBasics",
+  "latestGameId": "fractionTransform",
   "visibilityGameIds": [
     "verticalParallel",
-    "fractionBasics"
+    "fractionBasics",
+    "fractionTransform"
   ],
   "managedVisibilityGameIds": [
     "verticalParallel",
-    "fractionBasics"
+    "fractionBasics",
+    "fractionTransform"
   ]
 }
