@@ -13,14 +13,14 @@ function load(file, context = { window: {}, structuredClone }) {
   return context.window;
 }
 
-test('production lists the original 18 games and the released fraction game', () => {
+test('production lists the original 18 games and the two released fraction games', () => {
   const before = load('tests/fixtures/profile-catalog-before-production-summary.js').ManabiProfileCatalog;
   const after = load('profile-catalog.js').ManabiProfileCatalog;
-  const addedIds = ['keisanSummary', 'suichoku', 'parallelPair', 'missingAlphabet', 'verticalParallel', 'quadrilateral', 'heikouPair', 'shikakkeSecrets', 'fractionBasics'];
+  const addedIds = ['keisanSummary', 'suichoku', 'parallelPair', 'missingAlphabet', 'verticalParallel', 'quadrilateral', 'heikouPair', 'shikakkeSecrets', 'fractionBasics', 'fractionTransform'];
   const config = load('environment.js', { window: {}, location: { pathname: '/' } }).MANABI_BACKEND_CONFIG;
   const legacyMathIds = ['multiplicationProperties', 'shapeExpressions'];
   const releasedIds = [...before.map(game => game.id), ...addedIds, ...legacyMathIds].sort();
-  assert.equal(releasedIds.length, 19);
+  assert.equal(releasedIds.length, 20);
   assert.deepEqual([...config.gameIds, ...config.staticLocalGameIds].sort(), releasedIds);
   assert.deepEqual([...config.rankingGameIds].sort(), []);
   assert.deepEqual(fs.readdirSync('games').filter(file => file.endsWith('.html'))
