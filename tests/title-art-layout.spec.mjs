@@ -216,3 +216,19 @@ test('the shared badge renderer uses the complete PNG for all 15 titles', async 
   await page.goto(url);
   await capture('before');
 });
+
+for (const [id, threshold] of [['missingAlphabet', 5], ['parallelPair', 3]]) {
+  test(id + ' correct and title effects, points and reload', async ({ page }) => {
+    await page.goto(new URL('games/' + id + '.html', base).href);
+    for (let n = 1; n <= threshold; n++) {
+      await solve(page, { id });
+      await expect(page.locator('.mgl-celebration--' + (n === threshold ? 'title' : 'correct'))).toBeVisible();
+      await expect(page.locator('#best')).toHaveText(String(n));
+      await expect(page.locator('#points')).toHaveText(String(n));
+      await expect(page.locator('.mgl-celebration')).toBeHidden();
+    }
+    await page.reload();
+    await expect(page.locator('#best')).toHaveText(String(threshold));
+    await expect(page.locator('#points')).toHaveText(String(threshold));
+  });
+}

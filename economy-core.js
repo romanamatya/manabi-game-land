@@ -30,7 +30,7 @@ const heikouPair = (() => {
  return {epsilon,geometry};
 })();
 const subjects=['japanese','math','social','science','english'];
-const games={missingAlphabet:'english',keisan:'math','pref-name':'social','pref-place':'social',alphabet:'english',kotowaza:'japanese',distribution:'math',distribution2:'math',exchangeAssociation:'math'};
+const games={missingAlphabet:'english',keisan:'math','pref-name':'social','pref-place':'social',alphabet:'english',kotowaza:'japanese',distribution:'math',distribution2:'math',exchangeAssociation:'math',parallelPair:'math'};
 games.keisanSummary='math';games.multiplicationProperties='math';games.shapeExpressions='math';games.suichoku='math';games.verticalParallel='math';games.quadrilateral='math';games.heikouPair='math';games.shikakkeSecrets='math';games.fractionBasics='math';
 const shikakkeQuestions = Object.freeze([
   { id: 'diagonals', text: '2本の対角線が必ず垂直に交わる図形は？', answers: ['rhombus','square'] },
