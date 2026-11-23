@@ -18,8 +18,8 @@
 <script src="../economy.js?v=fraction-basics-v1"></script>
 <script src="../challenge120-core.js?v=fraction-basics-v1"></script>
 <script src="../celebration-effects.js"></script>
-<script type="module" src="../fraction-transform-game.js?v=fraction-transform-access-v2"></script>
-<link rel="stylesheet" href="../fraction-transform.css">
+<script type="module" src="../fraction-transform-game.js?v=fraction-single-digit-v1"></script>
+<link rel="stylesheet" href="../fraction-transform.css?v=fraction-single-digit-v1">
 </head>
 <body data-score-game="fractionTransform">
 <div class="app">
@@ -40,8 +40,10 @@
     <main class="panel game">
       <div class="question-header"><span class="category" id="category">分数</span><span id="question-number">第1問</span></div>
       <p id="access" role="status" hidden></p>
-      <h2 id="question">問題を準備しています</h2>
-      <div class="diagram" id="diagram" aria-label="問題の図"></div>
+      <div class="question-stage">
+        <h2 id="question">問題を準備しています</h2>
+        <div class="diagram" id="diagram" aria-label="問題の図"></div>
+      </div>
       <p class="instruction" id="instruction">答えをタッチしよう。</p>
       <div class="options" id="options" role="group" aria-label="答えの選択肢"></div>
       <div class="feedback" id="feedback" aria-live="polite"></div>

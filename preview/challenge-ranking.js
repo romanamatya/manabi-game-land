@@ -37,7 +37,7 @@ export function createPreviewChallengeRanking(F, db, uid, game) {
 export async function openChallengeRanking(game, config = window.MANABI_BACKEND_CONFIG, env = window.MANABI_ENV) {
   if (!challengeRankingEnabled(game, config, env)) throw Error('challenge-ranking-disabled');
   if (!env.preview) {
-    const { challengeRankingClient } = await import('./ranking-sync-api.js?v=d94089bc8224');
+    const { challengeRankingClient } = await import('./ranking-sync-api.js?v=de280faf770e');
     const api = await challengeRankingClient();
     return {
       rows: () => api.rankings(game),

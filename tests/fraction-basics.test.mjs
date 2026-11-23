@@ -21,14 +21,20 @@ const numeric = value => {
 };
 test('7,200 generated questions have mathematically unique answers and matching score inputs', () => {
   const rng = random();
-  assert.equal(TYPES.length, 12);
+  assert.equal(TYPES.length, 10);
   for (const type of TYPES) {
     const variants = new Set();
-    for (let i = 0; i < 600; i++) {
+    for (let i = 0; i < 720; i++) {
       const q = createQuestion(type, rng);
       variants.add(q.prompt + q.options.join('|') + JSON.stringify(q.visual));
       assert.equal(q.type, type);
       assert.ok(q.prompt && q.explanation && q.answer);
+      assert.ok(q.scorePrompt.n >= 2 && q.scorePrompt.n <= 9, type);
+      for (const text of [q.prompt, q.answer, q.explanation, ...q.options]) {
+        for (const [, denominator] of text.matchAll(/\d+\/(\d+)/g)) {
+          assert.match(denominator, /^[1-9]$/, text);
+        }
+      }
       const canonical = score.canonicalPrompt(GAME, q.scorePrompt);
       assert.equal(score.correct(GAME, canonical, q.answer), true, type);
       if (q.visual?.interactive) {
@@ -59,8 +65,6 @@ test('7,200 generated questions have mathematically unique answers and matching 
         const extreme = q.prompt.includes('小さい') ? Math.min : Math.max;
         assert.equal(numeric(q.answer), extreme(...q.options.map(numeric)));
       }
-      if (q.type === 'toFraction') assert.equal(Number(q.prompt.slice(0, 3)), numeric(q.answer));
-      if (q.type === 'toDecimal') assert.equal(Number(q.answer), numeric(q.prompt.split(' ')[0]));
       if (q.type === 'add' || q.type === 'subtract') {
         const [a,n,b,d] = q.prompt.match(/\d+/g).map(Number);
         assert.equal(n, d);

@@ -18,7 +18,7 @@ test.beforeEach(async ({ page }) => {
   await page.route('https://**/*', route => route.abort());
   await mockPublicVisibility(page,{fractionTransform:'published'});
   await page.addInitScript(scope => localStorage.setItem(scope+'mgl_nickname','ゲーム確認'),scope);
-  await page.route(/\/fraction-transform-model\.js(?:\?v=[a-f0-9]+)?$/, route => route.fulfill({
+  await page.route(/\/fraction-transform-model\.js(?:\?v=[\w-]+)?$/, route => route.fulfill({
     contentType:'application/javascript',
     body:`export { GAME } from './fraction-transform-model.js?real';
       import { createDeck as create } from './fraction-transform-model.js?real';
@@ -56,6 +56,9 @@ for (const size of viewports) test('four equal buttons and five badges at ' + si
     }));
     expect(boxes).toHaveLength(4);
     const prompt = await page.locator('#question').boundingBox();
+    const stage = await page.locator('.question-stage').boundingBox();
+    expect(Math.abs(prompt.y + prompt.height / 2 - (stage.y + stage.height / 2))).toBeLessThan(2);
+    await fits(page,size);
     for (const box of boxes) {
       expect(box.y).toBeCloseTo(boxes[0].y);
       expect(box.width).toBeCloseTo(boxes[0].width,0);

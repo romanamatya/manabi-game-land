@@ -14,7 +14,12 @@ test('12,000 conversions are balanced and have exactly one mathematical answer',
  let previous;
  for (let index=0; index<12000; index++) {
   const q = deck.next(), {n,k,type} = q.scorePrompt;
-  assert.ok(n>=2 && n<=10);
+  assert.ok(n>=2 && n<=9);
+  for (const text of [q.prompt, q.answer, q.explanation, ...q.options]) {
+   for (const [, denominator] of text.matchAll(/\d+\/(\d+)/g)) {
+    assert.match(denominator, /^[1-9]$/, text);
+   }
+  }
   assert.notEqual(type,previous);
   previous=type;
   counts[type]++;
