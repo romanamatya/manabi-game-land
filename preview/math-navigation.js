@@ -27,7 +27,9 @@ const displayNames={parallelPair:'平行な2本を見つけよう！',keisan:'�
 const descriptions={fractionTransform:'仮分数・帯分数・整数をへんしんさせよう',fractionBasics:'テープ・ピザ・数直線を使って、3年生の分数を復習しよう',shikakkeSecrets:'対角線・垂直・平行のひみつを見つけよう',heikouPair:'角の大きさと場所をくらべて、平行な直線を見つけよう',quadrilateral:'平行四辺形とひし形の辺の長さや角を見つけよう',verticalParallel:'赤い基準線を見て、垂直・平行な線を選ぼう',parallelPair:'7本の直線から平行な2本を見つけよう',keisan:'計算する順番を考えよう',distribution:'100を使って式を変え、計算しよう',distribution2:'共通する数をまとめて計算しよう',exchangeAssociation:'計算しやすい組み合わせを見つけよう',multiplicationProperties:'かける数が変わると、積はどう変わる？',shapeExpressions:'図の囲み方を式に表そう',suichoku:'2本の直線が垂直に交わる組を見つけよう',keisanSummary:'7つの問題形式で総復習。30問連続で最高称号！'};
 for(const id of (units.find(u=>u.id===unitId)?.games||[])){
  const g=window.ManabiProfileCatalog.find(g=>g.id===id),title=displayNames[id]||g?.name||id;
- const item=document.createElement('article');item.className='unit-card game-card';item.dataset.gameCard=id;if(id==='keisanSummary')item.classList.add('summary-card');
+ const item=document.createElement('article');item.className='unit-card game-card';item.dataset.gameCard=id;
+ if(id==='fractionTransform'&&window.MANABI_ENV?.environment!=='preview')item.hidden=true;
+ if(id==='keisanSummary')item.classList.add('summary-card');
  const summary=document.createElement('div');summary.className='game-summary';const h=document.createElement('h2'),p=document.createElement('p');h.textContent=title;p.textContent=descriptions[id]||'';summary.append(h,p);
  const badge=document.createElement('span');badge.className='game-status-badge';badge.dataset.gameStatus='';badge.setAttribute('role','status');badge.setAttribute('aria-live','polite');badge.hidden=true;
  const actions=document.createElement('div');actions.className='game-actions';

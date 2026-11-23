@@ -158,8 +158,15 @@ function start() {
   if ((config.availabilityEnabled||config.visibilityGameIds?.length) && window.ManabiPublicSettings) {
     for (const game of catalog.filter(g=>config.availabilityEnabled||config.visibilityGameIds?.includes(g.id))) {
       Promise.resolve(window.ManabiPublicSettings.subscribeGame(game.id, snapshot => {
-        if (snapshot?.metadata?.fromCache) return;
-        const setting = snapshot?.exists?.() ? snapshot.data() : null;
+        const productionTransform = game.id === 'fractionTransform' && config.mode === 'production';
+        const fromCache = snapshot?.metadata?.fromCache === true;
+        if (fromCache && !productionTransform) return;
+        const setting = !fromCache && snapshot?.exists?.() ? snapshot.data() : null;
+        if (productionTransform && setting?.status !== 'published') {
+          statuses.set(game.id, 'unknown');
+          update();
+          return;
+        }
         const value = visibilityState(setting);
         statuses.set(game.id, value); update();
       }, () => { statuses.set(game.id, 'unknown'); update(); })).then(stop => activeBindings.push(stop))

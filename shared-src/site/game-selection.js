@@ -33,7 +33,8 @@ function initialize(){
    });
    continue;
   }
-  const binding=bindGameAvailability(card,{enabled:window.MANABI_BACKEND_CONFIG?.availabilityEnabled===true||window.MANABI_BACKEND_CONFIG?.visibilityGameIds?.includes(card.dataset.gameCard),settings:window.ManabiPublicSettings});
+  const publishedOnly=card.dataset.gameCard==='fractionTransform'&&window.MANABI_ENV?.environment!=='preview';
+  const binding=bindGameAvailability(card,{publishedOnly,enabled:publishedOnly||window.MANABI_BACKEND_CONFIG?.availabilityEnabled===true||window.MANABI_BACKEND_CONFIG?.visibilityGameIds?.includes(card.dataset.gameCard),settings:window.ManabiPublicSettings});
   window.addEventListener('pagehide',binding.dispose,{once:true});
  }
 }

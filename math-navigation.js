@@ -27,6 +27,7 @@ const descriptions={fractionTransform:'仮分数・帯分数・整数をへん�
 for(const id of (units.find(u=>u.id===unitId)?.games||[])){
  const g=window.ManabiProfileCatalog.find(g=>g.id===id),title=displayNames[id]||g?.name||id;
  const item=document.createElement('article');item.className='unit-card game-card';item.dataset.gameCard=id;if(id==='keisanSummary')item.classList.add('summary-card');
+ if(id==='fractionTransform'&&window.MANABI_ENV?.environment!=='preview')item.hidden=true;
  const summary=document.createElement('div');summary.className='game-summary';const h=document.createElement('h2'),p=document.createElement('p');h.textContent=title;p.textContent=descriptions[id]||'';summary.append(h,p);
  const badge=document.createElement('span');badge.className='game-status-badge';badge.dataset.gameStatus='';badge.setAttribute('role','status');badge.setAttribute('aria-live','polite');badge.hidden=true;
  const actions=document.createElement('div');actions.className='game-actions';

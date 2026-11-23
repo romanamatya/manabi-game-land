@@ -77,7 +77,8 @@ function initialize() {
     if (playingChallenge && state.phase === 'ended') showGate();
     else next();
   });
-  if (config.visibilityGameIds?.includes(GAME) || config.managedVisibilityGameIds?.includes(GAME)) {
+  const productionTransform = GAME === 'fractionTransform' && environment === 'production';
+  if (productionTransform || config.visibilityGameIds?.includes(GAME) || config.managedVisibilityGameIds?.includes(GAME)) {
     const message = status => {
       const canPlay = status === 'published';
       $('access').hidden = canPlay;
@@ -97,7 +98,10 @@ function initialize() {
     const unavailable = () => { clearTimeout(responsiveTimeout); message('unknown'); };
     if (!window.ManabiPublicSettings) unavailable();
     else window.ManabiPublicSettings.subscribeGame(GAME, snapshot => {
-      if (snapshot.metadata?.fromCache) return;
+      if (snapshot.metadata?.fromCache) {
+        if (productionTransform && allowed) message('unknown');
+        return;
+      }
       clearTimeout(responsiveTimeout);
       message(snapshot.exists() ? snapshot.data().status : 'preparing');
     }, unavailable).catch(unavailable);

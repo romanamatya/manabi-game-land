@@ -7,7 +7,7 @@
  const staticLocalGames=new Set(cfg.staticLocalGameIds||[]);
  const managedGames=new Set(cfg.managedVisibilityGameIds||[]);
  const managedStatic=id=>staticLocalGames.has(id)&&managedGames.has(id);
- const staticPublished=id=>staticLocalGames.has(id)&&!managedStatic(id);
+ const staticPublished=id=>staticLocalGames.has(id)&&!managedStatic(id)&&(id!=='fractionTransform'||cfg.mode==='preview');
  const staticSnapshot={exists:()=>true,data:()=>({status:'published'}),metadata:{fromCache:false}};
  function gameAvailabilityStatus(setting){
   if(!setting)return 'unknown';

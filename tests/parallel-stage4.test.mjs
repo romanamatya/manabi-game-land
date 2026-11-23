@@ -20,6 +20,7 @@ test('parallelPair files and settings match the reviewed release candidate', asy
         .replace("if(window.MANABI_BACKEND_CONFIG?.staticLocalGameIds?.includes('heikouPair'))units.find(unit=>unit.id==='geometry').games.push('heikouPair');\r\n", '')
         .replace("if(window.MANABI_BACKEND_CONFIG?.staticLocalGameIds?.includes('shikakkeSecrets'))units.find(unit=>unit.id==='geometry').games.push('shikakkeSecrets');\r\n", '')
         .replace(/if\(window\.MANABI_BACKEND_CONFIG\?\.staticLocalGameIds\?\.includes\('fractionBasics'\)\)units\.push\([^\n]+\r?\n/, '')
+        .replace(" if(id==='fractionTransform'&&window.MANABI_ENV?.environment!=='preview')item.hidden=true;\n", '')
         .replace("fractionTransform:'仮分数・帯分数・整数をへんしんさせよう',", '')
         .replace("fractionBasics:'テープ・ピザ・数直線を使って、3年生の分数を復習しよう',", '')
         .replace("shikakkeSecrets:'対角線・垂直・平行のひみつを見つけよう',", '')

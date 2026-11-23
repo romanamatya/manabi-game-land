@@ -157,8 +157,29 @@ test('hidden visibility disables play in the list and on the direct game page', 
   await page.goto(base+'math-fractions.html');
   const row = page.locator('[data-game-card="fractionTransform"]');
   await expect(row.locator('[data-game-play]')).toBeDisabled();
+  if (production) await expect(row).toBeHidden();
   await expect(row.locator('.new-game-badge')).toHaveCount(0);
   await page.goto(url);
   await expect(page.locator('#access')).toHaveText('このゲームは現在非公開です。');
   await expect(page.locator('#options button')).toHaveCount(0);
 });
+
+if (production) {
+  for (const [scenario, state, message] of [
+    ['preparing', 'preparing', 'このゲームは公開準備中です。'],
+    ['no settings document', null, 'このゲームは公開準備中です。'],
+    ['settings read error', 'read-error', '公開状態を確認できません。'],
+  ]) {
+    test(`production fraction transformation stays unlisted and unplayable with ${scenario}`, async ({page}) => {
+      await page.unroute(/\/public-firebase-session\.js(?:\?|$)/);
+      await mockPublicVisibility(page, {fractionTransform:state});
+      await page.goto(base + 'math-fractions.html');
+      await expect(page.locator('[data-game-card="fractionBasics"] [data-game-play]')).toBeEnabled();
+      await expect(page.locator('[data-game-card="fractionTransform"]')).toBeHidden();
+      await page.goto(url);
+      await expect(page.locator('#access')).toContainText(message);
+      await expect(page.locator('#options button')).toHaveCount(0);
+      expect(await stored(page,'mgl_fractionTransform')).toBeNull();
+    });
+  }
+}
