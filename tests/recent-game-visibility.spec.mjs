@@ -11,12 +11,13 @@ const targets = [
   ['heikouPair', 'math-geometry.html', '[data-line]', '#practice-best'],
   ['shikakkeSecrets', 'math-geometry.html', '[data-shape]', '#practice-best'],
   ['fractionBasics','math-fractions.html','#options button, #diagram [data-count]','#best'],
+  ['fractionTransform','math-fractions.html','#options button','#best'],
 ];
 test('individual management hides cards, gates direct play and keeps local records through re-publication', async ({ browser }) => {
   test.setTimeout(120000);
   const admin = await browser.newPage();
   const student = await browser.newPage({ viewport: { width: 1024, height: 768 }, hasTouch: true, isMobile: true });
-  const states = { verticalParallel: null, quadrilateral: null, heikouPair: null, shikakkeSecrets: null, fractionBasics: null };
+  const states = { verticalParallel: null, quadrilateral: null, heikouPair: null, shikakkeSecrets: null, fractionBasics: null, fractionTransform: 'published' };
   const changes = [];
   await admin.route('https://**/*', route => route.abort());
   await student.route('https://**/*', route => route.abort());
@@ -25,7 +26,7 @@ test('individual management hides cards, gates direct play and keeps local recor
     if (sessionStorage.getItem('availability-fixtures')) return;
     sessionStorage.setItem('availability-fixtures','1');
     localStorage.setItem('mgl_nickname','公開設定テスト');
-    for (const key of ['verticalParallel','quadrilateral','heikouPair','shikakkeSecrets','fractionBasics']) localStorage.setItem('mgl_'+key,'{"best":9}');
+    for (const key of ['verticalParallel','quadrilateral','heikouPair','shikakkeSecrets','fractionBasics','fractionTransform']) localStorage.setItem('mgl_'+key,'{"best":9}');
   });
   await admin.exposeFunction('visibilityAdmin', (action, input) => {
     if (action === 'admin:snapshot') {
@@ -67,17 +68,18 @@ test('individual management hides cards, gates direct play and keeps local recor
     const card = student.locator(`[data-game-card="${id}"]`);
     await visit(student,list);
     await expect(card).toBeHidden();
-    if (id==='fractionBasics') {
+    if (id==='fractionTransform') {
       for (const name of ['index.html','math.html','math-fractions.html']) {
         await visit(student,name);
         await expect(student.locator('.new-game-badge')).toHaveCount(0);
       }
     }
     await visit(student,'games/'+id+'.html');
-    await expect(student.locator(id==='fractionBasics'?'#access':'#publicGameAccessStatus')).toContainText('現在非公開');
+    const isFraction = ['fractionBasics', 'fractionTransform'].includes(id);
+    await expect(student.locator(isFraction?'#access':'#publicGameAccessStatus')).toContainText('現在非公開');
     const action = student.locator(answer).first();
-    if (id!=='missingAlphabet' && id!=='fractionBasics') await expect(action).toBeAttached();
-    if (id==='fractionBasics') await expect(action).toHaveCount(0);
+    if (id!=='missingAlphabet' && !isFraction) await expect(action).toBeAttached();
+    if (isFraction) await expect(action).toHaveCount(0);
     if (await action.count()) {
       const cancelled = await action.evaluate(element => {
         const event = new MouseEvent('click',{bubbles:true,cancelable:true});
@@ -90,10 +92,10 @@ test('individual management hides cards, gates direct play and keeps local recor
     await toggle('published');
     await visit(student,list);
     await expect(card.getByRole('button',{name:'プレイ',exact:true})).toBeEnabled();
-    if (id==='fractionBasics') await expect(card.locator('.new-game-badge')).toHaveCount(1);
+    if (id==='fractionTransform') await expect(card.locator('.new-game-badge')).toHaveCount(1);
     await visit(student,'games/'+id+'.html');
     await expect(student.locator('#publicGameAccessStatus')).toHaveCount(0);
-    if (['verticalParallel','quadrilateral','heikouPair','shikakkeSecrets','fractionBasics'].includes(id)) {
+    if (['verticalParallel','quadrilateral','heikouPair','shikakkeSecrets','fractionBasics','fractionTransform'].includes(id)) {
       await expect(student.locator(best)).toHaveText('9');
     }
   }

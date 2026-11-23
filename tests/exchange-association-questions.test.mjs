@@ -97,10 +97,10 @@ test('correct option positions remain balanced and never repeat in a long run',(
  assert.ok(Math.max(...counts)-Math.min(...counts)<=1);
 });
 
-test('three-second automatic transition is scoped to successful exchange answers',()=>{
+test('completed answers use the common effect duration',()=>{
  const game=readFileSync(new URL('../shared-src/site/math-new-game.js',import.meta.url),'utf8');
- assert.match(game,/kind==='exchangeAssociation'&&ok\)autoNextTimer=setTimeout/);
- assert.match(game,/\},3000\)/);
- assert.match(game,/document\.addEventListener\('visibilitychange'/);
+ assert.match(game,/if\(completed\).*autoNextTimer=setTimeout/);
+ assert.match(game,/ManabiCelebrations\?\.delay\(\) \?\? 500/);
+ assert.match(game,/addEventListener\('pagehide'/);
  assert.match(game,/if\(!locked\)return;locked=false;clearAutoAdvance\(\);next\(\)/);
 });

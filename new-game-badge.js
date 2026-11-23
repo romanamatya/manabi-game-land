@@ -1,4 +1,4 @@
-import { latestGameId } from './latest-game.js?v=fraction-basics-v1';
+import { latestGameId } from './latest-game.js?v=fraction-transform-release-v1';
 import { visibilityState } from './game-selection-model.js?v=availability-read-fix-20261102';
 
 document.addEventListener('DOMContentLoaded', () => {

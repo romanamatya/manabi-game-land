@@ -8,7 +8,7 @@ if(process.env.MGL_CHROME_CHANNEL)test.use({channel:process.env.MGL_CHROME_CHANN
 const sizes=[{width:1024,height:768},{width:1194,height:834},{width:960,height:540}];
 test.beforeEach(async({page})=>{
  await page.route('https://**/*',route=>route.abort());
- await mockPublicVisibility(page,{verticalParallel:'published',fractionBasics:'published'});
+ await mockPublicVisibility(page,{verticalParallel:'published',fractionBasics:'published',fractionTransform:'published'});
  await page.addInitScript(scope=>{
   if (sessionStorage.getItem('title-collection-fixture')) return;
   sessionStorage.setItem('title-collection-fixture', '1');
@@ -48,7 +48,7 @@ for(const size of sizes)test('home, picker and collection '+size.width+'x'+size.
 });
 test('all released games launch without ranking requests or controls',async({page})=>{
  await page.goto(site+'titles.html');
- const ids=await page.evaluate(()=>window.ManabiProfileCatalog.map(g=>g.id));expect(ids).toHaveLength(19);
+ const ids=await page.evaluate(()=>window.ManabiProfileCatalog.map(g=>g.id));expect(ids).toHaveLength(20);
  const errors=[],requests=[];page.on('pageerror',e=>errors.push(new URL(page.url()).pathname+': '+e.message));page.on('request',r=>{if(/firestore.googleapis.com/.test(r.url()))requests.push(r.url());});
  for(const id of ids){
   await page.goto(site+'games/'+id+'.html');
@@ -62,7 +62,7 @@ test('all released games launch without ranking requests or controls',async({pag
 });
 for(const size of sizes)test('all subject lists retain ordered title rows '+size.width+'x'+size.height,async({page},info)=>{
  await page.setViewportSize(size);
- for(const [route,count] of [['japanese',1],['social',2],['language',2],['math-calculation',production?7:8]]){
+ for(const [route,count] of [['japanese',1],['social',2],['language',2],['math-calculation',7]]){
   await page.goto(site+route+'.html');
   await expect(page.locator('.title-game-row')).toHaveCount(count);
   await clean(page,{scroll:true});
@@ -81,14 +81,15 @@ if(production)for(const size of sizes)test('math units preserve all games and co
  await page.addInitScript(()=>localStorage.setItem('mgl_fractionBasics','{"best":25}'));
  await page.goto(site+'math.html');
  const unit=page.locator('[data-unit-id="fractions"]');
- await expect(unit.getByRole('progressbar')).toHaveAttribute('value','100');
- await expect(unit).toContainText('5 / 5個');
- await expect(unit).toContainText('1ゲーム');
- await expect(unit.getByRole('progressbar')).toHaveClass('complete');
+ await expect(unit.getByRole('progressbar')).toHaveAttribute('value','50');
+ await expect(unit).toContainText('5 / 10個');
+ await expect(unit).toContainText('2ゲーム');
+ await expect(unit.getByRole('progressbar')).not.toHaveClass('complete');
  await expect(page.locator('.math-unit-row')).toHaveCount(3);
  await clean(page);
  await unit.getByRole('link').click();
- await expect(page.locator('[data-game-card]')).toHaveCount(1);
+ await expect(page.locator('[data-game-card]')).toHaveCount(2);
+ await expect(page.locator('[data-game-card]').nth(1)).toHaveAttribute('data-game-card','fractionTransform');
  await expect(page.locator('[data-game-card="fractionBasics"] [data-game-play]')).toBeEnabled();
  await page.goto(site+'math-calculation.html');
  const rows=page.locator('[data-game-card]:visible');
@@ -140,7 +141,7 @@ for (const id of calculationGames) test(id + ' awards illustrated titles and res
  await page.goto(site + 'games/' + id + '.html');
  const tower = page.locator('#tower');
  for (let streak = 1; streak <= 25; streak++) {
-  await expect(page.locator('#feedback')).toBeHidden();
+  await expect(page.locator('#choices button').first()).toBeEnabled();
   const correctText = await page.evaluate(id => {
    const state = JSON.parse(window.manabiStorage.getItem('mgl_' + id));
    const pool = id === 'multiplicationProperties'
@@ -152,7 +153,7 @@ for (const id of calculationGames) test(id + ' awards illustrated titles and res
   await expect(page.locator('#best')).toHaveText(String(streak));
   if (streak % 5 === 0) {
    await expect(tower.locator('li.earned')).toHaveCount(streak / 5);
-   await expect(page.locator('#mqCelebration img')).toHaveAttribute('src',
+   await expect(page.locator('.mgl-celebration--title img')).toHaveAttribute('src',
     new RegExp(id + '-' + String(streak).padStart(2, '0') + '\\.png$'));
   }
  }
@@ -160,7 +161,7 @@ for (const id of calculationGames) test(id + ' awards illustrated titles and res
  await expect(tower.locator('li.earned')).toHaveCount(5);
  await expect(page.locator('#best')).toHaveText('25');
  await expect(tower.locator('.mq-badge').first()).toHaveCSS('filter', 'none');
- await expect(page.locator('#mqCelebration')).toHaveCount(0);
+ await expect(page.locator('.mgl-celebration:visible')).toHaveCount(0);
  await page.goto(site + 'titles.html');
  await page.locator('#collectionGame').selectOption(id);
  await expect(page.locator('.collection-title-grid li.earned')).toHaveCount(5);

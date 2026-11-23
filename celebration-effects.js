@@ -5,7 +5,7 @@ if(!economy||typeof economy.answer!=='function'||!core?.correct||window.ManabiCe
 const reduceMotion=window.matchMedia?.('(prefers-reduced-motion: reduce)');
 const testMode=new URL(location.href).searchParams.has('adminTest');
 const assetBase=new URL('.',document.currentScript?.src||location.href);
-let lastGesture=0,active=null,answerSequence=0,suppressLegacySuccess=false;
+let lastGesture=0,active=null,pending=null,until=0,suppressLegacySuccess=false;
 const bestSeen=new Map();
 const titles=window.ManabiProfileCatalog||[];
 const style=document.createElement('style');
@@ -61,19 +61,43 @@ watchLegacyCorrectText();
 function finish(){layer.hidden=true;if(active)clearTimeout(active);active=null;layer.className='mgl-celebration';layer.replaceChildren(glow,rays)}
 function show(correctTitle){clear();layer.hidden=false;layer.classList.add(correctTitle?'mgl-celebration--title':'mgl-celebration--correct');addParticles(correctTitle?66:38);const left=document.createElement('span'),right=document.createElement('span');left.className='mgl-celebration__burst mgl-celebration__burst--left';right.className='mgl-celebration__burst mgl-celebration__burst--right';layer.append(left,right);suppressLegacySuccess=true;hideLegacyCorrectText();
  if(correctTitle){const card=document.createElement('section');card.className='mgl-celebration__title-card';if(correctTitle.image!==null)card.append(artFor(correctTitle));const copy=document.createElement('div');copy.className='mgl-celebration__title-copy';const lead=document.createElement('strong');lead.textContent='新しい称号を獲得！';const name=document.createElement('h2');name.textContent=correctTitle.displayName||correctTitle.name;const sub=document.createElement('p');sub.textContent=correctTitle.at+'問連続正解';copy.append(lead,name,sub);card.append(copy);layer.append(card)}else{const text=document.createElement('p');text.className='mgl-celebration__text';text.textContent='正解！';layer.append(text)}
- active=setTimeout(finish,correctTitle?1000:470)}
+ const duration=correctTitle?1000:500;
+ until=Date.now()+duration;
+ active=setTimeout(finish,duration);
+ return duration;
+}
 function hasPlayableAccess(){return testMode||window.MANABI_BACKEND_CONFIG?.accountAccessEnabled!==true||window.ManabiPlayerAccess?.canPlay?.()===true}
 document.addEventListener('pointerdown',()=>{lastGesture=Date.now()},{capture:true,passive:true});document.addEventListener('keydown',()=>{lastGesture=Date.now()},{capture:true});document.addEventListener('click',()=>{lastGesture=Date.now()},{capture:true});
 const original=economy.answer;
 economy.answer=function(context,value){
+ if(context?.__mglCelebrationHandled)return original.apply(this,arguments);
  let game='',correct=false,before=0,eligible=false;
  if(context&&!context.__mglCelebrationHandled&&hasPlayableAccess())try{game=context.game;const prompt=core.canonicalPrompt(game,context.prompt);correct=core.correct(game,prompt,value)===true;if(correct){context.__mglCelebrationHandled=true;before=bestSeen.has(game)?bestSeen.get(game):readBest(game);eligible=testMode||Date.now()-lastGesture<2500;}}catch{}
  suppressLegacySuccess=correct&&eligible;
- if(!correct)answerSequence++;
+ if(!correct)pending=null;
  const result=original.apply(this,arguments);
  if(!correct)hideLegacyCorrectText();
- if(correct&&eligible){const token=++answerSequence;requestAnimationFrame(()=>requestAnimationFrame(()=>{if(token!==answerSequence)return;const after=readBest(game),previous=Math.max(0,before),title=titleFor(game,previous,after);bestSeen.set(game,Math.max(previous,after));show(title)}))}
+ if(correct&&eligible){
+  const answer={game,before};
+  pending=answer;
+  requestAnimationFrame(()=>requestAnimationFrame(()=>{if(pending===answer)flushPending()}));
+ }
  return result
 };
-window.ManabiCelebrations=Object.freeze({showCorrect(){show(null)},showTitle(item){show(item)},active:()=>!layer.hidden});
+function flushPending(){
+ if(!pending)return;
+ const {game,before}=pending;
+ pending=null;
+ const after=readBest(game),previous=Math.max(0,before);
+ const title=titleFor(game,previous,after);
+ bestSeen.set(game,Math.max(previous,after));
+ show(title);
+}
+window.ManabiCelebrations=Object.freeze({
+ showCorrect:()=>show(null),
+ showTitle:item=>show(item),
+ play(game,before,after){return show(titleFor(game,before,after))},
+ delay(){flushPending();return Math.max(0,until-Date.now())||500},
+ active:()=>!layer.hidden,
+});
 })();

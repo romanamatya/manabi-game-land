@@ -14,7 +14,11 @@ export function mockPublicVisibility(page, states = {}) {
       return { db: {}, F: {
         doc(_db, path) { return path; },
         async getDocFromServer(path) { return snapshot(path); },
-        onSnapshot(path, options, receive) { receive(snapshot(path)); return () => {}; },
+        onSnapshot(path, options, receive, reject) {
+          if (states[path.split('/').pop()] === 'read-error') reject(new Error('visibility read failed'));
+          else receive(snapshot(path));
+          return () => {};
+        },
       }};
     }};`,
   }));

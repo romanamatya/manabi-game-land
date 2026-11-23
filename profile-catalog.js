@@ -81,3 +81,18 @@ window.ManabiProfileCatalog.push({
     image:'assets/fraction-basics-titles/fractionBasics_'+file+'.png',
   })),
 });
+
+window.ManabiProfileCatalog.push({
+  id:'fractionTransform', name:'分数へんしんチャレンジ！', subject:'math', page:'math-fractions.html',
+  field:'fractionTransformBestStreak', rankingEnabled:false,
+  titles:[
+    [3,'分数へんしん見習い','03_apprentice'],
+    [5,'分数へんしんハンター','05_hunter'],
+    [10,'分数へんしんマスター','10_master'],
+    [15,'分数へんしんの達人','15_expert'],
+    [25,'分数へんしんの覇王','25_overlord'],
+  ].map(([at,name,file])=>({
+    id:'fractionTransform:'+at, at, name, standalone:true,
+    image:'assets/fraction-transform-titles/fractionTransform_'+file+'.png',
+  })),
+});

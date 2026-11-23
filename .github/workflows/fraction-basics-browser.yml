@@ -8,6 +8,7 @@ on:
       - 'preview/fraction-basics-*'
       - 'preview/games/fractionBasics.html'
       - 'tests/fraction-basics*'
+      - 'tests/fraction-transform*'
       - '.github/workflows/fraction-basics-browser.yml'
 
 permissions:
@@ -38,6 +39,7 @@ jobs:
         run: npx playwright install --with-deps chromium
       - run: node tools/suichoku-smoke-server.mjs > /tmp/fraction-basics-server.log 2>&1 &
       - run: npx playwright test tests/fraction-basics-browser.spec.mjs --browser ${{ matrix.browser }}
+      - run: npx playwright test tests/fraction-transform-browser.spec.mjs --browser ${{ matrix.browser }}
       - uses: actions/upload-artifact@v4
         if: always()
         with:

@@ -33,7 +33,7 @@ export function transformTitleMode(file, text, config, collectionPage) {
     text=text.replace(/<section class="leaderboard" id="leaderboard">[\s\S]*?<\/section>/,'<section id="titleCollectionHome" aria-live="polite"></section>');
     for(const [page,id] of [['japanese','japanese'],['math','math'],['social','social'],['science','science'],['language','english']])text=text.replace('class="card subject-card" href="'+page+'.html"','class="card subject-card" data-subject-card="'+id+'" href="'+page+'.html"');
   }
-  if(/^(index|math|math-calculation|math-geometry|japanese|social|science|language|ranking|titles|summary-ranking)\.html$/.test(file)){
+  if(/^(index|math|math-calculation|math-fractions|math-geometry|japanese|social|science|language|ranking|titles|summary-ranking)\.html$/.test(file)){
     if(!text.includes('href="title-collection.css"'))text=text.replace('</head>','<link rel="stylesheet" href="title-collection.css"><script type="module" src="title-collection.js?v=collection-v1"></script></head>');
     // Legacy home closes the head implicitly; make the insertion explicit there.
     if(!text.includes('src="title-collection.js'))text=text.replace('<body','<link rel="stylesheet" href="title-collection.css"><script type="module" src="title-collection.js?v=collection-v1"></script><body');

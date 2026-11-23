@@ -6,14 +6,21 @@ const error = code => Object.assign(new Error(code), {code});
 const validName = value => typeof value === 'string' && value === value.trim() && value.length >= 1 && value.length <= 12 && !/[<>\r\n]/.test(value);
 
 export function errorText(e) {
+  const rejectedSignIn = '管理室の認証情報が受け付けられませんでした。管理室用のパスワードを確認してください。';
   return ({
     'backend-not-configured': 'この環境の認証・権限は確認待ち。管理機能は安全のため停止中。',
     'production-project-rejected': '接続設定が環境と一致しないため停止した。',
     'environment-project-mismatch': '環境とFirebase接続先が一致しないため停止した。',
-    'auth/invalid-credential': 'パスワードを確認して。',
-    'auth/wrong-password': 'パスワードを確認して。',
-    'auth/user-not-found': 'パスワードを確認して。',
-    'auth/invalid-login-credentials': 'パスワードを確認して。',
+    'auth/invalid-credential': rejectedSignIn,
+    'auth/wrong-password': rejectedSignIn,
+    'auth/user-not-found': rejectedSignIn,
+    'auth/invalid-login-credentials': rejectedSignIn,
+    'auth/network-request-failed': '認証サービスに接続できませんでした。接続を確認してください。',
+    'auth/operation-not-allowed': 'この環境のメール／パスワード認証が利用できません。管理者に設定の確認を依頼してください。',
+    'auth/invalid-api-key': '認証サービスの接続設定を確認してください。',
+    'auth/app-not-authorized': 'このサイトは認証サービスへの接続を許可されていません。',
+    'auth/unauthorized-domain': 'このサイトは認証サービスへの接続を許可されていません。',
+    'auth/user-disabled': '管理室の認証アカウントが無効になっています。管理者に確認してください。',
     'auth/too-many-requests': '試行回数が多いため一時停止中。時間を空けて試して。',
     'permission-denied': '管理権限がないか、認証が失効している。再ログインして。',
     'admin-required': '管理者として認証されていない。',
@@ -142,7 +149,16 @@ export function createAdminOperations(c,{auth,db},A,F) {
   }
   return {
     auth, db, call, verify, logout, changePassword,
-    login: async password => {try {await A.signInWithEmailAndPassword(auth, alias, password); await verify();} catch (e) {await A.signOut(auth); throw e;}},
+    login: async password => {
+      try {
+        await A.signInWithEmailAndPassword(auth, alias, password);
+        await verify();
+      } catch (failure) {
+        // A failed cleanup must not replace the original sign-in or access error.
+        try { await A.signOut(auth); } catch {}
+        throw failure;
+      }
+    },
     watch: callback => A.onIdTokenChanged(auth, callback),
     watchRevocation: callback => {
       const check = async snapshot => {

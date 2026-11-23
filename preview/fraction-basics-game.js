@@ -225,6 +225,7 @@ function judge(value) {
   if (phase !== 'ask' || !allowed) return;
   phase = 'feedback';
   const correct = value === question.answer;
+  const before = gameProgress(game, storage).best;
   if (playingChallenge) {
     settle();
     const result = challenge.answer(state, challenge.issue(state, scoreContext.id), correct, state.lastWall);
@@ -240,7 +241,10 @@ function judge(value) {
       saveChallenge();
     }
   }
-  if (correct) void economy.answer(scoreContext, value).catch(() => {});
+  if (correct) {
+    scoreContext.__mglCelebrationHandled = true;
+    void economy.answer(scoreContext, value).catch(() => {});
+  }
   for (const button of $('options').querySelectorAll('button')) {
     button.disabled = true;
     if (button.dataset.value === question.answer) button.classList.add('correct');
@@ -252,10 +256,11 @@ function judge(value) {
   paintStats();
   if (correct) {
     $('feedback').innerHTML = '<strong>正解！</strong>';
+    const duration = window.ManabiCelebrations?.play(GAME, before, gameProgress(game, storage).best) ?? 500;
     transition = setTimeout(() => {
       if (!playingChallenge && practiceStreak === threshold) showGate();
       else next();
-    }, 500);
+    }, duration);
   } else {
     $('feedback').classList.add('wrong');
     $('feedback').innerHTML = '<strong>まちがいを確認しよう</strong><div>正しい答え：'

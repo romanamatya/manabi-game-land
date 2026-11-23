@@ -143,6 +143,8 @@ for (const game of games) {
   test(`${game.id}: capture pre-fix layout`, async ({ page }) => {
     test.skip(!baseline, 'Pre-fix screenshots require the pull request base commit');
     const replacements = ['profile-catalog.js', 'celebration-effects.js', 'games/' + game.id + '.html'];
+    // The baseline celebration module predates the delay API used by the candidate game.
+    if (game.id === 'missingAlphabet') replacements.push('missing-alphabet-game.js');
     for (const relative of replacements) {
       const original = execFileSync('git', ['show', `${baseline}:${relative}`]);
       await page.route(request => request.pathname === new URL(relative, base).pathname, route => route.fulfill({
@@ -214,3 +216,19 @@ test('the shared badge renderer uses the complete PNG for all 15 titles', async 
   await page.goto(url);
   await capture('before');
 });
+
+for (const [id, threshold] of [['missingAlphabet', 5], ['parallelPair', 3]]) {
+  test(id + ' correct and title effects, points and reload', async ({ page }) => {
+    await page.goto(new URL('games/' + id + '.html', base).href);
+    for (let n = 1; n <= threshold; n++) {
+      await solve(page, { id });
+      await expect(page.locator('.mgl-celebration--' + (n === threshold ? 'title' : 'correct'))).toBeVisible();
+      await expect(page.locator('#best')).toHaveText(String(n));
+      await expect(page.locator('#points')).toHaveText(String(n));
+      await expect(page.locator('.mgl-celebration')).toBeHidden();
+    }
+    await page.reload();
+    await expect(page.locator('#best')).toHaveText(String(threshold));
+    await expect(page.locator('#points')).toHaveText(String(threshold));
+  });
+}

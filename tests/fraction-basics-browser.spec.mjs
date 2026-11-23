@@ -135,7 +135,7 @@ test('five formal titles, saved record and daily points cap survive reload; chal
     } else await answer.tap();
     await expect(page.locator('#feedback')).toHaveText('正解！');
     await expect(page.locator('#streak')).toHaveText(String(expected));
-    await page.clock.fastForward(520);
+    await page.clock.fastForward([3,5,10,15,25].includes(expected) && expected<=25 ? 1020 : 520);
   }
   let rank = 0;
   for (let n=1; n<=25; n++) {
@@ -164,9 +164,9 @@ test('five formal titles, saved record and daily points cap survive reload; chal
   await page.clock.fastForward(121000);
   await expect(page.locator('#gate-message')).toContainText('時間切れ');
   await expect(page.locator('#best')).toHaveText('51');
-  await page.goto(base + (production?'math-fractions.html':'math-calculation.html'));
+  await page.goto(base + 'math-fractions.html');
   const row = page.locator('[data-game-card="fractionBasics"]');
-  await expect(row.locator('.new-game-badge')).toHaveText('NEW');
+  if (!production) await expect(row.locator('.new-game-badge')).toHaveCount(0);
   await expect(row.locator('.title-row-percent')).toContainText('100');
   await expect(row.locator('.title-row-best')).toContainText('51');
   await page.goto(base + 'titles.html?game=fractionBasics');
@@ -177,7 +177,7 @@ test('five formal titles, saved record and daily points cap survive reload; chal
 test('hidden visibility disables play in the list and on the direct game page', async ({page})=>{
   await page.unroute(/\/public-firebase-session\.js(?:\?|$)/);
   await mockPublicVisibility(page,{fractionBasics:'hidden'});
-  await page.goto(base+(production?'math-fractions.html':'math-calculation.html'));
+  await page.goto(base+'math-fractions.html');
   const row = page.locator('[data-game-card="fractionBasics"]');
   await expect(row.locator('[data-game-play]')).toBeDisabled();
   await expect(row.locator('.new-game-badge')).toHaveCount(0);

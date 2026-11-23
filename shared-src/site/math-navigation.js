@@ -5,26 +5,31 @@ if(window.MANABI_BACKEND_CONFIG?.gameIds?.includes('verticalParallel'))units.fin
 if(window.MANABI_BACKEND_CONFIG?.staticLocalGameIds?.includes('quadrilateral'))units.find(unit=>unit.id==='geometry').games.push('quadrilateral');
 if(window.MANABI_BACKEND_CONFIG?.staticLocalGameIds?.includes('heikouPair'))units.find(unit=>unit.id==='geometry').games.push('heikouPair');
 if(window.MANABI_BACKEND_CONFIG?.staticLocalGameIds?.includes('shikakkeSecrets'))units.find(unit=>unit.id==='geometry').games.push('shikakkeSecrets');
-if(window.MANABI_BACKEND_CONFIG?.staticLocalGameIds?.includes('fractionBasics')){
- const unit=units.find(unit=>unit.id==='calculation');
- unit.games.push('fractionBasics');
- unit.description+='。分数の復習にも挑戦！';
-}
+const fractions=['fractionBasics','fractionTransform'].filter(id=>window.MANABI_BACKEND_CONFIG?.staticLocalGameIds?.includes(id));
+if(fractions.length)units.push({id:'fractions',name:'分数',description:'分数のきほんと変換を練習しよう',page:'math-fractions.html',games:fractions});
 window.ManabiMathUnits=Object.freeze(units);const root=document.getElementById('mathCards'),unitId=document.body.dataset.unit,inUnit=units.some(u=>u.id===unitId);
 function card(title,description,href,rank){const article=document.createElement('article');article.className='unit-card';const a=document.createElement('a');a.className='game-start';a.href=testLink(href);const h=document.createElement('h2'),p=document.createElement('p');h.textContent=title;p.textContent=description;a.append(h,p);article.append(a);if(rank){const link=document.createElement('a');link.className='rank-button';link.href=testLink(rank);link.textContent='ゲーム最高連続ランキング（この端末）';article.append(link)}return article}
 if(!inUnit){
  for(const u of units){
   const unitCard = card(u.name,u.description,u.page);
-  unitCard.dataset.unitGames=u.games.join(' ');unitCard.dataset.unitId=u.id;
+  unitCard.classList.add('math-unit-row');
+  unitCard.dataset.unitId=u.id;
+  const link=unitCard.children[0];
+  for (const [tag,className,label] of [['div','math-unit-progress','―'],['span','math-unit-count','0ゲーム'],['span','math-unit-select','選択']]) {
+   const element=document.createElement(tag);element.className=className;element.textContent=label;link.append(element);
+  }
+  unitCard.dataset.unitGames=u.games.join(' ');
   root.append(unitCard);
  }
  return;
 }
 const displayNames={parallelPair:'平行な2本を見つけよう！',keisan:'計算の順番',multiplicationProperties:'掛け算の性質',shapeExpressions:'図形と式',suichoku:'垂直を見つけよう！',keisanSummary:'2分間チャレンジ'};
-const descriptions={fractionBasics:'テープ・ピザ・数直線を使って、3年生の分数を復習しよう',shikakkeSecrets:'対角線・垂直・平行のひみつを見つけよう',heikouPair:'角の大きさと場所をくらべて、平行な直線を見つけよう',quadrilateral:'平行四辺形とひし形の辺の長さや角を見つけよう',verticalParallel:'赤い基準線を見て、垂直・平行な線を選ぼう',parallelPair:'7本の直線から平行な2本を見つけよう',keisan:'計算する順番を考えよう',distribution:'100を使って式を変え、計算しよう',distribution2:'共通する数をまとめて計算しよう',exchangeAssociation:'計算しやすい組み合わせを見つけよう',multiplicationProperties:'かける数が変わると、積はどう変わる？',shapeExpressions:'図の囲み方を式に表そう',suichoku:'2本の直線が垂直に交わる組を見つけよう',keisanSummary:'7つの問題形式で総復習。30問連続で最高称号！'};
+const descriptions={fractionTransform:'仮分数・帯分数・整数をへんしんさせよう',fractionBasics:'テープ・ピザ・数直線を使って、3年生の分数を復習しよう',shikakkeSecrets:'対角線・垂直・平行のひみつを見つけよう',heikouPair:'角の大きさと場所をくらべて、平行な直線を見つけよう',quadrilateral:'平行四辺形とひし形の辺の長さや角を見つけよう',verticalParallel:'赤い基準線を見て、垂直・平行な線を選ぼう',parallelPair:'7本の直線から平行な2本を見つけよう',keisan:'計算する順番を考えよう',distribution:'100を使って式を変え、計算しよう',distribution2:'共通する数をまとめて計算しよう',exchangeAssociation:'計算しやすい組み合わせを見つけよう',multiplicationProperties:'かける数が変わると、積はどう変わる？',shapeExpressions:'図の囲み方を式に表そう',suichoku:'2本の直線が垂直に交わる組を見つけよう',keisanSummary:'7つの問題形式で総復習。30問連続で最高称号！'};
 for(const id of (units.find(u=>u.id===unitId)?.games||[])){
  const g=window.ManabiProfileCatalog.find(g=>g.id===id),title=displayNames[id]||g?.name||id;
- const item=document.createElement('article');item.className='unit-card game-card';item.dataset.gameCard=id;if(id==='keisanSummary')item.classList.add('summary-card');
+ const item=document.createElement('article');item.className='unit-card game-card';item.dataset.gameCard=id;
+ if(id==='fractionTransform'&&window.MANABI_ENV?.environment!=='preview')item.hidden=true;
+ if(id==='keisanSummary')item.classList.add('summary-card');
  const summary=document.createElement('div');summary.className='game-summary';const h=document.createElement('h2'),p=document.createElement('p');h.textContent=title;p.textContent=descriptions[id]||'';summary.append(h,p);
  const badge=document.createElement('span');badge.className='game-status-badge';badge.dataset.gameStatus='';badge.setAttribute('role','status');badge.setAttribute('aria-live','polite');badge.hidden=true;
  const actions=document.createElement('div');actions.className='game-actions';

@@ -44,9 +44,9 @@ test('all currently configured public game pages load the shared effect after id
    if(id==='alphabet')assert.ok(html.includes('alphabet-audio.js'),`${dir}/${id}: optional user-triggered voice remains installed`);
   }
  }
- for(const id of ['kotowaza','multiplicationProperties','shapeExpressions','keisanSummary']){
+ for (const id of ['kotowaza','multiplicationProperties','shapeExpressions','keisanSummary','fractionBasics']) {
   const html=await readFile(new URL(`../games/${id}.html`,import.meta.url),'utf8');
-  assert.ok(!html.includes('celebration-effects.js'),`${id} remains outside the currently published game configuration`);
+  assert.match(html,/celebration-effects\.js/,id);
  }
  assert.equal(await readFile(new URL('../celebration-effects.js',import.meta.url),'utf8'),await readFile(new URL('../shared-src/site/celebration-effects.js',import.meta.url),'utf8'));
 });
@@ -55,7 +55,7 @@ test('a correct response shows the confetti celebration without blocking input o
  const h=harness({before:1,threshold:5});h.dispatch('pointerdown');const result=h.economy.answer(h.context,'right');assert.ok(result instanceof Promise);assert.equal(h.state.best,2,'the original game answer continues immediately');h.flushFrames();
  const layer=h.body.children.find(n=>n.classList.contains('mgl-celebration'));
  assert.ok(layer);assert.ok(layer.classList.contains('mgl-celebration--correct'));assert.match(layer.textContent,/正解！/);assert.equal(layer.children.filter(n=>n.classList.contains('mgl-celebration__particle')).length,38);assert.equal(layer.style.values['pointer-events'],undefined);
- assert.ok(h.timers.some(t=>t.ms===470));assert.ok(!h.timers.some(t=>t.ms===500),'the shared module does not introduce or alter a game advance timer');
+ assert.equal(h.timers.filter(t=>t.ms===500).length,1,'the shared module does not introduce or alter a game advance timer');
 });
 
 test('a newly crossed title shows the title art and title-only overlay',()=>{
@@ -101,5 +101,16 @@ test('explicit local title effects use the shared one-second celebration without
  assert.equal(layer.querySelectorAll('img').length,0);assert.equal(layer.querySelectorAll('.mgl-celebration__art').length,0);
  assert.equal(layer.querySelectorAll('.mgl-celebration__particle').length,66);
  assert.equal(h.timers.at(-1).ms,1000);h.timers.at(-1).fn();assert.equal(layer.hidden,true);
- h.window.ManabiCelebrations.showCorrect();assert.equal(h.timers.at(-1).ms,470);
+ h.window.ManabiCelebrations.showCorrect();assert.equal(h.timers.at(-1).ms,500);
+});
+
+
+test('synchronous title selection returns the full title delay and blocks replay',()=>{
+ const h=harness({before:4,threshold:5});
+ h.economy.answer(h.context,'right');
+ assert.ok(h.window.ManabiCelebrations.delay()>950);
+ h.flushFrames();
+ assert.equal(h.body.querySelectorAll('.mgl-celebration--title').length,1);
+ assert.equal(h.body.querySelectorAll('.mgl-celebration--correct').length,0);
+ assert.equal(h.window.ManabiCelebrations.play('keisan',5,6),500);
 });

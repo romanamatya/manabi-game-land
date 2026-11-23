@@ -73,7 +73,7 @@ window.ManabiProfileCatalog.push({
 });
 
 window.ManabiProfileCatalog.push({
-  id:'fractionBasics', name:'分数のきほんをマスター！', subject:'math', page:'math-calculation.html',
+  id:'fractionBasics', name:'分数のきほんをマスター！', subject:'math', page:'math-fractions.html',
   field:'fractionBasicsBestStreak', rankingEnabled:false,
   titles:[
     [3,'分数のおさらい隊','03_review'], [5,'分数の思い出し名人','05_recall'],
@@ -85,3 +85,18 @@ window.ManabiProfileCatalog.push({
   })),
 });
 window.ManabiProfileCatalog.push({"id": "keisanSummary", "name": "計算のきまり・総まとめ", "subject": "math", "page": "math-calculation.html", "field": "keisanSummaryBestStreak", "rankingEnabled": true, "titles": [{"id": "keisanSummary:5", "at": 5, "name": "計算の見習い", "image": "assets/title_05.png", "standalone": true}, {"id": "keisanSummary:10", "at": 10, "name": "計算のひらめき者", "image": "assets/title_10.png", "standalone": true}, {"id": "keisanSummary:15", "at": 15, "name": "計算の使い手", "image": "assets/title_15.png", "standalone": true}, {"id": "keisanSummary:20", "at": 20, "name": "計算の達人", "image": "assets/title_20.png", "standalone": true}, {"id": "keisanSummary:30", "at": 30, "name": "計算のきまりマスター", "image": "assets/title_30.png", "standalone": true}]});
+
+window.ManabiProfileCatalog.push({
+  id:'fractionTransform', name:'分数へんしんチャレンジ！', subject:'math', page:'math-fractions.html',
+  field:'fractionTransformBestStreak', rankingEnabled:false,
+  titles:[
+    [3,'分数へんしん見習い','03_apprentice'],
+    [5,'分数へんしんハンター','05_hunter'],
+    [10,'分数へんしんマスター','10_master'],
+    [15,'分数へんしんの達人','15_expert'],
+    [25,'分数へんしんの覇王','25_overlord'],
+  ].map(([at,name,file])=>({
+    id:'fractionTransform:'+at, at, name, standalone:true,
+    image:'assets/fraction-transform-titles/fractionTransform_'+file+'.png',
+  })),
+});

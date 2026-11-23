@@ -8,7 +8,7 @@ const root = new URL('../', import.meta.url);
 
 test('parallelPair files and settings match the reviewed release candidate', async () => {
   const manifest = JSON.parse(await readFile(new URL('docs/parallel-stage4-manifest.json', root), 'utf8'));
-  const sharedRuntimeFiles = new Set(['environment.js', 'management-model.js', 'challenge120-core.js', 'economy-core.js', 'profile-catalog.js', 'public-admin-settings.js', 'ranking-sync-api.js', 'parallel-game.js', 'parallel.css', 'games/parallelPair.html']);
+  const sharedRuntimeFiles = new Set(['environment.js', 'management-model.js', 'challenge120-core.js', 'economy-core.js', 'celebration-effects.js', 'profile-catalog.js', 'public-admin-settings.js', 'ranking-sync-api.js', 'parallel-game.js', 'parallel.css', 'games/parallelPair.html']);
   for (const file of manifest.files) {
     if (sharedRuntimeFiles.has(file.path)) continue;
     let bytes = await readFile(new URL(file.path, root));
@@ -20,6 +20,8 @@ test('parallelPair files and settings match the reviewed release candidate', asy
         .replace("if(window.MANABI_BACKEND_CONFIG?.staticLocalGameIds?.includes('heikouPair'))units.find(unit=>unit.id==='geometry').games.push('heikouPair');\r\n", '')
         .replace("if(window.MANABI_BACKEND_CONFIG?.staticLocalGameIds?.includes('shikakkeSecrets'))units.find(unit=>unit.id==='geometry').games.push('shikakkeSecrets');\r\n", '')
         .replace(/if\(window\.MANABI_BACKEND_CONFIG\?\.staticLocalGameIds\?\.includes\('fractionBasics'\)\)units\.push\([^\n]+\r?\n/, '')
+        .replace(" if(id==='fractionTransform'&&window.MANABI_ENV?.environment!=='preview')item.hidden=true;\n", '')
+        .replace("fractionTransform:'仮分数・帯分数・整数をへんしんさせよう',", '')
         .replace("fractionBasics:'テープ・ピザ・数直線を使って、3年生の分数を復習しよう',", '')
         .replace("shikakkeSecrets:'対角線・垂直・平行のひみつを見つけよう',", '')
         .replace("heikouPair:'角の大きさと場所をくらべて、平行な直線を見つけよう',", '')
@@ -65,14 +67,14 @@ test('parallelPair files and settings match the reviewed release candidate', asy
   settings.parallelPairRankingEnabled=true;
   settings.rankingGameIds=['keisan','pref-name','pref-place','alphabet','distribution','distribution2','exchangeAssociation','kotowaza','multiplicationProperties','shapeExpressions','keisanSummary','suichoku','parallelPair','missingAlphabet'];
   assert.equal(settings.staticLocalGameIds.filter(id=>id==='verticalParallel').length,1);
-  settings.staticLocalGameIds=settings.staticLocalGameIds.filter(id=>!['verticalParallel','quadrilateral','heikouPair','shikakkeSecrets','fractionBasics'].includes(id));
+  settings.staticLocalGameIds=settings.staticLocalGameIds.filter(id=>!['verticalParallel','quadrilateral','heikouPair','shikakkeSecrets','fractionBasics','fractionTransform'].includes(id));
   for (const key of ['gameIds','rankingGameIds']) {
     assert.equal(settings[key].filter(id=>id==='missingAlphabet').length,1);
     settings[key]=settings[key].filter(id=>id!=='missingAlphabet');
   }
   assert.equal(settings.missingAlphabetRankingSyncEnabled,false);
   assert.deepEqual([...settings.challenge120GameIds],['missingAlphabet']);
-  assert.deepEqual([...settings.managedVisibilityGameIds], ['parallelPair','missingAlphabet','verticalParallel','quadrilateral','heikouPair','shikakkeSecrets','fractionBasics']);
+  assert.deepEqual([...settings.managedVisibilityGameIds], ['parallelPair','missingAlphabet','verticalParallel','quadrilateral','heikouPair','shikakkeSecrets','fractionBasics','fractionTransform']);
   delete settings.managedVisibilityGameIds;
   delete settings.missingAlphabetRankingSyncEnabled;
   delete settings.challenge120GameIds;

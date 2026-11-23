@@ -30,7 +30,7 @@ test('public page renders titles and completes ten correct answers, including re
  const expected=['title_25.png','title_20.png','title_15.png','title_10.png','title_05.png'];await expect(page.locator('#tower > li')).toHaveCount(5);
  for(let i=0;i<5;i++){const row=page.locator('#tower > li').nth(i);await expect(row.locator('img')).toHaveCount(1);await expect(row.locator('img')).toHaveAttribute('src',new RegExp(expected[i]+'$'))}
  for(let streak=1;streak<=10;streak++){
-  const choice=await perpendicularChoice(page);await tapCandidate(page,choice);await expect(page.locator('#verdict')).toHaveText('正解！');await expect(page.locator('#streak')).toHaveText(String(streak));if(streak<10)await expect(page.locator('#choices button').first()).toBeEnabled({timeout:1800});
+  const choice=await perpendicularChoice(page);await page.locator('#choices button').nth(choice).click();await expect(page.locator('#verdict')).toHaveText('正解！');await expect(page.locator('#streak')).toHaveText(String(streak));if(streak<10)await page.waitForFunction(()=>document.querySelector('#choices button')?.disabled===false,null,{timeout:2500});
   if(streak<10)await expect(page.locator('#feedback')).toBeHidden({timeout:3000});
  }
  await expect.poll(()=>page.evaluate(()=>JSON.parse(window.manabiStorage.getItem('mgl_suichoku')).best)).toBe(10);
