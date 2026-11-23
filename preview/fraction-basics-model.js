@@ -2,7 +2,7 @@
 export const GAME = 'fractionBasics';
 export const TYPES = Object.freeze([
   'readTape', 'readPizza', 'reverseTape', 'reversePizza',
-  'unit', 'one', 'compare', 'line', 'toFraction', 'toDecimal', 'add', 'subtract',
+  'unit', 'one', 'compare', 'line', 'add', 'subtract',
 ]);
 const integer = (random, min, max) => min + Math.floor(random() * (max - min + 1));
 const choice = (random, values) => values[integer(random, 0, values.length - 1)];
@@ -23,12 +23,6 @@ function fractionOptions(random, top, bottom) {
     }
   }
   return shuffle(random, [top, ...shuffle(random, distractors).slice(0, 3)].map(value => fraction(value, bottom)));
-}
-function decimalOptions(random, top) {
-  const candidates = Array.from({ length: 10 }, (_, i) => i).filter(v => v !== top);
-  candidates.sort((a, b) => Math.abs(a - top) - Math.abs(b - top));
-  return shuffle(random, [top, ...shuffle(random, candidates.slice(0, 6)).slice(0, 3)]
-    .map(value => (value / 10).toFixed(1)));
 }
 export function createQuestion(type, random = Math.random) {
   if (!TYPES.includes(type)) throw Error('unknown-fraction-type:' + type);
@@ -74,16 +68,6 @@ export function createQuestion(type, random = Math.random) {
     answer = fraction(k, n); options = fractionOptions(random, k, n);
     visual = { kind: 'line', n, k, interactive: false };
     explanation = '0から1までを ' + n + '等分しています。0から ' + k + '目の目もりは ' + answer + ' です。';
-  } else if (type === 'toFraction') {
-    k = integer(random, 1, 9); n = 10; label = '小数から分数';
-    prompt = (k / 10).toFixed(1) + ' を分数で表すと？';
-    answer = fraction(k, 10); options = fractionOptions(random, k, 10);
-    explanation = '0.1 は 1/10 です。その ' + k + 'こ分なので ' + answer + ' です。';
-  } else if (type === 'toDecimal') {
-    k = integer(random, 1, 9); n = 10; label = '分数から小数';
-    prompt = fraction(k, 10) + ' を小数で表すと？';
-    answer = (k / 10).toFixed(1); options = decimalOptions(random, k);
-    explanation = '1/10 は 0.1 です。その ' + k + 'こ分なので ' + answer + ' です。';
   } else if (type === 'add') {
     n = integer(random, 3, 9); a = integer(random, 1, n - 1); b = integer(random, 1, n - a); k = a + b;
     label = '分数のたし算'; prompt = fraction(a, n) + ' ＋ ' + fraction(b, n) + ' ＝ ？';

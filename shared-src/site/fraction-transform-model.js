@@ -11,7 +11,7 @@ function shuffle(items, random) {
 }
 
 export function createQuestion(type, random = Math.random) {
-  const n = 2 + Math.floor(random() * 9);
+  const n = 2 + Math.floor(random() * 8);
   const whole = 2 + Math.floor(random() * 8);
   const remainder = type === 'improperToInteger' ? 0 : 1 + Math.floor(random() * (n - 1));
   const k = whole * n + remainder;

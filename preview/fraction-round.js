@@ -1,4 +1,4 @@
-import { gameProgress } from './title-progress-model.js?v=d94089bc8224';
+import { gameProgress } from './title-progress-model.js?v=de280faf770e';
 
 export function startFractionGame(GAME, createDeck, { celebrate = false } = {}) {
 const $ = id => document.getElementById(id);

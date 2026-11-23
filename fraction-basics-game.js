@@ -1,4 +1,4 @@
-import { GAME, createDeck } from './fraction-basics-model.js';
+import { GAME, createDeck } from './fraction-basics-model.js?v=fraction-single-digit-v1';
 import { gameProgress } from './title-progress-model.js';
 
 const $ = id => document.getElementById(id);

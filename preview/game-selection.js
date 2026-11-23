@@ -1,5 +1,5 @@
-import {bindGameAvailability,renderGameState} from './game-selection-model.js?v=d94089bc8224';
-import {openLineQuizRanking} from './line-quiz-online.js?v=d94089bc8224';
+import {bindGameAvailability,renderGameState} from './game-selection-model.js?v=de280faf770e';
+import {openLineQuizRanking} from './line-quiz-online.js?v=de280faf770e';
 const initialized=new WeakSet();
 function addMissingAlphabetCard(){
  const config=window.MANABI_BACKEND_CONFIG;

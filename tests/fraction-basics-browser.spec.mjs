@@ -18,7 +18,7 @@ test.beforeEach(async ({ page }) => {
   await page.route('https://**/*', route => route.abort());
   await mockPublicVisibility(page,{fractionBasics:'published'});
   await page.addInitScript(scope => localStorage.setItem(scope+'mgl_nickname','ゲーム確認'),scope);
-  await page.route('**/fraction-basics-model.js', route => route.fulfill({
+  await page.route(/\/fraction-basics-model\.js(?:\?v=[\w-]+)?$/, route => route.fulfill({
     contentType:'application/javascript',
     body:`export { GAME } from './fraction-basics-model.js?real';
       import { createDeck as create } from './fraction-basics-model.js?real';
