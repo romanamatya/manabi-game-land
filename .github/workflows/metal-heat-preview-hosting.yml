@@ -1,0 +1,113 @@
+name: Metal heat review Hosting
+
+on:
+  push:
+    branches: [infra/metal-heat-preview-hosting]
+
+permissions: {}
+
+concurrency:
+  group: manabi-metal-heat-preview-hosting
+  cancel-in-progress: false
+
+env:
+  PREVIEW_PROJECT: manabi-game-landcheck
+  PREVIEW_SOURCE: 9bd4abe5bacd414ee446f19a5c7d34aad66c3800
+
+jobs:
+  build:
+    if: github.repository_id == '1430974446' && github.repository_owner_id == '346875777'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ env.PREVIEW_SOURCE }}
+          persist-credentials: false
+      - name: Prepare the pinned preview
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$PREVIEW_SOURCE"
+          npm run build:preview
+          git diff --exit-code -- preview
+          test -z "$(git ls-files --others --exclude-standard -- preview)"
+          jq -e --arg project "$PREVIEW_PROJECT" '
+            .environment=="preview" and .projectId==$project and .firebase.projectId==$project
+            and .playerSyncEnabled==false and .productionReleaseApproved==false
+            and (.visibilityGameIds | index("metalHeat") != null)
+          ' environments/preview.json >/dev/null
+          mkdir -p hosting/public/preview
+          rsync -a --exclude /firebase/ --exclude /qa/ --exclude /BUILD-MANIFEST.json preview/ hosting/public/preview/
+          cp package.json package-lock.json hosting/
+          test -f hosting/public/preview/science.html
+          test -f hosting/public/preview/games/metalHeat.html
+          test ! -e hosting/public/preview/firebase
+          grep -F "\"expectedProjectId\":\"$PREVIEW_PROJECT\"" hosting/public/preview/environment.js >/dev/null
+          jq -n --arg site "$PREVIEW_PROJECT" '{hosting:{
+            site:$site,public:"public",ignore:["**/.*"],
+            redirects:[{source:"/",destination:"/preview/science.html",type:302}],
+            headers:[{source:"**",headers:[{key:"X-Robots-Tag",value:"noindex, nofollow"}]}]
+          }}' >hosting/firebase.json
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: metal-heat-hosting
+          path: hosting/
+          retention-days: 1
+          if-no-files-found: error
+
+  deploy:
+    if: github.repository_id == '1430974446' && github.repository_owner_id == '346875777'
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: metal-heat-hosting
+          path: hosting
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: 22
+      - name: Verify the distribution and install the locked Firebase CLI
+        working-directory: hosting
+        run: |
+          set -euo pipefail
+          test "$PREVIEW_PROJECT" = manabi-game-landcheck
+          jq -e --arg project "$PREVIEW_PROJECT" '
+            (keys == ["hosting"]) and .hosting.site==$project and .hosting.public=="public"
+            and (.hosting.rewrites | not)
+          ' firebase.json >/dev/null
+          grep -F "\"expectedProjectId\":\"$PREVIEW_PROJECT\"" public/preview/environment.js >/dev/null
+          test -f public/preview/games/metalHeat.html
+          test ! -e public/preview/firebase
+          npm ci --ignore-scripts --no-audit --no-fund
+      - uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093
+        with:
+          project_id: manabi-game-landcheck
+          workload_identity_provider: projects/499579497285/locations/global/workloadIdentityPools/manabi-hosting-pr88/providers/github
+          service_account: hosting-pr88@manabi-game-landcheck.iam.gserviceaccount.com
+      - name: Deploy only the 24-hour review channel
+        working-directory: hosting
+        run: |
+          set -euo pipefail
+          test "$PREVIEW_PROJECT" = manabi-game-landcheck
+          test "$GOOGLE_CLOUD_PROJECT" = "$PREVIEW_PROJECT"
+          jq -e --arg project "$PREVIEW_PROJECT" '.hosting.site==$project' firebase.json >/dev/null
+          ./node_modules/.bin/firebase hosting:channel:deploy metal-heat-pr88 --project "$PREVIEW_PROJECT" --config firebase.json --expires 24h --no-authorized-domains --non-interactive --json >"$RUNNER_TEMP/hosting.json"
+          result="$RUNNER_TEMP/hosting.json"
+          jq -e --arg site "$PREVIEW_PROJECT" '
+            .status=="success" and (.result | keys)==[$site]
+            and .result[$site].site==$site
+            and (.result[$site].url | test("^https://manabi-game-landcheck--metal-heat-pr88-[a-z0-9-]+[.]web[.]app$"))
+            and (.result[$site].expireTime | type == "string")
+          ' "$result" >/dev/null
+          url="$(jq -r --arg site "$PREVIEW_PROJECT" '.result[$site].url' "$result")"
+          expiry="$(jq -r --arg site "$PREVIEW_PROJECT" '.result[$site].expireTime' "$result")"
+          curl --fail --silent --show-error --retry 3 "$url/preview/science.html" | grep -F 'data-game-card="metalHeat"' >/dev/null
+          curl --fail --silent --show-error --retry 3 "$url/preview/games/metalHeat.html" | grep -F 'data-score-game="metalHeat"' >/dev/null
+          curl --fail --silent --show-error --retry 3 "$url/preview/environment.js" | grep -F "\"expectedProjectId\":\"$PREVIEW_PROJECT\"" >/dev/null
+          printf '確認用チャネル（期限 %s）\n- 理科 %s/preview/science.html\n- ゲーム %s/preview/games/metalHeat.html\n' "$expiry" "$url" "$url" | tee -a "$GITHUB_STEP_SUMMARY"
