@@ -31,9 +31,10 @@ function artwork(game, title, size) {
   wrap.setAttribute('role', 'img');
   wrap.setAttribute('aria-label', title.name + '・' + (title.earned ? '獲得済み' : '未獲得'));
   // Full 512px PNGs are whole illustrations, not 1254px sprite sheets.
-  const fullPNG = title.image?.endsWith('.png') && (title.standalone ||
-    title.viewport?.every((value, index) => value === [0, 0, 512, 512][index]));
-  if (fullPNG) {
+  const standaloneImage = (title.standalone && title.image?.endsWith('.svg')) ||
+    (title.image?.endsWith('.png') && (title.standalone ||
+    title.viewport?.every((value, index) => value === [0, 0, 512, 512][index])));
+  if (standaloneImage) {
     const badge = node('span', undefined, 'mq-badge');
     badge.style.setProperty('--badge-size', size + 'px');
     const image = document.createElement('img'); image.src = title.image;

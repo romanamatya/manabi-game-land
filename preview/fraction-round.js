@@ -1,6 +1,6 @@
-import { gameProgress } from './title-progress-model.js?v=de280faf770e';
+import { gameProgress } from './title-progress-model.js?v=e6c15133f25b';
 
-export function startFractionGame(GAME, createDeck, { celebrate = false } = {}) {
+export function startFractionGame(GAME, createDeck, { celebrate = false, requirePublished = false, renderFigure, renderChoice } = {}) {
 const $ = id => document.getElementById(id);
 const storage = window.manabiStorage;
 const economy = window.ManabiEconomy;
@@ -78,14 +78,14 @@ function initialize() {
     else next();
   });
   const productionTransform = GAME === 'fractionTransform' && environment === 'production';
-  if (productionTransform || config.visibilityGameIds?.includes(GAME) || config.managedVisibilityGameIds?.includes(GAME)) {
+  if (requirePublished || productionTransform || config.visibilityGameIds?.includes(GAME) || config.managedVisibilityGameIds?.includes(GAME)) {
     const message = status => {
       const canPlay = status === 'published';
       $('access').hidden = canPlay;
       $('question').hidden = !canPlay;
       $('access').textContent = status === 'hidden' ? 'このゲームは現在非公開です。'
         : status === 'preparing' ? 'このゲームは公開準備中です。'
-          : '公開状態を確認できません。算数の一覧へ戻ってください。';
+          : ($('access').dataset.unavailable || '公開状態を確認できません。算数の一覧へ戻ってください。');
       if (canPlay && !allowed) { allowed = true; resume(); }
       else if (!canPlay) {
         allowed = false;
@@ -99,7 +99,7 @@ function initialize() {
     if (!window.ManabiPublicSettings) unavailable();
     else window.ManabiPublicSettings.subscribeGame(GAME, snapshot => {
       if (snapshot.metadata?.fromCache) {
-        if (productionTransform && allowed) message('unknown');
+        if ((requirePublished || productionTransform) && allowed) message('unknown');
         return;
       }
       clearTimeout(responsiveTimeout);
@@ -215,13 +215,13 @@ function next() {
   $('category').textContent = question.label;
   $('question-number').textContent = '第' + number + '問';
   $('question').innerHTML = fractionHTML(question.prompt);
-  $('diagram').innerHTML = visualHTML(question.visual);
+  $('diagram').innerHTML = renderFigure ? renderFigure(question) : visualHTML(question.visual);
   $('diagram').classList.toggle('empty', !question.visual);
   $('instruction').textContent = question.visual?.interactive
     ? '色をつける最後の部分をタッチしよう。' + (question.visual.kind === 'pizza' ? '上から時計回りに色がつくよ。' : '左から順に色がつくよ。')
     : '答えを1つタッチしよう。';
   $('options').innerHTML = question.options.map(value =>
-    '<button type="button" data-value="' + value + '">' + fractionHTML(value) + '</button>').join('');
+    '<button type="button" data-value="' + value + '">' + (renderChoice ? renderChoice(value, question) : fractionHTML(value)) + '</button>').join('');
   $('feedback').innerHTML = '';
   $('feedback').className = 'feedback';
   paintStats();

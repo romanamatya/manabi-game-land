@@ -8,7 +8,7 @@ if(process.env.MGL_CHROME_CHANNEL)test.use({channel:process.env.MGL_CHROME_CHANN
 const sizes=[{width:1024,height:768},{width:1194,height:834},{width:960,height:540}];
 test.beforeEach(async({page})=>{
  await page.route('https://**/*',route=>route.abort());
- await mockPublicVisibility(page,{verticalParallel:'published',fractionBasics:'published',fractionTransform:'published'});
+ await mockPublicVisibility(page,{verticalParallel:'published',fractionBasics:'published',fractionTransform:'published',metalHeat:null});
  await page.addInitScript(scope=>{
   if (sessionStorage.getItem('title-collection-fixture')) return;
   sessionStorage.setItem('title-collection-fixture', '1');
@@ -48,7 +48,7 @@ for(const size of sizes)test('home, picker and collection '+size.width+'x'+size.
 });
 test('all released games launch without ranking requests or controls',async({page})=>{
  await page.goto(site+'titles.html');
- const ids=await page.evaluate(()=>window.ManabiProfileCatalog.map(g=>g.id));expect(ids).toHaveLength(20);
+ const ids=await page.evaluate(()=>window.ManabiProfileCatalog.map(g=>g.id));expect(ids).toHaveLength(production?20:21);
  const errors=[],requests=[];page.on('pageerror',e=>errors.push(new URL(page.url()).pathname+': '+e.message));page.on('request',r=>{if(/firestore.googleapis.com/.test(r.url()))requests.push(r.url());});
  for(const id of ids){
   await page.goto(site+'games/'+id+'.html');
