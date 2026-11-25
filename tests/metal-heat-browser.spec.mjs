@@ -27,8 +27,13 @@ for (const size of [{width:1024,height:768},{width:1194,height:834},{width:960,h
   test('six formats and correction feedback fit iPad landscape at '+size.width, async ({page}) => {
     await page.setViewportSize(size);
     await mockPublicVisibility(page,{metalHeat:'published'});
-    await page.goto(base+'science.html');
+    await page.goto(base+'index.html');
+    await expect(page.getByRole('link',{name:'理科 ゲームを選ぶ'})).toBeVisible();
+    await page.getByRole('link',{name:'理科 ゲームを選ぶ'}).click();
     await expect(page.locator('[data-game-card="metalHeat"]')).toBeVisible();
+    await expect(page.locator('[data-game-card="metalHeat"] .title-row-art img')).toHaveCount(5);
+    await page.goto(base+'titles.html?subject=science&game=metalHeat');
+    await expect(page.locator('.collection-title-grid img')).toHaveCount(5);
     await page.goto(url);
     const deck = createDeck(seeded());
     const seen = new Set();

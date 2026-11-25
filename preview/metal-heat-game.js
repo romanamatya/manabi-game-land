@@ -1,5 +1,5 @@
-import { GAME, createDeck, questionFromPrompt } from './metal-heat-model.js?v=e6c15133f25b';
-import { startFractionGame } from './fraction-round.js?v=e6c15133f25b';
+import { GAME, createDeck, questionFromPrompt } from './metal-heat-model.js?v=a6a54f792358';
+import { startFractionGame } from './fraction-round.js?v=a6a54f792358';
 
 const shapeNames={rod:'金ぞくのぼう',plate:'金ぞくの板'};
 const board = shape => shape === 'rod'
