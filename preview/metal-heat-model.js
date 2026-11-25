@@ -18,6 +18,17 @@ const boards = [
 const permutations = a => a.length ? a.flatMap((x,i) => permutations(a.filter((_,j)=>i!==j)).map(rest=>[x,...rest])) : [[]];
 const letterOrders=permutations(points);
 const distance = ([x,y],[a,b]) => (x-a)**2 + (y-b)**2;
+function predictionFrames(heat) {
+  const [x,y]=heat;
+  const far=x===50&&y===50 ? [13,20] : [100-x,100-y];
+  const off=[x<70?x+34:x-34,y<55?y+25:y-25];
+  return {
+    '近くから広がる図':[[heat,12],[heat,42]],
+    '遠くから広がる図':[[far,12],[far,42]],
+    '近くで止まる図':[[heat,12],[heat,12]],
+    'はなれて広がる図':[[heat,12],[off,32]],
+  };
+}
 const inkFact = 'この図では、し温インクがあたたまると青色からピンク色に変わります。';
 const themed = {
   ink:[
@@ -50,10 +61,11 @@ function buildQuestion(type, variant) {
   }
   if (type === 'predict') {
     const [shape, where, heat] = boards[3+variant];
+    const frames=predictionFrames(heat);
     return { prompt:'赤い印を熱したときの、し温インクの変化はどの図？',
-      answer:'近くから広がる図', options:['近くから広がる図','遠くから広がる図','近くで止まる図','はなれて広がる図'],
+      answer:'近くから広がる図', options:Object.keys(frames),
       explanation:'熱した場所の近くが先にピンク色になり、時間がたつと色の変わった部分が広がります。',
-      visual:{kind:'predict', shape, where, heat} };
+      visual:{kind:'predict', shape, where, heat, frames} };
   }
   const [shape, where, heat, positions] = boards[Math.floor(variant/24)];
   const letters = letterOrders[variant%24];

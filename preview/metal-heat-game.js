@@ -1,5 +1,5 @@
-import { GAME, createDeck, questionFromPrompt } from './metal-heat-model.js?v=a6a54f792358';
-import { startFractionGame } from './fraction-round.js?v=a6a54f792358';
+import { GAME, createDeck, questionFromPrompt } from './metal-heat-model.js?v=537bd87d6552';
+import { startFractionGame } from './fraction-round.js?v=537bd87d6552';
 
 const shapeNames={rod:'金ぞくのぼう',plate:'金ぞくの板'};
 const board = shape => shape === 'rod'
@@ -25,14 +25,7 @@ function figure(question) {
 function choice(value, question) {
   const v=question.visual;
   if(v?.kind!=='predict') return value;
-  const [x,y]=v.heat, far=[100-x,100-y];
-  const off=[x<70?x+34:x-34,y<55?y+25:y-25];
-  const pattern={
-    '近くから広がる図':[[v.heat,12],[v.heat,42]],
-    '遠くから広がる図':[[far,12],[far,42]],
-    '近くで止まる図':[[v.heat,12],[v.heat,12]],
-    'はなれて広がる図':[[v.heat,12],[off,32]],
-  }[value];
+  const pattern=v.frames[value];
   return '<span class="heat-result" role="img" aria-label="'+value+'">'+
     pattern.map(([pink,r],i)=>plateSnapshot(v.heat,pink,r).replaceAll('plate-clip-','plate-clip-'+question.options.indexOf(value)+'-'+i+'-')).join('<span aria-hidden="true">→</span>')+'</span>';
 }

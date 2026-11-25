@@ -32,14 +32,20 @@ test('20,000 metal questions have exact proportions and one scored answer', () =
         const {sites,heat:[hx,hy],shape}=q.visual;
         const distances=sites.map(({xy:[x,y],label})=>[Math.hypot(x-hx,y-hy),label]);
         assert.equal(new Set(distances.map(([d])=>d)).size,sites.length);
-        assert.equal(q.type==='first'?sites.length:0,q.type==='first'?4:0);
+        assert.equal(sites.length,q.type==='first'?4:3);
         const expected=distances.sort(([a],[b])=>a-b).map(([,label])=>label);
         assert.equal(q.answer,q.type==='first'?expected[0]:expected.join(' → '));
         assert.ok(sites.every(({xy:[x,y]})=>x>6&&x<94&&y>9&&y<91));
         heat.add(shape+':'+hx+':'+hy);
       }else if(q.type==='predict'){
         assert.equal(q.visual.shape,'plate');
-        assert.equal(q.answer,'近くから広がる図');
+        const {frames,heat}=q.visual;
+        assert.equal(new Set(Object.values(frames).map(pair=>JSON.stringify(pair))).size,4);
+        const correct=q.options.filter(option=>{
+          const [[[x1,y1],r1],[[x2,y2],r2]]=frames[option];
+          return x1===heat[0]&&y1===heat[1]&&x2===x1&&y2===y1&&r2>r1;
+        });
+        assert.deepEqual(correct,[q.answer]);
       }
     }
     assert.ok(Object.values(count).every(v=>v===0));

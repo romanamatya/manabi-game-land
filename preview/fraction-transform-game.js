@@ -1,4 +1,4 @@
-import { GAME, createDeck } from './fraction-transform-model.js?v=a6a54f792358';
-import { startFractionGame } from './fraction-round.js?v=a6a54f792358';
+import { GAME, createDeck } from './fraction-transform-model.js?v=537bd87d6552';
+import { startFractionGame } from './fraction-round.js?v=537bd87d6552';
 
 startFractionGame(GAME, createDeck, { celebrate: true });
