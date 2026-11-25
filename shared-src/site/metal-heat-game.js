@@ -15,8 +15,8 @@ function plateSnapshot(heat, pink, radius) {
 function figure(question) {
   const v=question.visual;
   if(!v) return '';
-  if(v.kind==='swatches') return '<div class="ink-observation"><span>青色</span><span>あたためると →</span><span>？</span></div>';
-  if(v.kind==='predict') return '<p class="heat-caption">赤い印：熱する場所（'+v.where+'）　青色：熱する前</p>';
+  if(v.kind==='swatches') return '<div class="ink-observation"><span>青色・熱する前</span><span aria-hidden="true">→</span><span>ピンク色・あたたまった部分</span></div>';
+  if(v.kind==='predict') return '<p class="heat-caption"><span>赤い印：熱する場所（'+v.where+'）</span><span>青色：熱する前</span><span>ピンク色：あたたまった部分</span></p>';
   const letters=v.sites.map(({xy:[x,y],label})=>'<text x="'+x+'" y="'+y+'" dominant-baseline="central" text-anchor="middle">'+label+'</text>').join('');
   const described=v.sites.map(({xy:[x,y],label})=>label+'は左から'+x+'、上から'+y).join('、');
   return '<div class="metal-board">'+svg(shapeNames[v.shape]+'。赤い熱する印は'+v.where+'。'+described, '<g class="unheated">'+board(v.shape)+'</g>'+dot(v.heat)+letters)+

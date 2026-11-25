@@ -32,6 +32,9 @@ for (const size of [{width:1024,height:768},{width:1194,height:834},{width:960,h
     await page.getByRole('link',{name:'理科 ゲームを選ぶ'}).click();
     await expect(page.locator('[data-game-card="metalHeat"]')).toBeVisible();
     await expect(page.locator('[data-game-card="metalHeat"] .title-row-art img')).toHaveCount(5);
+    await page.locator('[data-game-card="metalHeat"]').getByRole('button',{name:'プレイ'}).tap();
+    await expect(page).toHaveURL(url);
+    await expect(options(page)).toHaveCount(4);
     await page.goto(base+'titles.html?subject=science&game=metalHeat');
     await expect(page.locator('.collection-title-grid img')).toHaveCount(5);
     await page.goto(url);
@@ -42,9 +45,16 @@ for (const size of [{width:1024,height:768},{width:1194,height:834},{width:960,h
       if (!seen.has(q.type)) {
         seen.add(q.type);
         await expect(options(page)).toHaveCount(4);
-        for (const button of await options(page).all()) await expect(button).toBeInViewport();
+        for (const button of await options(page).all()) {
+          await expect(button).toBeInViewport();
+          expect((await button.boundingBox()).height).toBeGreaterThanOrEqual(44);
+        }
         if (q.type==='predict') await expect(options(page).locator('svg')).toHaveCount(8);
-        if (q.type==='first'||q.type==='order') await expect(page.locator('#diagram svg text')).toHaveCount(q.visual.sites.length);
+        if (q.type==='first'||q.type==='order') {
+          await expect(page.locator('#diagram svg text')).toHaveCount(q.visual.sites.length);
+          await expect(page.locator('#diagram .heat-caption')).toHaveText('赤い印：熱する場所（'+q.visual.where+'）');
+          await expect(page.locator('#diagram .heat-source')).toBeVisible();
+        }
       }
       await answer(page,q.options.find(v=>v!==q.answer)).tap();
       await expect(page.locator('#feedback')).toContainText(q.explanation);
@@ -98,4 +108,32 @@ test('tap guard, titles, daily cap, best and 120-second challenge use shared sto
   await expect(page.locator('#titles .earned')).toHaveCount(5);
   await page.clock.fastForward(121000);
   await expect(page.locator('#gate-message')).toContainText('時間切れ');
+});
+
+
+test('review points and scores stay in preview storage with no remote writes',async ({page})=>{
+  const externalRequests=[];
+  page.on('request',request=>{
+    if (!request.url().startsWith('http://127.0.0.1:4173/')) externalRequests.push(request.url());
+  });
+  await mockPublicVisibility(page,{metalHeat:'published'});
+  await page.addInitScript(()=>{
+    localStorage.setItem('mgl_metalHeat','production-score-sentinel');
+    localStorage.setItem('mgl_economy_v1','production-points-sentinel');
+  });
+  await page.goto(url);
+  const project=await page.evaluate(()=>({
+    firebase:window.MANABI_BACKEND_CONFIG.firebase.projectId,
+    expected:window.MANABI_BACKEND_CONFIG.expectedProjectId,
+    sync:window.MANABI_BACKEND_CONFIG.playerSyncEnabled,
+  }));
+  expect(project).toEqual({firebase:'manabi-game-landcheck',expected:'manabi-game-landcheck',sync:false});
+  await answer(page,createDeck(seeded()).next().answer).tap();
+  await expect(page.locator('#points')).toHaveText('1');
+  expect(await page.evaluate(()=>({
+    best:JSON.parse(localStorage.getItem('manabi_public_preview:mgl_metalHeat')).best,
+    productionScore:localStorage.getItem('mgl_metalHeat'),
+    productionPoints:localStorage.getItem('mgl_economy_v1'),
+  }))).toEqual({best:1,productionScore:'production-score-sentinel',productionPoints:'production-points-sentinel'});
+  expect(externalRequests).toEqual([]);
 });

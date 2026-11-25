@@ -1,23 +1,25 @@
 body[data-score-game="metalHeat"] {color:#172e4b;background:#eaf3fb}
 body[data-score-game="metalHeat"] .game {border-color:#bdd8ed}
 body[data-score-game="metalHeat"] #question {font-size:clamp(19px,2.3vw,29px)}
-body[data-score-game="metalHeat"] .options button {font-size:clamp(13px,1.55vw,20px);line-height:1.27;overflow-wrap:anywhere;padding:4px}
+body[data-score-game="metalHeat"] .options button {font-size:clamp(13px,1.55vw,20px);line-height:1.27;overflow-wrap:anywhere;padding:6px;min-height:48px}
 body[data-score-game="metalHeat"] .options:has(.heat-result) button {min-height:52px}
 .metal-board {width:min(100%,440px);text-align:center}
 body[data-score-game="metalHeat"] .metal-board svg {width:100%;height:clamp(75px,19vh,148px);max-height:none}
 .metal-board svg {overflow:visible}
-.metal-board svg text {fill:#17334e;font-size:5px;font-weight:900}
+.metal-board svg text {fill:#17334e;font-size:8px;paint-order:stroke;stroke:#fff;stroke-width:1.2px;font-weight:900}
 .unheated {fill:#dce8f2;stroke:#607a91;stroke-width:1}
 .heat-source {fill:#b92937;stroke:white;stroke-width:1}
 .ink-blue {fill:#7fb7e7;stroke:#52779b;stroke-width:1}
 .ink-pink {fill:#e95b98;stroke:#973661;stroke-width:1}
-.heat-caption {margin:0;color:#324c68;font-size:clamp(12px,1.45vw,16px);font-weight:700;text-align:center}
+.heat-caption {display:flex;justify-content:center;flex-wrap:wrap;gap:2px 10px;margin:0;color:#324c68;font-size:clamp(12px,1.45vw,16px);font-weight:700;text-align:center}
 .heat-result {display:flex;align-items:center;justify-content:center;gap:2px;width:100%;max-width:190px;margin:auto}
 .heat-result svg {width:calc(50% - 9px);max-height:65px}
 .ink-observation {display:flex;align-items:center;gap:.9rem;font-weight:800}
 .ink-observation span:first-child {background:#c1def9;color:#183955;border-radius:.45rem;padding:.3em .65em}
-.ink-observation span:last-child {background:#eee;border-radius:.45rem;padding:.3em .65em}
+.ink-observation span:last-child {background:#f4b5d1;color:#63163b;border-radius:.45rem;padding:.3em .65em}
 @media (max-height:620px) {
   body[data-score-game="metalHeat"] .game {gap:4px}
   .heat-result svg {max-height:50px}
 }
+
+body[data-score-game="metalHeat"] .feedback.wrong {line-height:1.25}
