@@ -1,9 +1,12 @@
 import { readFile } from 'node:fs/promises';
+import { createServer } from 'node:http';
+import { once } from 'node:events';
 import { test, expect } from '@playwright/test';
 import { createDeck } from '../preview/metal-heat-model.js';
 
 const review = new URL('../.release/manabi-metal-heat-review.html', import.meta.url).href;
-const isolatedReview = 'http://metal-heat-offline.test/';
+let isolatedReview;
+let server;
 const storagePrefix = 'manabi_offline_review:metalHeat:';
 
 function seeded(initialState = 762) {
@@ -11,18 +14,37 @@ function seeded(initialState = 762) {
   return () => (state = (Math.imul(state, 1664525) + 1013904223) >>> 0) / 2 ** 32;
 }
 
-test.use({ offline: true, viewport: { width: 1024, height: 768 }, hasTouch: true });
+test.use({ viewport: { width: 1024, height: 768 }, hasTouch: true });
+
+test.beforeAll(async () => {
+  const html = await readFile(new URL(review));
+  server = createServer((request, response) => {
+    if (request.url !== '/') {
+      response.writeHead(404).end();
+      return;
+    }
+    response.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' }).end(html);
+  });
+  server.listen(0, '127.0.0.1');
+  await once(server, 'listening');
+  isolatedReview = 'http://127.0.0.1:' + server.address().port + '/';
+});
+test.afterAll(() => {
+  server?.close();
+});
 
 for (const stableOrigin of [false, true]) {
   const testName = stableOrigin ? 'offline review retains records at an isolated origin' : 'offline file plays all six formats without network';
   test(testName, async ({ page }) => {
-    if (stableOrigin) {
-      const html = await readFile(new URL(review), 'utf8');
-      await page.route(isolatedReview, route => route.fulfill({ contentType: 'text/html', body: html }));
-    }
+    // Browser-engine offline mode itself blocks file navigation in WebKit.
+    // Block outbound requests while permitting the test's loopback document.
+    await page.route(/^https?:/, route =>
+      route.request().url() === isolatedReview ? route.continue() : route.abort());
     const remoteRequests = [];
     page.on('request', request => {
-      if (/^https?:/.test(request.url()) && request.url() !== isolatedReview) remoteRequests.push(request.url());
+      if (/^https?:/.test(request.url()) && (!stableOrigin || request.url() !== isolatedReview)) {
+        remoteRequests.push(request.url());
+      }
     });
     await page.addInitScript(({ initialState, stableOrigin }) => {
       const nativeRandom = Math.random;
