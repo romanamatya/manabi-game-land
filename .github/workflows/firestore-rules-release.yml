@@ -6,6 +6,7 @@ on:
     paths:
       - '.github/workflows/firestore-rules-release.yml'
       - 'firebase/*release*.rules'
+      - 'firebase/production-fraction-input-visibility-candidate.rules'
       - 'preview/firebase/tests/challenge-prototype.rules'
       - 'firebase/rules-release-emulator.json'
       - 'tools/firestore-rules-release*.mjs'
@@ -23,6 +24,11 @@ on:
         type: choice
         options: [inspect, inspect-pr67, inspect-shikakke, plan, deploy, rollback, rehearse]
         default: inspect
+      release_profile:
+        description: Approved pair of baseline and candidate Rules
+        type: choice
+        options: [default, fraction-input]
+        default: default
       rollback_ruleset:
         description: Previous immutable Ruleset name from the backup receipt
         type: string
@@ -48,6 +54,7 @@ jobs:
           TARGET: ${{ inputs.target || 'preview' }}
           OPERATION: ${{ inputs.operation || 'test' }}
           ROLLBACK_RULESET: ${{ inputs.rollback_ruleset }}
+          RELEASE_PROFILE: ${{ inputs.release_profile || 'default' }}
           RULES_PRODUCTION_WRITE_ENABLED: ${{ vars.RULES_PRODUCTION_WRITE_ENABLED }}
         run: |
           set -euo pipefail
@@ -73,6 +80,18 @@ jobs:
               source=firebase/preview-release-candidate.rules
               ;;
             *) echo "::error::Unsupported operation for the selected project."; exit 1 ;;
+          esac
+          case "$RELEASE_PROFILE" in
+            default) ;;
+            fraction-input)
+              case "$TARGET/$OPERATION" in
+                production/inspect|production/plan|production/deploy|production/rollback) ;;
+                *) echo "::error::Fraction input is a production Rules profile."; exit 1 ;;
+              esac
+              baseline=firebase/production-fraction-transform-visibility-candidate.rules
+              source=firebase/production-fraction-input-visibility-candidate.rules
+              ;;
+            *) echo "::error::Unknown Rules profile."; exit 1 ;;
           esac
           if [[ "$TARGET" == production && ( "$OPERATION" == deploy || "$OPERATION" == rollback ) ]]; then
             if [[ "$RULES_PRODUCTION_WRITE_ENABLED" != true ]]; then
