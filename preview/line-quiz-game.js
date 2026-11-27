@@ -1,5 +1,5 @@
-import { challengeRankingEnabled, mountChallengeRanking } from './challenge-ranking.js?v=417321ae8777';
-import { openLineQuizRanking } from './line-quiz-online.js?v=417321ae8777';
+import { challengeRankingEnabled, mountChallengeRanking } from './challenge-ranking.js?v=3b98e712c0d7';
+import { openLineQuizRanking } from './line-quiz-online.js?v=3b98e712c0d7';
 
 const $ = id => document.getElementById(id);
 const model = window.ManabiLineQuiz;

@@ -75,7 +75,8 @@ for (const [width, height] of [[960,540], [1024,768], [1194,834]]) {
     await key(page, '5').tap();
     await key(page, 'submit').tap();
     await expect(page.locator('#feedback')).toContainText('正しい答え');
-    await expect(page.locator('#understood')).toBeInViewport();
+    await expect(options(page)).toBeHidden();
+    await expect(page.locator('#understood')).toBeInViewport({ratio:1});
     await page.locator('#understood').tap();
     await expect(options(page).locator('[data-field]')).toHaveCount(3);
     await key(page, '6').tap();

@@ -1,4 +1,4 @@
-import { subjects, geometryGames, gameProgress, collectionProgress, summarizePublished } from './title-progress-model.js?v=417321ae8777';
+import { subjects, geometryGames, gameProgress, collectionProgress, summarizePublished } from './title-progress-model.js?v=3b98e712c0d7';
 
 const storage = window.manabiStorage;
 const catalog = window.ManabiProfileCatalog || [];
@@ -178,7 +178,9 @@ function start() {
         if (fromCache && !explicitPublication) return;
         const setting = !fromCache && snapshot?.exists?.() ? snapshot.data() : null;
         if (explicitPublication && setting?.status !== 'published') {
-          statuses.set(game.id, 'unknown');
+          const status = game.id === 'fractionTransformInput' && !fromCache && (!setting || ['hidden','preparing'].includes(setting.status))
+            ? 'hidden' : 'unknown';
+          statuses.set(game.id, status);
           update();
           return;
         }

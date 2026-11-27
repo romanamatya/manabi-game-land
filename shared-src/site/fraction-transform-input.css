@@ -42,7 +42,6 @@ button:focus-visible { outline: 3px solid #144e9b; outline-offset: 2px; }
 .answer-fraction { display: grid; gap: 5px; position: relative; }
 .answer-fraction::after { content: ""; position: absolute; height: 2px; background: currentColor; inset: calc(50% - 1px) -1px auto; pointer-events: none; }
 .instruction { margin: 0 0 5px; text-align: center; font-size: 13px; color: #305577; }
-.game:has(.feedback:not(:empty)) .instruction { display: none; }
 .input-message { min-height: 1.3em; margin: 4px 0; font-size: 13px; text-align: center; color: #8f332b; }
 .input-keypad { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 5px; }
 .input-keypad button { min-height: 44px; border: 1px solid #9cbfdf; border-radius: 8px; color: #203950; background: #edf6ff; font-size: 20px; font-weight: 800; }
@@ -53,7 +52,7 @@ button:focus-visible { outline: 3px solid #144e9b; outline-offset: 2px; }
 .feedback { font-size: 15px; padding: 9px; border-radius: 9px; background: #e8f9ed; text-align: center; }
 .feedback.wrong { background: #fff0ed; color: #812d27; }
 .feedback button, .gate button { display: block; width: 100%; margin-top: 7px; }
-.game:has(.feedback:not(:empty)) .options, .game:has(.gate:not([hidden])) .question-stage,
+.game:has(.gate:not([hidden])) .question-stage,
 .game:has(#access:not([hidden])) .question-stage { display: none; }
 .gate, #access { margin: auto 0; padding: 10px; text-align: center; background: #edf6ff; border-radius: 9px; }
 .titles ol { list-style: none; display: grid; gap: 7px; padding: 0; margin: 0; }

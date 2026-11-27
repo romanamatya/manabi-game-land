@@ -1,5 +1,5 @@
-import { GAME, answerFields, checkInput, createDeck } from './fraction-transform-input-model.js?v=417321ae8777';
-import { startFractionGame } from './fraction-round.js?v=417321ae8777';
+import { GAME, answerFields, checkInput, createDeck } from './fraction-transform-input-model.js?v=3b98e712c0d7';
+import { startFractionGame } from './fraction-round.js?v=3b98e712c0d7';
 
 const labels = { whole: '整数部分', top: '分子', bottom: '分母' };
 const directions = { fromImproper: '仮分数から', toImproper: '帯分数から' };

@@ -1,4 +1,4 @@
-import { gameProgress } from './title-progress-model.js?v=417321ae8777';
+import { gameProgress } from './title-progress-model.js?v=3b98e712c0d7';
 
 export function startFractionGame(GAME, createDeck, { celebrate = false, responseInput, requirePublished = false } = {}) {
 const $ = id => document.getElementById(id);
@@ -255,7 +255,11 @@ function judge(value) {
       saveChallenge();
     }
   }
-  responseInput?.record(question, correct);
+  if (responseInput) {
+    $('options').hidden = true;
+    $('instruction').hidden = true;
+    responseInput.record(question, correct);
+  }
   if (correct) {
     if (celebrate) scoreContext.__mglCelebrationHandled = true;
     void economy.answer(scoreContext, value).catch(() => {});

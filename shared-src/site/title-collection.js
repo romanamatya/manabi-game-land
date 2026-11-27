@@ -178,7 +178,9 @@ function start() {
         if (fromCache && !explicitPublication) return;
         const setting = !fromCache && snapshot?.exists?.() ? snapshot.data() : null;
         if (explicitPublication && setting?.status !== 'published') {
-          statuses.set(game.id, 'unknown');
+          const status = game.id === 'fractionTransformInput' && !fromCache && (!setting || ['hidden','preparing'].includes(setting.status))
+            ? 'hidden' : 'unknown';
+          statuses.set(game.id, status);
           update();
           return;
         }

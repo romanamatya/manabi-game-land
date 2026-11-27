@@ -1,5 +1,5 @@
-import {GAME_IDS,checkedInput,visibilityStatus} from './management-model.js?v=417321ae8777';
-import {contractFor} from './data-contract.js?v=417321ae8777';
+import {GAME_IDS,checkedInput,visibilityStatus} from './management-model.js?v=3b98e712c0d7';
+import {contractFor} from './data-contract.js?v=3b98e712c0d7';
 
 export function createManagementStore(mode,F,db){
  const {base}=contractFor(mode),ref=(collection,id)=>F.doc(db,base+'/'+collection,id),col=k=>F.collection(db,base+'/'+k);
