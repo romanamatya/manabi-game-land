@@ -114,6 +114,18 @@ export function createAdminOperations(c,{auth,db},A,F) {
       return {players:players.rows,playerCursor:players.cursor,...more,managementReady:c.managementEnabled===true,audit:history.docs.map(d=>plain({...d.data(),id:d.id}))};
     }
     if (action === 'admin:players') return list('players', input.cursor);
+    if (action === 'admin:fraction-input:read' || action === 'admin:fraction-input:set') {
+      if (contract.mode !== 'preview' || c.expectedProjectId !== 'manabi-game-landcheck'
+          || !c.managedVisibilityGameIds?.includes('fractionTransformInput')) throw error('feature-unverified');
+      const target = ref('gameSettings', 'fractionTransformInput');
+      if (action === 'admin:fraction-input:read') {
+        const snapshot = await F.getDocFromServer(target);
+        return snapshot.data()?.status || 'hidden';
+      }
+      if (input.confirm !== true || !['published', 'preparing', 'hidden'].includes(input.status)) throw error('invalid-input');
+      await F.setDoc(target, {status: input.status, updatedAt: F.serverTimestamp()});
+      return input.status;
+    }
     const fractionId = input.id ?? 'fractionBasics';
     if (action.startsWith('admin:fraction-visibility:') && ['fractionBasics','fractionTransform'].includes(fractionId) && contract.mode === 'preview'
         && c.expectedProjectId === 'manabi-game-landcheck' && c.managedVisibilityGameIds?.includes(fractionId)) {

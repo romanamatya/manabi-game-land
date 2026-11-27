@@ -20,7 +20,8 @@ test('parallelPair files and settings match the reviewed release candidate', asy
         .replace("if(window.MANABI_BACKEND_CONFIG?.staticLocalGameIds?.includes('heikouPair'))units.find(unit=>unit.id==='geometry').games.push('heikouPair');\r\n", '')
         .replace("if(window.MANABI_BACKEND_CONFIG?.staticLocalGameIds?.includes('shikakkeSecrets'))units.find(unit=>unit.id==='geometry').games.push('shikakkeSecrets');\r\n", '')
         .replace(/if\(window\.MANABI_BACKEND_CONFIG\?\.staticLocalGameIds\?\.includes\('fractionBasics'\)\)units\.push\([^\n]+\r?\n/, '')
-        .replace(" if(id==='fractionTransform'&&window.MANABI_ENV?.environment!=='preview')item.hidden=true;\n", '')
+        .replace(" if(['fractionTransform','fractionTransformInput'].includes(id)&&window.MANABI_ENV?.environment!=='preview')item.hidden=true;\n", '')
+        .replace("fractionTransformInput:'答えの形を考え、数字を入れて分数を直そう',", '')
         .replace("fractionTransform:'仮分数・帯分数・整数をへんしんさせよう',", '')
         .replace("fractionBasics:'テープ・ピザ・数直線を使って、3年生の分数を復習しよう',", '')
         .replace("shikakkeSecrets:'対角線・垂直・平行のひみつを見つけよう',", '')
@@ -67,14 +68,14 @@ test('parallelPair files and settings match the reviewed release candidate', asy
   settings.parallelPairRankingEnabled=true;
   settings.rankingGameIds=['keisan','pref-name','pref-place','alphabet','distribution','distribution2','exchangeAssociation','kotowaza','multiplicationProperties','shapeExpressions','keisanSummary','suichoku','parallelPair','missingAlphabet'];
   assert.equal(settings.staticLocalGameIds.filter(id=>id==='verticalParallel').length,1);
-  settings.staticLocalGameIds=settings.staticLocalGameIds.filter(id=>!['verticalParallel','quadrilateral','heikouPair','shikakkeSecrets','fractionBasics','fractionTransform'].includes(id));
+  settings.staticLocalGameIds=settings.staticLocalGameIds.filter(id=>!['verticalParallel','quadrilateral','heikouPair','shikakkeSecrets','fractionBasics','fractionTransform','fractionTransformInput'].includes(id));
   for (const key of ['gameIds','rankingGameIds']) {
     assert.equal(settings[key].filter(id=>id==='missingAlphabet').length,1);
     settings[key]=settings[key].filter(id=>id!=='missingAlphabet');
   }
   assert.equal(settings.missingAlphabetRankingSyncEnabled,false);
   assert.deepEqual([...settings.challenge120GameIds],['missingAlphabet']);
-  assert.deepEqual([...settings.managedVisibilityGameIds], ['parallelPair','missingAlphabet','verticalParallel','quadrilateral','heikouPair','shikakkeSecrets','fractionBasics','fractionTransform']);
+  assert.deepEqual([...settings.managedVisibilityGameIds], ['parallelPair','missingAlphabet','verticalParallel','quadrilateral','heikouPair','shikakkeSecrets','fractionBasics','fractionTransform','fractionTransformInput']);
   delete settings.managedVisibilityGameIds;
   delete settings.missingAlphabetRankingSyncEnabled;
   delete settings.challenge120GameIds;

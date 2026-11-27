@@ -27,7 +27,7 @@ function connect(rules, projectId=base) {
     .then(rules => initializeTestEnvironment({projectId,firestore:{rules}}));
 }
 before(async () => {
-  env=await connect('production-fraction-transform-visibility-candidate.rules');
+  env=await connect('production-fraction-input-visibility-candidate.rules');
   await seed(env);
   admin=env.authenticatedContext(adminUid,signedIn).firestore();
   child=env.authenticatedContext('visibility-child',learner).firestore();
@@ -49,8 +49,9 @@ test('the existing admin store lists the individual visibility games and preserv
   assert.equal(new Set(GAME_IDS).size,GAME_IDS.length);
   const store=()=>createManagementStore('production',F,admin);
   assert.deepEqual((await store().snapshot()).games.filter(g=>ids.includes(g.id)).map(g=>g.id),ids);
-  assert.ok((await store().snapshot()).games.filter(g=>recent.includes(g.id)&&g.id!=='fractionTransform').every(g=>g.status==='published'));
+  assert.ok((await store().snapshot()).games.filter(g=>recent.includes(g.id)&&!['fractionTransform','fractionTransformInput'].includes(g.id)).every(g=>g.status==='published'));
   assert.equal((await store().snapshot()).games.find(g=>g.id==='fractionTransform').status,'unknown');
+  assert.equal((await store().snapshot()).games.find(g=>g.id==='fractionTransformInput').status,'unknown');
   for (const game of ids) {
     const change=status=>store().mutate({uid:adminUid},'visibilityBatch',{games:[game],status});
     const hidden=await assertSucceeds(change('hidden'));
@@ -101,6 +102,8 @@ test('campaign, extra fields and mixed visibility batches cannot alter the new d
   await assertFails(commit(['heikouPair'],{nickname:'変更'}));
   await assertFails(commit(['shikakkeSecrets'],{campaign:{enabled:true}}));
   await assertFails(commit(['shikakkeSecrets','keisan'],{}));
+  await assertFails(commit(['fractionTransformInput','keisan'],{}));
+  await assertFails(commit(['fractionTransformInput'],{campaign:{enabled:true}}));
   await assertFails(commit(['fractionTransform','keisan'],{}));
   await assertFails(commit(['fractionTransform'],{campaign:{enabled:true}}));
   await assertFails(commit(['fractionBasics','keisan'],{}));

@@ -13,16 +13,18 @@ function load(file, context = { window: {}, structuredClone }) {
   return context.window;
 }
 
-test('production lists the original 18 games and the two released fraction games', () => {
+test('production preserves the original games and registers the three fraction games', () => {
   const before = load('tests/fixtures/profile-catalog-before-production-summary.js').ManabiProfileCatalog;
   const after = load('profile-catalog.js').ManabiProfileCatalog;
-  const addedIds = ['keisanSummary', 'suichoku', 'parallelPair', 'missingAlphabet', 'verticalParallel', 'quadrilateral', 'heikouPair', 'shikakkeSecrets', 'fractionBasics', 'fractionTransform'];
+  const addedIds = ['keisanSummary', 'suichoku', 'parallelPair', 'missingAlphabet', 'verticalParallel', 'quadrilateral', 'heikouPair', 'shikakkeSecrets', 'fractionBasics', 'fractionTransform', 'fractionTransformInput'];
   const config = load('environment.js', { window: {}, location: { pathname: '/' } }).MANABI_BACKEND_CONFIG;
   const legacyMathIds = ['multiplicationProperties', 'shapeExpressions'];
   const releasedIds = [...before.map(game => game.id), ...addedIds, ...legacyMathIds].sort();
-  assert.equal(releasedIds.length, 20);
+  assert.equal(releasedIds.length, 21);
   assert.deepEqual([...config.gameIds, ...config.staticLocalGameIds].sort(), releasedIds);
   assert.deepEqual([...config.rankingGameIds].sort(), []);
+  assert.ok(config.managedVisibilityGameIds.includes('fractionTransformInput'));
+  assert.equal(after.find(game => game.id === 'fractionTransformInput').rankingEnabled, false);
   assert.deepEqual(fs.readdirSync('games').filter(file => file.endsWith('.html'))
     .map(file => file.slice(0, -5)).sort(), releasedIds);
   assert.deepEqual(Array.from(after, game => game.id).sort(),

@@ -1,4 +1,4 @@
-import {createManagementStore} from './management-store.js?v=fraction-basics-v1';
+import {createManagementStore} from './management-store.js?v=fraction-input-release-v1';
 import {validateBackend,contractFor} from './data-contract.js?v=adminprod-20261030';
 import {createFirestoreStore} from './firebase-store.js?v=title-collection-production-v1';
 const config = window.MANABI_SPARK_CONFIG;
