@@ -71,3 +71,22 @@ test('numeric input is preview-managed with distinct keys and a separate daily p
   assert.equal(wallet.daily.games.fractionTransform, 1);
   assert.equal(wallet.balances.math, 51);
 });
+
+test('the five official titles preserve earned IDs and use unique packaged PNGs', () => {
+  const context = { window: {} };
+  vm.runInNewContext(read('shared-src/site/profile-catalog.js'), context);
+  const game = context.window.ManabiProfileCatalog.find(game => game.id === GAME);
+  const rows = Array.from(game.titles, title => [title.id, title.at, title.name]);
+  assert.deepEqual(rows, [
+    [GAME + ':3', 3, '分数ルーキー'], [GAME + ':5', 5, '分数ハンター'],
+    [GAME + ':10', 10, '分数マスター'], [GAME + ':15', 15, '分数の達人'],
+    [GAME + ':25', 25, '分数の覇王'],
+  ]);
+  assert.equal(new Set(game.titles.map(title => title.image)).size, 5);
+  for (const title of game.titles) {
+    assert.equal(title.standalone, true);
+    const png = readFileSync(new URL('../shared-src/site/' + title.image, import.meta.url));
+    assert.equal(png.subarray(1, 4).toString(), 'PNG');
+    assert.equal(png[25], 6);
+  }
+});

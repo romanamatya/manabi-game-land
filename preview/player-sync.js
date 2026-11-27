@@ -1,6 +1,6 @@
-import './spark-config.js?v=3b98e712c0d7';
-import {browserClient} from './player-sync-api.js?v=3b98e712c0d7';
-import {capture,read,zero,number,localBalances,union,GAMES,error,observeBalances} from './player-sync-model.js?v=3b98e712c0d7';
+import './spark-config.js?v=63ff8c4f8736';
+import {browserClient} from './player-sync-api.js?v=63ff8c4f8736';
+import {capture,read,zero,number,localBalances,union,GAMES,error,observeBalances} from './player-sync-model.js?v=63ff8c4f8736';
 const META='mgl_sync_v2',BACKUP='mgl_sync_original_v2';
 const watched=new Set(['mgl_nickname','mgl_economy_v1','mgl_profile','mgl_best','mq_pref_name','mq_pref_place',...GAMES.map(g=>'mgl_'+g),'mgl_limited_icons_v1','mgl_limited_frames_v1']);
 export async function start(){

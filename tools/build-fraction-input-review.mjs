@@ -9,7 +9,12 @@ const inline = code => '<script>\n' + code.replace(/<\/script/ig, '<\\/script') 
 const sandbox = { window: {} };
 vm.runInNewContext(await read('profile-catalog.js'), sandbox);
 const catalog = sandbox.window.ManabiProfileCatalog.filter(game => game.id === 'fractionTransformInput');
-if (catalog.length !== 1 || catalog[0].titles.some(title => title.image)) throw Error('unexpected-review-catalog');
+if (catalog.length !== 1 || catalog[0].titles.length !== 5) throw Error('unexpected-review-catalog');
+for (const title of catalog[0].titles) {
+  if (!/^assets\/fraction-transform-input-titles\/[a-z0-9_]+\.png$/.test(title.image)) throw Error('unexpected-review-art');
+  const png = await readFile(new URL(title.image, source));
+  title.image = 'data:image/png;base64,' + png.toString('base64');
+}
 
 let html = await read('games/fractionTransformInput.html');
 html = html.replace(/<script[^>]*\ssrc="[^"]+"[^>]*><\/script>/g, '')
@@ -23,8 +28,13 @@ const classic = await Promise.all(['economy-core.js', 'storage-adapters.js', 'ec
   'challenge120-core.js', 'celebration-effects.js'].map(read));
 const files = ['title-progress-model.js', 'fraction-transform-input-model.js', 'fraction-round.js', 'fraction-transform-input-game.js'];
 const modules = await Promise.all(files.map(async file => {
-  const code = (await read(file)).replace(/^import .+ from ['"]\.\/[^'"]+['"];\r?\n/gm, '')
+  let code = (await read(file)).replace(/^import .+ from ['"]\.\/[^'"]+['"];\r?\n/gm, '')
     .replace(/^export (?=(?:const|function) )/gm, '');
+  if (file === 'fraction-round.js') {
+    const relativeImage = "image.src = '../' + title.image;";
+    if (!code.includes(relativeImage)) throw Error('offline-title-image-hook-missing');
+    code = code.replace(relativeImage, 'image.src = title.image;');
+  }
   if (/^\s*(?:export|import)\b/m.test(code)) throw Error('unexpected-module-syntax:' + file);
   return code;
 }));

@@ -104,7 +104,14 @@ window.ManabiProfileCatalog.push({
 window.ManabiProfileCatalog.push({
   id:'fractionTransformInput', name:'分数へんしんチャレンジ！【数字入力】', subject:'math', page:'math-fractions.html',
   field:'fractionTransformInputBestStreak', rankingEnabled:false,
-  titles:[3,5,10,15,25].map(at=>({
-    id:'fractionTransformInput:'+at, at, name:at+'問連続（仮称号）', textOnly:true, image:null,
+  titles:[
+    [3,'分数ルーキー','01_fraction_rookie.png'],
+    [5,'分数ハンター','02_fraction_hunter.png'],
+    [10,'分数マスター','03_fraction_master.png'],
+    [15,'分数の達人','04_fraction_expert.png'],
+    [25,'分数の覇王','05_fraction_overlord.png'],
+  ].map(([at,name,file])=>({
+    id:'fractionTransformInput:'+at, at, name, standalone:true,
+    image:'assets/fraction-transform-input-titles/'+file,
   })),
 });

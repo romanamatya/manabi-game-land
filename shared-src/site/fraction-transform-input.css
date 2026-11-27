@@ -56,15 +56,17 @@ button:focus-visible { outline: 3px solid #144e9b; outline-offset: 2px; }
 .game:has(#access:not([hidden])) .question-stage { display: none; }
 .gate, #access { margin: auto 0; padding: 10px; text-align: center; background: #edf6ff; border-radius: 9px; }
 .titles ol { list-style: none; display: grid; gap: 7px; padding: 0; margin: 0; }
-.titles li { background: #edf3fb; padding: 8px; border-radius: 8px; font-size: 13px; font-weight: bold; }
+.titles li { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 7px; background: #edf3fb; padding: 8px; border-radius: 8px; font-size: 13px; font-weight: bold; }
 .titles li.earned { background: #ffedb1; }
 .titles li small { display: block; font-size: 11px; margin-top: 3px; }
-.titles li img { width: 36px; height: 36px; object-fit: contain; }
+.titles li img { width: 52px; height: 52px; object-fit: contain; }
+.titles li:not(.earned) img { filter: grayscale(1); opacity: .65; }
 @media (max-height: 620px) {
   .app { padding: 7px; gap: 6px; }
   .panel { padding: 9px; }
   .question-stage { min-height: 66px; }
   .titles li { padding: 6px; }
+  .titles li img { width: 44px; height: 44px; }
 }
 @media (max-width: 720px) {
   .layout { grid-template-columns: 1fr; }
