@@ -4,7 +4,8 @@ export function mockPublicVisibility(page, states = {}) {
     body: `window.ManabiFirebaseSession = { open: async () => {
       const states = ${JSON.stringify(states)};
       const snapshot = (path, fromCache = false) => {
-        const state = states[path.split('/').pop()];
+        const id = path.split('/').pop();
+        const state = Object.hasOwn(states, id) ? states[id] : id === 'fractionTransformInput' ? null : undefined;
         return {
           exists: () => state !== null,
           data: () => ({ status: state ?? 'published' }),
