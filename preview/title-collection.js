@@ -1,4 +1,4 @@
-import { subjects, geometryGames, gameProgress, collectionProgress, summarizePublished } from './title-progress-model.js?v=de280faf770e';
+import { subjects, geometryGames, gameProgress, collectionProgress, summarizePublished } from './title-progress-model.js?v=417321ae8777';
 
 const storage = window.manabiStorage;
 const catalog = window.ManabiProfileCatalog || [];
@@ -144,7 +144,7 @@ function renderNewBadge() {
   const game = catalog.find(game => game.id === id);
   if (!game) return;
   const subjectId = game.subject || subjectMap[id];
-  const unit = window.ManabiMathUnits?.find(unit => unit.games.includes(id))?.id || (geometryGames.includes(id) ? 'geometry' : ['fractionBasics','fractionTransform'].includes(id) ? 'fractions' : 'calculation');
+  const unit = window.ManabiMathUnits?.find(unit => unit.games.includes(id))?.id || (geometryGames.includes(id) ? 'geometry' : ['fractionBasics','fractionTransform','fractionTransformInput'].includes(id) ? 'fractions' : 'calculation');
   for (const card of document.querySelectorAll('[data-subject-card],[data-unit-games],[data-game-card]')) {
     const matches = card.dataset.gameCard === id || card.dataset.subjectCard === subjectId
       || (subjectId === 'math' && card.dataset.unitId === unit);
@@ -173,11 +173,11 @@ function start() {
   if ((config.availabilityEnabled||config.visibilityGameIds?.length) && window.ManabiPublicSettings) {
     for (const game of catalog.filter(g=>config.availabilityEnabled||config.visibilityGameIds?.includes(g.id))) {
       Promise.resolve(window.ManabiPublicSettings.subscribeGame(game.id, snapshot => {
-        const productionTransform = game.id === 'fractionTransform' && config.mode === 'production';
+        const explicitPublication = game.id === 'fractionTransformInput' || (game.id === 'fractionTransform' && config.mode === 'production');
         const fromCache = snapshot?.metadata?.fromCache === true;
-        if (fromCache && !productionTransform) return;
+        if (fromCache && !explicitPublication) return;
         const setting = !fromCache && snapshot?.exists?.() ? snapshot.data() : null;
-        if (productionTransform && setting?.status !== 'published') {
+        if (explicitPublication && setting?.status !== 'published') {
           statuses.set(game.id, 'unknown');
           update();
           return;

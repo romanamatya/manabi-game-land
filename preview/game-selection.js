@@ -1,5 +1,5 @@
-import {bindGameAvailability,renderGameState} from './game-selection-model.js?v=de280faf770e';
-import {openLineQuizRanking} from './line-quiz-online.js?v=de280faf770e';
+import {bindGameAvailability,renderGameState} from './game-selection-model.js?v=417321ae8777';
+import {openLineQuizRanking} from './line-quiz-online.js?v=417321ae8777';
 const initialized=new WeakSet();
 function addMissingAlphabetCard(){
  const config=window.MANABI_BACKEND_CONFIG;
@@ -33,7 +33,7 @@ function initialize(){
    });
    continue;
   }
-  const publishedOnly=card.dataset.gameCard==='fractionTransform'&&window.MANABI_ENV?.environment!=='preview';
+  const publishedOnly=card.dataset.gameCard==='fractionTransformInput'||(card.dataset.gameCard==='fractionTransform'&&window.MANABI_ENV?.environment!=='preview');
   const binding=bindGameAvailability(card,{publishedOnly,enabled:publishedOnly||window.MANABI_BACKEND_CONFIG?.availabilityEnabled===true||window.MANABI_BACKEND_CONFIG?.visibilityGameIds?.includes(card.dataset.gameCard),settings:window.ManabiPublicSettings});
   window.addEventListener('pagehide',binding.dispose,{once:true});
  }
