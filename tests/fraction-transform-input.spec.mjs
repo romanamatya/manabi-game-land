@@ -184,10 +184,21 @@ test('offline review opens directly, shows playable questions, and does not cont
   await visibleArt(page.locator('#titles img'), 44);
   expect(await page.locator('#titles img').evaluateAll(images => images.every(image => image.src.startsWith('data:image/png;base64,')))).toBe(true);
   await page.emulateMedia({ reducedMotion:'reduce' });
-  await page.evaluate(() => window.ManabiCelebrations.play('fractionTransformInput', 0, 3));
-  const offlineAward = page.locator('.mgl-celebration--title');
-  await expect(offlineAward.locator('h2')).toHaveText('分数ルーキー');
-  await visibleArt(offlineAward.locator('img'), 130, 1);
+  const award = await page.evaluate(async () => {
+    window.ManabiCelebrations.play('fractionTransformInput', 0, 3);
+    const display = document.querySelector('.mgl-celebration--title');
+    const image = display.querySelector('img');
+    const expected = document.querySelector('#titles li[data-at="3"] img');
+    const {left, right, top, bottom, width, height} = image.getBoundingClientRect();
+    const title = display.querySelector('h2').textContent;
+    await image.decode();
+    return {
+      title, decoded: image.naturalWidth > 0, matchesBadge: image.src === expected.src,
+      fits: left >= 0 && right <= innerWidth && top >= 0 && bottom <= innerHeight,
+      large: Math.min(width, height) >= 130,
+    };
+  });
+  expect(award).toEqual({title:'分数ルーキー', decoded:true, matchesBadge:true, fits:true, large:true});
   await expect(key(page, '0')).toBeInViewport();
   await key(page, 'submit').tap();
   await expect(page.locator('[data-input-message]')).toContainText('必要な数字');
