@@ -49,8 +49,8 @@ for(const size of sizes)test('home, picker and collection '+size.width+'x'+size.
 test('all released games launch without ranking requests or controls',async({page})=>{
  await page.goto(site+'titles.html');
  const ids=await page.evaluate(()=>window.ManabiProfileCatalog.map(g=>g.id));
- expect(ids).toHaveLength(production ? 20 : 21);
- expect(ids.includes('fractionTransformInput')).toBe(!production);
+ expect(ids).toHaveLength(21);
+ expect(ids).toContain('fractionTransformInput');
  const errors=[],requests=[];page.on('pageerror',e=>errors.push(new URL(page.url()).pathname+': '+e.message));page.on('request',r=>{if(/firestore.googleapis.com/.test(r.url()))requests.push(r.url());});
  for(const id of ids){
   await page.goto(site+'games/'+id+'.html');
@@ -90,7 +90,7 @@ if(production)for(const size of sizes)test('math units preserve all games and co
  await expect(page.locator('.math-unit-row')).toHaveCount(3);
  await clean(page);
  await unit.getByRole('link').click();
- await expect(page.locator('[data-game-card]')).toHaveCount(2);
+ await expect(page.locator('[data-game-card]:visible')).toHaveCount(2);
  await expect(page.locator('[data-game-card]').nth(1)).toHaveAttribute('data-game-card','fractionTransform');
  await expect(page.locator('[data-game-card="fractionBasics"] [data-game-play]')).toBeEnabled();
  await page.goto(site+'math-calculation.html');

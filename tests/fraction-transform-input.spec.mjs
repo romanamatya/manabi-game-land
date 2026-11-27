@@ -2,7 +2,9 @@ import { test, expect } from '@playwright/test';
 import { mockPublicVisibility } from './fixtures/public-visibility-browser.mjs';
 
 const game = 'fractionTransformInput';
-const base = 'http://127.0.0.1:4173/preview/';
+const production = process.env.MGL_FRACTION_INPUT_TARGET === 'production';
+const base = 'http://127.0.0.1:4173/' + (production ? '' : 'preview/');
+const scope = production ? '' : 'manabi_public_preview:';
 const direct = base + 'games/' + game + '.html';
 const titles = new Map([[3,'分数ルーキー'],[5,'分数ハンター'],[10,'分数マスター'],[15,'分数の達人'],[25,'分数の覇王']]);
 async function visibleArt(images, minimum, count = 5) {
@@ -24,7 +26,7 @@ const set = async (page, field, value) => {
 test.use({ hasTouch: true, isMobile: true });
 test.beforeEach(async ({ page }) => {
   await page.route('https://**/*', route => route.abort());
-  await page.addInitScript(() => localStorage.setItem('manabi_public_preview:mgl_nickname','数字入力テスト'));
+  await page.addInitScript(scope => localStorage.setItem(scope+'mgl_nickname','数字入力テスト'),scope);
 });
 
 for (const status of [null, 'hidden', 'preparing', 'read-error']) {
@@ -41,7 +43,7 @@ for (const status of [null, 'hidden', 'preparing', 'read-error']) {
 }
 
 async function deterministicDeck(page) {
-  await page.route(/fraction-transform-input-model\.js\?v=/, route => route.fulfill({
+  await page.route(/fraction-transform-input-model\.js(?:\?v=[\w-]+)?$/, route => route.fulfill({
     contentType:'application/javascript',
     body:`export { GAME, answerFields, checkInput } from './fraction-transform-input-model.js?real';
       export function createDeck() {

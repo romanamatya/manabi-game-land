@@ -23,7 +23,7 @@ function initialize(){
   if(initialized.has(card))continue;initialized.add(card);
   const button=card.querySelector('[data-game-play]');
   if(button)button.addEventListener('click',()=>{if(card.dataset.gameAvailability==='published'&&!button.disabled&&button.dataset.gameHref)location.assign(button.dataset.gameHref)});
-  const publishedOnly=card.dataset.gameCard==='fractionTransform'&&window.MANABI_ENV?.environment!=='preview';
+  const publishedOnly=['fractionTransform','fractionTransformInput'].includes(card.dataset.gameCard)&&window.MANABI_ENV?.environment!=='preview';
   const binding=bindGameAvailability(card,{publishedOnly,enabled:publishedOnly||window.MANABI_BACKEND_CONFIG?.availabilityEnabled===true,settings:window.ManabiPublicSettings,hideHidden:window.MANABI_BACKEND_CONFIG?.managedVisibilityGameIds?.includes(card.dataset.gameCard)});
   window.addEventListener('pagehide',binding.dispose,{once:true});
  }

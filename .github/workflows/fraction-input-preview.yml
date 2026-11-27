@@ -27,6 +27,9 @@ jobs:
       fail-fast: false
       matrix:
         browser: [chromium, webkit]
+        target: [preview, production]
+    env:
+      MGL_FRACTION_INPUT_TARGET: ${{ matrix.target }}
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:

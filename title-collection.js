@@ -158,12 +158,12 @@ function start() {
   if ((config.availabilityEnabled||config.visibilityGameIds?.length) && window.ManabiPublicSettings) {
     for (const game of catalog.filter(g=>config.availabilityEnabled||config.visibilityGameIds?.includes(g.id))) {
       Promise.resolve(window.ManabiPublicSettings.subscribeGame(game.id, snapshot => {
-        const productionTransform = game.id === 'fractionTransform' && config.mode === 'production';
+        const productionTransform = ['fractionTransform','fractionTransformInput'].includes(game.id) && config.mode === 'production';
         const fromCache = snapshot?.metadata?.fromCache === true;
         if (fromCache && !productionTransform) return;
         const setting = !fromCache && snapshot?.exists?.() ? snapshot.data() : null;
         if (productionTransform && setting?.status !== 'published') {
-          statuses.set(game.id, 'unknown');
+          statuses.set(game.id, game.id === 'fractionTransformInput' && !fromCache && (!setting || ['hidden','preparing'].includes(setting.status)) ? 'hidden' : 'unknown');
           update();
           return;
         }

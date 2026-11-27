@@ -12,12 +12,13 @@ const targets = [
   ['shikakkeSecrets', 'math-geometry.html', '[data-shape]', '#practice-best'],
   ['fractionBasics','math-fractions.html','#options button, #diagram [data-count]','#best'],
   ['fractionTransform','math-fractions.html','#options button','#best'],
+  ['fractionTransformInput','math-fractions.html','#options button','#best'],
 ];
 test('individual management hides cards, gates direct play and keeps local records through re-publication', async ({ browser }) => {
   test.setTimeout(120000);
   const admin = await browser.newPage();
   const student = await browser.newPage({ viewport: { width: 1024, height: 768 }, hasTouch: true, isMobile: true });
-  const states = { verticalParallel: null, quadrilateral: null, heikouPair: null, shikakkeSecrets: null, fractionBasics: null, fractionTransform: 'published' };
+  const states = { verticalParallel: null, quadrilateral: null, heikouPair: null, shikakkeSecrets: null, fractionBasics: null, fractionTransform: 'published', fractionTransformInput: null };
   const changes = [];
   await admin.route('https://**/*', route => route.abort());
   await student.route('https://**/*', route => route.abort());
@@ -26,7 +27,7 @@ test('individual management hides cards, gates direct play and keeps local recor
     if (sessionStorage.getItem('availability-fixtures')) return;
     sessionStorage.setItem('availability-fixtures','1');
     localStorage.setItem('mgl_nickname','公開設定テスト');
-    for (const key of ['verticalParallel','quadrilateral','heikouPair','shikakkeSecrets','fractionBasics','fractionTransform']) localStorage.setItem('mgl_'+key,'{"best":9}');
+    for (const key of ['verticalParallel','quadrilateral','heikouPair','shikakkeSecrets','fractionBasics','fractionTransform','fractionTransformInput']) localStorage.setItem('mgl_'+key,'{"best":9}');
   });
   await admin.exposeFunction('visibilityAdmin', (action, input) => {
     if (action === 'admin:snapshot') {
@@ -75,7 +76,7 @@ test('individual management hides cards, gates direct play and keeps local recor
       }
     }
     await visit(student,'games/'+id+'.html');
-    const isFraction = ['fractionBasics', 'fractionTransform'].includes(id);
+    const isFraction = ['fractionBasics', 'fractionTransform', 'fractionTransformInput'].includes(id);
     await expect(student.locator(isFraction?'#access':'#publicGameAccessStatus')).toContainText('現在非公開');
     const action = student.locator(answer).first();
     if (id!=='missingAlphabet' && !isFraction) await expect(action).toBeAttached();
@@ -95,7 +96,7 @@ test('individual management hides cards, gates direct play and keeps local recor
     if (id==='fractionTransform') await expect(card.locator('.new-game-badge')).toHaveCount(1);
     await visit(student,'games/'+id+'.html');
     await expect(student.locator('#publicGameAccessStatus')).toHaveCount(0);
-    if (['verticalParallel','quadrilateral','heikouPair','shikakkeSecrets','fractionBasics','fractionTransform'].includes(id)) {
+    if (['verticalParallel','quadrilateral','heikouPair','shikakkeSecrets','fractionBasics','fractionTransform','fractionTransformInput'].includes(id)) {
       await expect(student.locator(best)).toHaveText('9');
     }
   }
