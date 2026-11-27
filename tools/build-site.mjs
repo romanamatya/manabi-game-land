@@ -75,6 +75,10 @@ for (const rel of sourceFiles) {
       text = text.replace(/(<script src="((?:\.\.\/)?)public-admin-settings\.js[^"]*"><\/script>)/,
         '$1<script src="$2fraction-public-settings.js"></script>');
     }
+    if (mode === 'preview' && config.managedVisibilityGameIds?.includes('fractionTransformInput')) {
+      text = text.replace(/(<script src="((?:\.\.\/)?)public-admin-settings\.js[^"]*"><\/script>)/,
+        '$1<script src="$2fraction-input-settings.js?v=review"></script>');
+    }
     if (!text.includes('src="environment.js') && !text.includes('src="../environment.js')) {
       text = text.replace('<head>', `<head><script src="${rel.startsWith('games/') ? '../' : ''}environment.js"></script>`);
     }

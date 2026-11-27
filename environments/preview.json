@@ -44,18 +44,21 @@
     "shikakkeSecrets",
     "fractionBasics",
     "verticalParallel",
-    "fractionTransform"
+    "fractionTransform",
+    "fractionTransformInput"
   ],
   "rankingsRetired": true,
   "latestGameId": "fractionTransform",
   "visibilityGameIds": [
     "verticalParallel",
     "fractionBasics",
-    "fractionTransform"
+    "fractionTransform",
+    "fractionTransformInput"
   ],
   "managedVisibilityGameIds": [
     "verticalParallel",
     "fractionBasics",
-    "fractionTransform"
+    "fractionTransform",
+    "fractionTransformInput"
   ]
 }

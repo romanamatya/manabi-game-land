@@ -1,6 +1,6 @@
 import { gameProgress } from './title-progress-model.js';
 
-export function startFractionGame(GAME, createDeck, { celebrate = false } = {}) {
+export function startFractionGame(GAME, createDeck, { celebrate = false, responseInput, requirePublished = false } = {}) {
 const $ = id => document.getElementById(id);
 const storage = window.manabiStorage;
 const economy = window.ManabiEconomy;
@@ -44,21 +44,25 @@ function initialize() {
   for (const title of [...game.titles].reverse()) {
     const item = document.createElement('li');
     item.dataset.at = title.at;
-    const image = document.createElement('img');
-    image.src = '../' + title.image;
-    image.alt = '';
     const labels = document.createElement('div');
     const name = document.createElement('span');
     name.textContent = title.name;
     const count = document.createElement('small');
     count.textContent = title.at + '問連続';
     labels.append(name, count);
-    item.append(image, labels);
+    if (title.image) {
+      const image = document.createElement('img');
+      image.src = '../' + title.image;
+      image.alt = '';
+      item.append(image);
+    }
+    item.append(labels);
     $('titles').append(item);
   }
   $('restart').addEventListener('click', restart);
   $('challenge-start').addEventListener('click', startChallenge);
   $('practice-continue').addEventListener('click', restart);
+  responseInput?.bind(judge);
   $('options').addEventListener('click', event => {
     const button = event.target.closest('button[data-value]');
     if (button) judge(button.dataset.value);
@@ -78,7 +82,7 @@ function initialize() {
     else next();
   });
   const productionTransform = GAME === 'fractionTransform' && environment === 'production';
-  if (productionTransform || config.visibilityGameIds?.includes(GAME) || config.managedVisibilityGameIds?.includes(GAME)) {
+  if (requirePublished || productionTransform || config.visibilityGameIds?.includes(GAME) || config.managedVisibilityGameIds?.includes(GAME)) {
     const message = status => {
       const canPlay = status === 'published';
       $('access').hidden = canPlay;
@@ -99,7 +103,7 @@ function initialize() {
     if (!window.ManabiPublicSettings) unavailable();
     else window.ManabiPublicSettings.subscribeGame(GAME, snapshot => {
       if (snapshot.metadata?.fromCache) {
-        if (productionTransform && allowed) message('unknown');
+        if ((requirePublished || productionTransform) && allowed) message('unknown');
         return;
       }
       clearTimeout(responsiveTimeout);
@@ -217,11 +221,15 @@ function next() {
   $('question').innerHTML = fractionHTML(question.prompt);
   $('diagram').innerHTML = visualHTML(question.visual);
   $('diagram').classList.toggle('empty', !question.visual);
-  $('instruction').textContent = question.visual?.interactive
-    ? '色をつける最後の部分をタッチしよう。' + (question.visual.kind === 'pizza' ? '上から時計回りに色がつくよ。' : '左から順に色がつくよ。')
-    : '答えを1つタッチしよう。';
-  $('options').innerHTML = question.options.map(value =>
-    '<button type="button" data-value="' + value + '">' + fractionHTML(value) + '</button>').join('');
+  if (responseInput) {
+    $('instruction').textContent = responseInput.show(question);
+  } else {
+    $('instruction').textContent = question.visual?.interactive
+      ? '色をつける最後の部分をタッチしよう。' + (question.visual.kind === 'pizza' ? '上から時計回りに色がつくよ。' : '左から順に色がつくよ。')
+      : '答えを1つタッチしよう。';
+    $('options').innerHTML = question.options.map(value =>
+      '<button type="button" data-value="' + value + '">' + fractionHTML(value) + '</button>').join('');
+  }
   $('feedback').innerHTML = '';
   $('feedback').className = 'feedback';
   paintStats();
@@ -247,6 +255,7 @@ function judge(value) {
       saveChallenge();
     }
   }
+  responseInput?.record(question, correct);
   if (correct) {
     if (celebrate) scoreContext.__mglCelebrationHandled = true;
     void economy.answer(scoreContext, value).catch(() => {});

@@ -100,3 +100,11 @@ window.ManabiProfileCatalog.push({
     image:'assets/fraction-transform-titles/fractionTransform_'+file+'.png',
   })),
 });
+
+window.ManabiProfileCatalog.push({
+  id:'fractionTransformInput', name:'分数へんしんチャレンジ！【数字入力】', subject:'math', page:'math-fractions.html',
+  field:'fractionTransformInputBestStreak', rankingEnabled:false,
+  titles:[3,5,10,15,25].map(at=>({
+    id:'fractionTransformInput:'+at, at, name:at+'問連続（仮称号）', textOnly:true, image:null,
+  })),
+});

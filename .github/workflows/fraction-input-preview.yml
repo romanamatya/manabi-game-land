@@ -1,0 +1,51 @@
+name: Fraction input preview
+
+on:
+  push:
+    branches: [feat/fraction-transform-input]
+  pull_request:
+    paths:
+      - '.github/workflows/fraction-input-preview.yml'
+      - 'shared-src/site/**'
+      - 'environments/preview.json'
+      - 'firebase/preview-current.rules'
+      - 'tests/**/fraction-transform-input*'
+      - 'tools/build-fraction-input-review.mjs'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: fraction-input-preview-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  browser:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    strategy:
+      fail-fast: false
+      matrix:
+        browser: [chromium, webkit]
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '22'
+      - run: npm run build:preview
+      - run: node --test tests/fraction-transform-input.test.mjs
+      - run: node tools/build-fraction-input-review.mjs
+      - run: npm install --no-save --no-package-lock @playwright/test@1.56.1
+      - run: npx playwright install --with-deps ${{ matrix.browser }}
+      - name: Run preview and offline browser tests
+        run: |
+          python3 -m http.server 4173 --bind 127.0.0.1 >/tmp/manabi-fraction-http.log 2>&1 &
+          server=$!
+          trap 'kill "$server" 2>/dev/null || true' EXIT
+          for attempt in {1..30}; do
+            if curl -fsS http://127.0.0.1:4173/preview/math-fractions.html >/dev/null 2>&1; then break; fi
+            sleep 0.2
+          done
+          npx playwright test tests/fraction-transform-input.spec.mjs --browser=${{ matrix.browser }} --timeout=90000 --reporter=line
