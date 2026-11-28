@@ -4,6 +4,8 @@
  const cfg=window.MANABI_BACKEND_CONFIG;if(!cfg)return;
  const games=['keisan','pref-name','pref-place','alphabet','missingAlphabet','distribution','distribution2','exchangeAssociation','kotowaza','multiplicationProperties','shapeExpressions','keisanSummary','parallelPair','suichoku','verticalParallel','quadrilateral','heikouPair','shikakkeSecrets'];
  if (cfg.staticLocalGameIds?.includes('fractionTransform')) games.push('fractionTransform');
+ const scopedMetal=cfg.mode==='preview'&&cfg.managedVisibilityGameIds?.includes('metalHeat');
+ if(scopedMetal)games.push('metalHeat');
  const settingsRoot=cfg.environment==='productionAdmin/v1'?'productionAdmin/v1':cfg.environment==='previewSpark/v1'?'previewSpark/v1':null;
  const staticLocalGames=new Set(cfg.staticLocalGameIds||[]);
  const managedGames=new Set(cfg.managedVisibilityGameIds||[]);
@@ -30,7 +32,7 @@
  async function read(collection,id){
   if(!settingsRoot)throw Error('settings-environment-unavailable');
   const session=await db(),snapshot=await session.F.getDocFromServer(session.F.doc(session.db,settingsRoot+'/'+collection+'/'+id));
-  return snapshot.exists()?snapshot.data():collection==='gameSettings'&&managedStatic(id)&&id!=='fractionTransform'?staticSnapshot.data():null;
+  return snapshot.exists()?snapshot.data():collection==='gameSettings'&&managedStatic(id)&&id!=='fractionTransform'&&id!=='metalHeat'?staticSnapshot.data():null;
  }
  window.ManabiPublicSettings=Object.freeze({
   availabilityEnabled:cfg.availabilityEnabled===true,
@@ -39,11 +41,11 @@
    if(!settingsRoot||!games.includes(id))return Promise.reject(Error('game-settings-unavailable'));
    if(staticPublished(id)){onValue(staticSnapshot);return Promise.resolve(()=>{});}
    return db().then(({F,db})=>F.onSnapshot(F.doc(db,settingsRoot+'/gameSettings/'+id),{includeMetadataChanges:true},snapshot=>{
-    onValue(managedStatic(id)&&id!=='fractionTransform'&&!snapshot.exists()&&snapshot.metadata.fromCache===false?staticSnapshot:snapshot);
+    onValue(managedStatic(id)&&id!=='fractionTransform'&&id!=='metalHeat'&&!snapshot.exists()&&snapshot.metadata.fromCache===false?staticSnapshot:snapshot);
    },onError));
   }
  });
- const gameId=location.pathname.match(/(?:^|\/)games\/([^/]+)\.html$/)?.[1],gated=cfg.availabilityEnabled===true&&gameId!=='fractionTransform'&&games.includes(gameId)&&!staticPublished(gameId);
+ const gameId=location.pathname.match(/(?:^|\/)games\/([^/]+)\.html$/)?.[1],gated=cfg.availabilityEnabled===true&&gameId!=='fractionTransform'&&gameId!=='metalHeat'&&games.includes(gameId)&&!staticPublished(gameId);
  if(gated){
   const readGameSetting=()=>read('gameSettings',gameId);
   if(window.ManabiGameAvailability?.create){const reset=()=>window.ManabiPublicSettings?.reset?.();void window.ManabiGameAvailability.create(document).check(readGameSetting,{onTimeout:reset,onError:reset});}

@@ -1,4 +1,4 @@
-import { subjects, geometryGames, gameProgress, collectionProgress, summarizePublished } from './title-progress-model.js?v=de280faf770e';
+import { subjects, geometryGames, gameProgress, collectionProgress, summarizePublished } from './title-progress-model.js?v=d1ceb7680050';
 
 const storage = window.manabiStorage;
 const catalog = window.ManabiProfileCatalog || [];
@@ -31,9 +31,10 @@ function artwork(game, title, size) {
   wrap.setAttribute('role', 'img');
   wrap.setAttribute('aria-label', title.name + '・' + (title.earned ? '獲得済み' : '未獲得'));
   // Full 512px PNGs are whole illustrations, not 1254px sprite sheets.
-  const fullPNG = title.image?.endsWith('.png') && (title.standalone ||
-    title.viewport?.every((value, index) => value === [0, 0, 512, 512][index]));
-  if (fullPNG) {
+  const standaloneImage = (title.standalone && title.image?.endsWith('.svg')) ||
+    (title.image?.endsWith('.png') && (title.standalone ||
+    title.viewport?.every((value, index) => value === [0, 0, 512, 512][index])));
+  if (standaloneImage) {
     const badge = node('span', undefined, 'mq-badge');
     badge.style.setProperty('--badge-size', size + 'px');
     const image = document.createElement('img'); image.src = title.image;
@@ -79,6 +80,10 @@ function renderHome() {
   const host = document.getElementById('titleCollectionHome');
   if (!host) return;
   const result = view(), overall = result.overall;
+  if (statuses.has('metalHeat')) {
+    const scienceLabel = document.querySelector('.mq-home a[href="science.html"] span');
+    if (scienceLabel) scienceLabel.textContent = statuses.get('metalHeat') === 'published' ? 'ゲームを選ぶ' : '準備中';
+  }
   host.replaceChildren(node('h2', 'ぼく・わたしの称号コレクション'));
   const overview = node('div', undefined, 'collection-overview');
   const counts = node('div');
@@ -175,6 +180,12 @@ function start() {
       Promise.resolve(window.ManabiPublicSettings.subscribeGame(game.id, snapshot => {
         const productionTransform = game.id === 'fractionTransform' && config.mode === 'production';
         const fromCache = snapshot?.metadata?.fromCache === true;
+        const metalHeat = game.id === 'metalHeat';
+        if (metalHeat && (fromCache || snapshot?.exists?.() === false)) {
+          statuses.set(game.id, fromCache ? 'checking' : 'hidden');
+          update();
+          return;
+        }
         if (fromCache && !productionTransform) return;
         const setting = !fromCache && snapshot?.exists?.() ? snapshot.data() : null;
         if (productionTransform && setting?.status !== 'published') {
@@ -182,7 +193,9 @@ function start() {
           update();
           return;
         }
-        const value = setting?.status || (setting?.published === false ? 'hidden' : setting?.published === true ? 'published' : 'unknown');
+        const value = metalHeat
+          ? (['published', 'preparing', 'hidden'].includes(setting?.status) ? setting.status : 'unknown')
+          : setting?.status || (setting?.published === false ? 'hidden' : setting?.published === true ? 'published' : 'unknown');
         statuses.set(game.id, value); update();
       }, () => { statuses.set(game.id, 'unknown'); update(); })).then(stop => activeBindings.push(stop))
         .catch(() => { statuses.set(game.id, 'unknown'); update(); });

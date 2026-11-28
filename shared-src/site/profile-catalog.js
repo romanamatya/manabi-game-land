@@ -100,3 +100,12 @@ window.ManabiProfileCatalog.push({
     image:'assets/fraction-transform-titles/fractionTransform_'+file+'.png',
   })),
 });
+
+window.ManabiProfileCatalog.push({
+  id:'metalHeat', name:'金ぞくのあたたまり方', subject:'science', page:'science.html',
+  field:'metalHeatBestStreak', rankingEnabled:false,
+  titles:[3,5,10,15,25].map((at,index)=>({
+    id:'metalHeat:'+at, at, name:'仮称号 '+(index+1), standalone:true,
+    image:'assets/metal-heat-titles/'+at+'.svg',
+  })),
+});

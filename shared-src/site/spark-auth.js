@@ -114,6 +114,19 @@ export function createAdminOperations(c,{auth,db},A,F) {
       return {players:players.rows,playerCursor:players.cursor,...more,managementReady:c.managementEnabled===true,audit:history.docs.map(d=>plain({...d.data(),id:d.id}))};
     }
     if (action === 'admin:players') return list('players', input.cursor);
+    if (action.startsWith('admin:metal-heat:') && contract.mode === 'preview'
+        && c.expectedProjectId === 'manabi-game-landcheck' && c.managedVisibilityGameIds?.includes('metalHeat')) {
+      const target = ref('gameSettings','metalHeat');
+      if (action === 'admin:metal-heat:read') {
+        const snap = await F.getDocFromServer(target);
+        return snap.exists() ? snap.data().status : 'unregistered';
+      }
+      if (action === 'admin:metal-heat:set' && input.confirm === true && ['hidden','preparing','published'].includes(input.status)) {
+        await F.setDoc(target,{status:input.status,updatedAt:F.serverTimestamp()});
+        return {ok:true};
+      }
+      throw error('invalid-input');
+    }
     const fractionId = input.id ?? 'fractionBasics';
     if (action.startsWith('admin:fraction-visibility:') && ['fractionBasics','fractionTransform'].includes(fractionId) && contract.mode === 'preview'
         && c.expectedProjectId === 'manabi-game-landcheck' && c.managedVisibilityGameIds?.includes(fractionId)) {

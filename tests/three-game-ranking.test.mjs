@@ -24,6 +24,8 @@ test('each candidate changes only the dedicated challenge collection', () => {
     const end = candidate.indexOf('\n    }', candidate.indexOf('allow delete: if false;', start)) + 6;
     assert.ok(start >= 0 && end > start);
     assert.match(candidate.slice(start, end), new RegExp(path));
-    assert.equal(candidate.slice(0, start) + candidate.slice(end).replace(/^\r?\n\r?\n/, ''), readFileSync(base, 'utf8'));
+    // The retired ranking candidate predates the independent metal-heat document.
+    const baseline = readFileSync(base, 'utf8').replace(/^    match \/previewSpark\/v1\/gameSettings\/metalHeat \{\n[\s\S]*?^    \}\r?\n/m, '');
+    assert.equal(candidate.slice(0, start) + candidate.slice(end).replace(/^\r?\n\r?\n/, ''), baseline);
   }
 });

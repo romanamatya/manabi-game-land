@@ -33,7 +33,8 @@
     "suichoku",
     "verticalParallel",
     "parallelPair",
-    "keisanSummary"
+    "keisanSummary",
+    "metalHeat"
   ],
   "challengeRankingGameIds": [],
   "rankingGameIds": [],
@@ -44,18 +45,21 @@
     "shikakkeSecrets",
     "fractionBasics",
     "verticalParallel",
-    "fractionTransform"
+    "fractionTransform",
+    "metalHeat"
   ],
   "rankingsRetired": true,
   "latestGameId": "fractionTransform",
   "visibilityGameIds": [
     "verticalParallel",
     "fractionBasics",
-    "fractionTransform"
+    "fractionTransform",
+    "metalHeat"
   ],
   "managedVisibilityGameIds": [
     "verticalParallel",
     "fractionBasics",
-    "fractionTransform"
+    "fractionTransform",
+    "metalHeat"
   ]
 }
